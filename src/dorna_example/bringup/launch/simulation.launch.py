@@ -36,8 +36,14 @@ def generate_launch_description():
                 output='screen',
                 )
 
+    sp = launch_ros.actions.Node(
+                package='cylinders',
+                node_executable='cylinders',
+                output='screen',
+                )
 
-    return launch.LaunchDescription(r1 + [camera_node, control_box, sp_ui, sp_operator]) #+ r2)
+
+    return launch.LaunchDescription(r1 + [camera_node, control_box, sp_ui, sp_operator, sp]) #+ r2)
 
 
 
@@ -49,11 +55,11 @@ def make_dorna_simulation(name, poses_file):
 
     robot_state_publisher_params = {
         "robot_description": robot_desc,
-    }    
-    rsp_node = launch_ros.actions.Node(package='robot_state_publisher', 
+    }
+    rsp_node = launch_ros.actions.Node(package='robot_state_publisher',
                                 node_executable='robot_state_publisher',
                                 node_namespace='dorna/' + name,
-                                output='screen',   
+                                output='screen',
                                 parameters=[robot_state_publisher_params]
                                 )
 
@@ -107,7 +113,5 @@ def make_dorna_simulation(name, poses_file):
                 output='screen',
                 parameters=[gui_parameters]
                 )
-    
+
     return [rsp_node, sim_node, gui_node]
-
-
