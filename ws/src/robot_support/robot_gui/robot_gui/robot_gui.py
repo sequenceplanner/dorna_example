@@ -46,8 +46,8 @@ def load_poses(file):
         joint_csv_reader = csv.reader(joint_csv, delimiter=':')
         for row in joint_csv_reader:
             if len(row) == 2 and len(ast.literal_eval(row[1])) == CommVariables.no_of_joints:
-                result[row[0]] = ast.literal_eval(row[1])
-        
+                result[row[0]] = rad_pose_to_deg(ast.literal_eval(row[1]))
+
     return result
 
 def pose_from_position(poses, joints):
@@ -87,8 +87,8 @@ class RobotGUI(Node, CommVariables):
         # for some reason these parameters becomes ([...]) so we need to [0] when using
         CommVariables.joint_limit_max = self.declare_parameter("joint_limit_max", value=[180]*self.no_of_joints).value,
         CommVariables.joint_limit_min = self.declare_parameter("joint_limit_min", value=[-180]*self.no_of_joints).value,
-        
-        CommVariables.joint_tolerance = self.declare_parameter("joint_tolerance", value=0.01).value
+
+        CommVariables.joint_tolerance = 180.0/math.pi * self.declare_parameter("joint_tolerance", value=0.05).value
 
         CommVariables.poses = load_poses(CommVariables.saved_poses_file)
         CommVariables.to_robot.gui_joint_control = [0.0]*self.no_of_joints
@@ -446,7 +446,7 @@ class Window(QWidget, CommVariables):
 
         def combo_box_button_clicked():
             pose = combo.currentText()
-            for i, v in enumerate(CommVariables.poses[pose]):
+            for i, v in enumerate(deg_pose_to_rad(CommVariables.poses[pose])):
                 CommVariables.to_robot.gui_joint_control[i] = v
             self.force_slider_signal.emit()
 
