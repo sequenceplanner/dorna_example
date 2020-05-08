@@ -30,8 +30,8 @@ class RobotSimulator(Node):
 
         self.max_joint_speed = self.declare_parameter("max_joint_speed", value=[45]*self.no_of_joints).value  #deg/sec
         self.speed_scale = self.declare_parameter("speed_scale", value=100).value
-        self.joint_tolerance = self.declare_parameter("joint_tolerance", value=0.01).value
-        
+        self.joint_tolerance = self.declare_parameter("joint_tolerance", value=0.05).value
+
         self.ref_pos = self.declare_parameter("ref_pos", value=[0.0]*self.no_of_joints).value
         self.act_pos = self.declare_parameter("act_pos", value=[0.0]*self.no_of_joints).value
 
