@@ -7,7 +7,7 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     examples_dir = FindPackageShare('dorna_example').find('dorna_example')
     r1 = make_dorna_simulation("r1",  os.path.join(examples_dir, 'poses', 'r1_joint_poses.csv'))
-    #r2 = make_dorna_simulation("r2")
+    r2 = make_dorna_simulation("r2",  os.path.join(examples_dir, 'poses', 'r2_joint_poses.csv'))
 
     sm_parameters = {
         "active_transforms": os.path.join(examples_dir, 'transforms', 'active_transforms.json'),
@@ -55,7 +55,7 @@ def generate_launch_description():
                 )
 
     nodes = [scene_manipulation_service, camera_node, control_box, sp_ui, sp_operator, sp]
-    return launch.LaunchDescription(r1 + nodes) #+ r2)
+    return launch.LaunchDescription(r1 + r2 + nodes)
 
 
 
