@@ -18,7 +18,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 
-install(DIRECTORY launch config poses
+install(DIRECTORY launch config poses transforms
   DESTINATION share/${PROJECT_NAME})
 
 

@@ -9,6 +9,18 @@ def generate_launch_description():
     r1 = make_dorna_simulation("r1",  os.path.join(examples_dir, 'poses', 'r1_joint_poses.csv'))
     #r2 = make_dorna_simulation("r2")
 
+    sm_parameters = {
+        "active_transforms": os.path.join(examples_dir, 'transforms', 'active_transforms.json'),
+        "static_transforms": os.path.join(examples_dir, 'transforms', 'static_transforms.json')
+    }
+
+    scene_manipulation_service = launch_ros.actions.Node(
+                package='ros2_scene_manipulation',
+                node_executable='service_main',
+                output='screen',
+                parameters=[sm_parameters]
+                )
+
     camera_node = launch_ros.actions.Node(
                 package='camera_driver',
                 node_executable='camera_simulator',
@@ -42,8 +54,8 @@ def generate_launch_description():
                 output='screen',
                 )
 
-
-    return launch.LaunchDescription(r1 + [camera_node, control_box, sp_ui, sp_operator, sp]) #+ r2)
+    nodes = [scene_manipulation_service, camera_node, control_box, sp_ui, sp_operator, sp]
+    return launch.LaunchDescription(r1 + nodes) #+ r2)
 
 
 
