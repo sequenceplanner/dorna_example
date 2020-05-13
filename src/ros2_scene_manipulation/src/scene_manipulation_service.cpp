@@ -46,11 +46,6 @@ SceneManipulationService::SceneManipulationService(
 	, static_broadcaster_(this)
 	, on_scene_object_moved_(on_scene_object_moved)
 {
-	for_each_second(std::begin(static_transforms_), std::end(static_transforms_), [this](const RelatedTransform& transform){
-		on_scene_object_moved_(transform);
-		static_broadcaster_.sendTransform(toMsg(transform));
-	});
-
     rclcpp::ParameterValue default_value("");
     rcl_interfaces::msg::ParameterDescriptor descriptor;
     descriptor.read_only = true;
@@ -61,8 +56,13 @@ SceneManipulationService::SceneManipulationService(
 
     std::string active_t = readFile(active_fn.c_str());
     std::string static_t = readFile(static_fn.c_str());
-    this->active_transforms_ = readTransforms(active_t);
-    this->static_transforms_ = readTransforms(static_t);
+    active_transforms_ = readTransforms(active_t);
+    static_transforms_ = readTransforms(static_t);
+
+	for_each_second(std::begin(static_transforms_), std::end(static_transforms_), [this](const RelatedTransform& transform){
+		on_scene_object_moved_(transform);
+		static_broadcaster_.sendTransform(toMsg(transform));
+	});
 }
 
 bool SceneManipulationService::onSceneManipulationRequest(
