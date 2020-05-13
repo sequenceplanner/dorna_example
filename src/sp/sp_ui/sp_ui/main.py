@@ -55,6 +55,37 @@ class Ros2Node(Node, Callbacks):
         #self.state_publisher.publish(Callbacks.cmd)
 
 
+# workaround for missing .setRecursiveFilteringEnabled(True)
+class RecursiveFilterProxyModel(QtCore.QSortFilterProxyModel):
+    def filterAcceptsRow(self, source_row, source_parent):
+        if (super(RecursiveFilterProxyModel, self).filterAcceptsRow(source_row, source_parent)):
+            return True
+
+        if (self.hasAcceptedChildren(source_row, source_parent)):
+            return True
+
+        return False
+
+    def hasAcceptedChildren(self, source_row, source_parent):
+        model = self.sourceModel()
+        sourceIndex = model.index(source_row, 0, source_parent)
+        if not (sourceIndex.isValid()):
+            return False
+
+        childCount = model.rowCount(sourceIndex)
+        if (childCount == 0):
+            return False
+
+        for i in range (childCount):
+            if (super(RecursiveFilterProxyModel, self).filterAcceptsRow(i, sourceIndex)):
+                return True
+
+            if (self.hasAcceptedChildren(i, sourceIndex)):
+                return True
+
+        return False
+
+
 class Window(QtWidgets.QWidget, Callbacks):
     triggerSignal = QtCore.pyqtSignal()
 
@@ -64,7 +95,9 @@ class Window(QtWidgets.QWidget, Callbacks):
         #self.count = 0
 
         self.state_model = QtGui.QStandardItemModel(self)
-        self.state_model_proxy = QtCore.QSortFilterProxyModel(self)
+        #self.state_model_proxy = QtCore.QSortFilterProxyModel(self)
+        # workaround for missing .setRecursiveFilteringEnabled(True)
+        self.state_model_proxy = RecursiveFilterProxyModel(self)
 
         Callbacks.trigger_ui = self.trigger
         self.triggerSignal.connect(self.update_state_variables)
@@ -151,7 +184,8 @@ class Window(QtWidgets.QWidget, Callbacks):
                     self.insert_variable(self.get_parent(parent), name, value)
                 else:
                     index = self.state_map[name]
-                    value_index = index.siblingAtColumn(1)
+                    #value_index = index.siblingAtColumn(1)
+                    value_index = index.sibling(index.row(), 1)
                     value_item = self.state_model.itemFromIndex(value_index)
 
                     if value_item.data(Qt.DisplayRole) != value:
@@ -189,7 +223,7 @@ class Window(QtWidgets.QWidget, Callbacks):
 
     def tree_widget(self):
         self.state_model.setHorizontalHeaderLabels(['path', 'value', 'set'])
-        self.state_model_proxy.setRecursiveFilteringEnabled(True)
+        # self.state_model_proxy.setRecursiveFilteringEnabled(True)
         self.state_model_proxy.setFilterRole(Qt.ToolTipRole)
         self.state_model_proxy.setSourceModel(self.state_model)
 
@@ -224,7 +258,8 @@ class Window(QtWidgets.QWidget, Callbacks):
             print("set_state")
             set_it = []
             for path, index in self.state_map.items():
-                set_index = index.siblingAtColumn(2)
+                #set_index = index.siblingAtColumn(2)
+                set_index = index.sibling(index.row(), 2)
                 set_item = self.state_model.itemFromIndex(set_index)
                 if set_item:
                     set_value = set_item.data(Qt.EditRole)
