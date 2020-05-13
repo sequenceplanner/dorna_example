@@ -15,6 +15,8 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let leave = "leave"; // down at conveyor
 
     let dorna = m.use_named_resource("dorna", make_dorna("r1", &[pt, scan, t1, t2, t3, leave]));
+    let dorna2 = m.use_named_resource("dorna", make_dorna("r2", &[pt, scan, t1, t2, t3, leave]));
+
     let cb = m.use_resource(make_control_box("control_box"));
     let camera = m.use_resource(make_camera("camera"));
 
@@ -59,6 +61,19 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         "to_take3",
         &p!([p:ap == t3] => [[p:pp == t1] || [p:pp == t2] || [p:pp == t3] || [p:pp == pt]]),
     );
+
+    // force dorna2 to move sometimes
+    let ap2 = &dorna2["act_pos"];
+    m.add_invar(
+        "dorna2_1",
+        &p!([p:ap == scan] => [p:ap2 == leave]),
+    );
+
+    m.add_invar(
+        "dorna2_2",
+        &p!([p:ap == leave] => [p:ap2 == scan]),
+    );
+
 
     // scan and leave can only be reached from pre_take
     m.add_invar(
@@ -245,17 +260,25 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     // goal for testing
     // let g = p!([p:shelf1 == 1] && [p:shelf2 == 2] && [p:shelf3 == 3]);
     //let g = p!([p:shelf1 == 1]);
-    let g = p!([p: conveyor == 0]);
+    //let g = p!([p: conveyor == 0]);
+
+    let g = p!([p: ap == leave]);
+
+    let pp2 = &dorna2["prev_pos"];
 
     // setup initial state of our estimated variables.
     // todo: do this interactively in some UI
     m.initial_state(&[
         (pp, pt.to_spvalue()), // TODO: move to measured in robot driver?
+        (pp2, pt.to_spvalue()), // TODO: move to measured in robot driver?
         (&dorna_holding, 0.to_spvalue()),
         (&shelf1, 100.to_spvalue()), //SPValue::Unknown),
         (&shelf2, 100.to_spvalue()),
         (&shelf3, 100.to_spvalue()),
         (&conveyor, 0.to_spvalue()),
+        (ap, pt.to_spvalue()),
+        (rp, pt.to_spvalue()),
+        (ap2, pt.to_spvalue()),
     ]);
 
     println!("MAKING MODEL");
