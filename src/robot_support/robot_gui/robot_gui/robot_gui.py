@@ -25,12 +25,12 @@ class CommVariables():
     to_robot = GuiToRobot()
     from_robot = JointState()
 
-    to_robot.gui_control_enabled = True
+    to_robot.gui_control_enabled = False
     to_robot.gui_speed_control = 50
     to_robot.gui_joint_control = []
 
     node_name = ""
-    
+
     saved_poses_file = ""
     joint_names = []
     joint_limit_max = []
@@ -68,7 +68,7 @@ def deg_pose_to_rad(pose):
 
 
 
-    
+
 
 class RobotGUI(Node, CommVariables):
 
@@ -155,10 +155,10 @@ class Window(QWidget, CommVariables):
 
         self.from_robot_changed_signal.emit()
 
-        
 
-        
-        
+
+
+
 
     def load_window(self):
         print("LOADING UI")
@@ -194,7 +194,7 @@ class Window(QWidget, CommVariables):
         grid.addWidget(self.gui_control_box, 9, 3, 1, 1)
 
         self.trigger_enabled()
-        
+
 
         self.setLayout(grid)
         self.setWindowTitle(CommVariables.node_name)
@@ -257,7 +257,7 @@ class Window(QWidget, CommVariables):
             self.to_robot_changed_signal.connect(
                 lambda i = i, deg_label = ref_deg, rad_label=ref_rad:
                 changed_ref(i, deg_label, rad_label))
-            
+
 
             result.append({
                 "name": name,
@@ -299,11 +299,11 @@ class Window(QWidget, CommVariables):
                 CommVariables.to_robot.gui_joint_control[joint_no] = value * math.pi / 180
                 self.to_robot_changed_signal.emit()
             slider.valueChanged.connect(lambda value=slider.value(), joint_no=i: slider_change(value, joint_no))
-            
+
             def force_slider(i, s):
                 s.setValue(180*CommVariables.to_robot.gui_joint_control[i]/math.pi)
             self.force_slider_signal.connect(lambda dummy=False, i=i, s=slider: force_slider(i, s))
-            
+
 
         return result
 
@@ -341,6 +341,7 @@ class Window(QWidget, CommVariables):
         def toggle():
             CommVariables.to_robot.gui_control_enabled = radio.isChecked()
             self.trigger_enabled()
+            self.trigger_node()
         radio.toggled.connect(toggle)
         return radio_box
 

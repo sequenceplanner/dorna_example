@@ -40,6 +40,10 @@ class RobotSimulator(Node):
 
         self.poses = self.load_poses(self.saved_poses_file)
 
+        self.initial_pose_name = self.declare_parameter("robot_state_initial_pose_name", value="unknown").value
+        if self.initial_pose_name != "unknown":
+            self.ref_pos = self.poses[self.initial_pose_name]
+            self.act_pos = self.poses[self.initial_pose_name]
 
         # gui to robot:
         self.gui_to_robot = GuiToRobot()
@@ -90,7 +94,7 @@ class RobotSimulator(Node):
             self.robot_state_ticker)
 
 
-  
+
         # node management
         self.mode = NodeMode()
         self.mode.mode = "init"
@@ -136,7 +140,7 @@ class RobotSimulator(Node):
             for row in joint_csv_reader:
                 if len(row) == 2 and len(ast.literal_eval(row[1])) == self.no_of_joints:
                     result[row[0]] = ast.literal_eval(row[1])
-            
+
         return result
 
     def pose_from_position(self, poses, joints):
@@ -149,12 +153,10 @@ class RobotSimulator(Node):
                 break
         return result
 
-    # KB: Not sure why this was needed. Maybe add it back if we do
-    # def joint_state_callback(self, data):
-    #     for i in range(self.no_of_joints):
-    #         self.act_pos[i] = data.position[i]
-
     def robot_goal_callback(self, data):
+        if self.mode.mode != "running":
+            return
+
         self.robot_goal_msg = data
         if not self.gui_to_robot.gui_control_enabled and self.robot_goal_msg.ref_pos in self.poses:
             self.ref_pos = self.poses[self.robot_goal_msg.ref_pos]
@@ -169,12 +171,10 @@ class RobotSimulator(Node):
         #         j = data.gui_joint_control[i]
         #     self.gui_to_robot.gui_joint_control[i] = round(j, 5)
 
-        self.speed_scale = self.gui_to_robot.gui_speed_control        
+        self.speed_scale = self.gui_to_robot.gui_speed_control
 
         if self.gui_to_robot.gui_control_enabled:
             self.ref_pos = self.gui_to_robot.gui_joint_control
-        elif self.robot_goal_msg.ref_pos in self.poses:
-            self.ref_pos = list(map(lambda x: x*math.pi/180, self.poses[self.robot_goal_msg.ref_pos]))
 
     def joint_state_ticker(self):
 

@@ -41,11 +41,11 @@ class Ros2Node(Node, Callbacks):
             10)
 
         print('Up and running...')
-    
+
     def trigger(self):
         print("trigger node")
         self.state_publisher.publish(Callbacks.cmd)
-    
+
     def sp_cmd_callback(self, data):
         Callbacks.info = data
         #self.get_logger().info('info: "%s"' % data)
@@ -61,7 +61,7 @@ class Window(QtWidgets.QWidget, Callbacks):
     def __init__(self):
         Callbacks.__init__(self)
         QtWidgets.QWidget.__init__(self, None)
-        #self.count = 0 
+        #self.count = 0
 
         self.state_model = QtGui.QStandardItemModel(self)
         self.state_model_proxy = QtCore.QSortFilterProxyModel(self)
@@ -126,7 +126,7 @@ class Window(QtWidgets.QWidget, Callbacks):
 
             parent.appendRow([item, value_item, set_item])
             self.state_map[name] = item.index()
-                    
+
 
     def update_state_variables(self):
         if self and self.init:
@@ -142,7 +142,7 @@ class Window(QtWidgets.QWidget, Callbacks):
                     else:
                         p_of_p_item = self.state_model.itemFromIndex(self.state_map[p_of_p])
                         self.insert_parent(p_of_p_item, p)
-                    
+
 
                 # add variable
                 (parent, name) = path[-1]
@@ -157,14 +157,14 @@ class Window(QtWidgets.QWidget, Callbacks):
                     if value_item.data(Qt.DisplayRole) != value:
                         value_item.setData(value, Qt.DisplayRole)
                         value_item.setData(value, Qt.ToolTipRole)
-                        
+
             self.mode.setText(str(Callbacks.info.mode))
 
             #self.count += 1
 
             #i = self.state_model.invisibleRootItem().index()
             #self.tree.dataChanged(i, i)
-        
+
 
     def trigger(self):
         self.triggerSignal.emit()
@@ -177,7 +177,7 @@ class Window(QtWidgets.QWidget, Callbacks):
         #pub mode: std::string::String,
         #pub forced_state: Vec<sp_messages::msg::State>,
         #pub forced_goal: Vec<sp_messages::msg::ForcedGoal>,
-        
+
 
         self.mode = QtWidgets.QLabel("no info yet")
         info_l.addWidget(QtWidgets.QLabel("runner mode: "), 1, 0)
@@ -238,21 +238,21 @@ class Window(QtWidgets.QWidget, Callbacks):
                             set_it.append(State(path = path, value_as_json = json.dumps(val)))
                         except ValueError:
                             set_it.append(State(path = path, value_as_json = json.dumps(set_value)))
-                    
+
                         set_item.setData("", Qt.EditRole)
-            
+
             print("SET STATE:")
             print(set_it)
             if set_it:
                 Callbacks.cmd.state = set_it
                 Callbacks.cmd.set_state = True
                 Callbacks.trigger_node()
-            
+
         set_state_button.clicked.connect(set_state_button_clicked)
         tree_l.addWidget(set_state_button, 1, 3)
 
         self.tree = QtWidgets.QTreeView(self)
-        
+
         self.tree.setModel(self.state_model_proxy)
         self.tree.setColumnWidth(0, 200)
         self.tree.setSortingEnabled(True)

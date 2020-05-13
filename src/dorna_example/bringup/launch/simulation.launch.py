@@ -73,7 +73,8 @@ def make_dorna_simulation(name, poses_file):
             "dorna_axis_5_joint",
         ],
         "max_joint_speed": [45, 45, 45, 45, 45],  # deg/sec
-        "joint_state_timer_period": 0.05
+        "joint_state_timer_period": 0.05,
+        "robot_state_initial_pose_name": "pre_take"
     }
     sim_node = launch_ros.actions.Node(package='robot_simulator',
                  node_executable='robot_simulator',
