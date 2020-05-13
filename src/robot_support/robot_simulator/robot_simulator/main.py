@@ -42,8 +42,8 @@ class RobotSimulator(Node):
 
         self.initial_pose_name = self.declare_parameter("robot_state_initial_pose_name", value="unknown").value
         if self.initial_pose_name != "unknown":
-            self.ref_pos = self.poses[self.initial_pose_name]
-            self.act_pos = self.poses[self.initial_pose_name]
+            self.ref_pos = self.poses[self.initial_pose_name][:]
+            self.act_pos = self.poses[self.initial_pose_name][:]
 
         # gui to robot:
         self.gui_to_robot = GuiToRobot()
