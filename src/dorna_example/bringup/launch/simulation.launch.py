@@ -6,6 +6,7 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     examples_dir = FindPackageShare('dorna_example').find('dorna_example')
+
     r1 = make_dorna_simulation("r1",  os.path.join(examples_dir, 'poses', 'r1_joint_poses.csv'))
     r2 = make_dorna_simulation("r2",  os.path.join(examples_dir, 'poses', 'r2_joint_poses.csv'))
 
@@ -54,8 +55,16 @@ def generate_launch_description():
                 output='screen',
                 )
 
+    rviz_config_file = os.path.join(examples_dir, 'config', 'dorna.rviz')
+    launch_rviz = launch.actions.DeclareLaunchArgument(name="rviz", default_value="False", description="Launch RViz?")
+    rviz_cond = launch.conditions.IfCondition(launch.substitutions.LaunchConfiguration("rviz"))
+    rviz = launch_ros.actions.Node(package='rviz2', node_executable='rviz2',
+                                   arguments=['-d', rviz_config_file],
+                                   output='screen', condition = rviz_cond)
+
+    rviz_nodes = [launch_rviz, rviz]
     nodes = [scene_manipulation_service, camera_node, control_box, sp_ui, sp_operator, sp]
-    return launch.LaunchDescription(r1 + r2 + nodes)
+    return launch.LaunchDescription(r1 + r2 + nodes + rviz_nodes)
 
 
 
