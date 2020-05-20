@@ -1,0 +1,72 @@
+{
+    "related_transforms": [
+        {
+            "frame_id": "dorna/r1/dorna_base_link",
+            "parent_id": "world",
+            "transform": {
+                "Vector3": {
+                    "x": 0.0,
+                    "y": 0.2,
+                    "z": 0.0
+                },
+                "Quaternion": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "frame_id": "dorna/r2/dorna_base_link",
+            "parent_id": "world",
+            "transform": {
+                "Vector3": {
+                    "x": 0.0,
+                    "y": -0.2,
+                    "z": 0.0
+                },
+                "Quaternion": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "frame_id": "dorna/r3/dorna_base_link",
+            "parent_id": "world",
+            "transform": {
+                "Vector3": {
+                    "x": 0.3,
+                    "y": 0.3,
+                    "z": 0.0
+                },
+                "Quaternion": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "frame_id": "dorna/r4/dorna_base_link",
+            "parent_id": "world",
+            "transform": {
+                "Vector3": {
+                    "x": -0.3,
+                    "y": -0.3,
+                    "z": 0.0
+                },
+                "Quaternion": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            }
+        }
+    ]
+}
