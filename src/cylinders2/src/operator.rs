@@ -29,17 +29,17 @@ pub fn make_operator(name: &str, goals: &[&str]) -> Resource {
         ability!{
             name: move_to,
 
-            enabled : p!(ref_pos <-> act_pos),
-            executing : p!(ref_pos <!> act_pos),
-            finished : p!(ref_pos <-> act_pos),
+            enabled : p!(to_do <-> doing),
+            executing : p!(to_do <!> doing),
+            finished : p!(to_do <-> doing),
 
-            *start : p!(enabled) => [ a!(prev_pos <- act_pos), a!(ref_pos?) ] / [a!(act_pos = "unknown")],
-            finish : p!(executing) => [] / [a!(act_pos <- ref_pos)],
+            *start : p!(enabled) => [ a!(prev_pos <- doing), a!(to_do?) ] / [a!(doing = "unknown")],
+            finish : p!(executing) => [] / [a!(doing <- to_do)],
         },
 
         never!{
             name: cannot_go_to_unknown,
-            prop: p!(ref_pos == "unknown")
+            prop: p!(to_do == "unknown")
         },
 
     }
