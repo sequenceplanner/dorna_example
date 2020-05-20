@@ -234,6 +234,17 @@ mod test {
                 println!("{}", o.path());
             });
 
+        println!("ts model");
+        let ts_model = TransitionSystemModel::from_op(&m);
+
+        ts_model.transitions.iter().for_each(|t| {
+            println!("transition {}", t.path());
+        });
+
+        ts_model.vars.iter().for_each(|t| {
+            println!("var {}", t.path());
+        });
+
         assert!(false);
     }
 
