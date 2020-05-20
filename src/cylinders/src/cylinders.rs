@@ -20,7 +20,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let cb = m.use_resource(make_control_box("control_box"));
     let camera = m.use_resource(make_camera("camera"));
 
-    let products = &[
+    let product_domain = &[
         100.to_spvalue(), // SPValue::Unknown,   macros need better support for Unknown
         0.to_spvalue(),
         1.to_spvalue(),
@@ -28,11 +28,11 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         3.to_spvalue(),
     ];
 
-    let shelf1 = m.add_estimated_domain("shelf1", products);
-    let shelf2 = m.add_estimated_domain("shelf2", products);
-    let shelf3 = m.add_estimated_domain("shelf3", products);
-    let conveyor = m.add_estimated_domain("conveyor", products);
-    let dorna_holding = m.add_estimated_domain("dorna_holding", products);
+    let shelf1 = m.add_estimated_domain("shelf1", product_domain);
+    let shelf2 = m.add_estimated_domain("shelf2", product_domain);
+    let shelf3 = m.add_estimated_domain("shelf3", product_domain);
+    let conveyor = m.add_estimated_domain("conveyor", product_domain);
+    let dorna_holding = m.add_estimated_domain("dorna_holding", product_domain);
 
     let ap = &dorna["act_pos"];
     let rp = &dorna["ref_pos"];
@@ -174,89 +174,6 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    // OPERATIONS
-
-    let prods = vec![100, 1, 2, 3];
-    let pos = vec![
-        shelf1.clone(),
-        shelf2.clone(),
-        shelf3.clone(),
-        conveyor.clone(),
-    ];
-
-    for pos in &pos {
-        for p in &prods {
-            m.add_op(
-                &format!("pick_{}_at_{}", p, pos.leaf()),
-                true,
-                &p!([p: pos == p] && [p: dorna_holding == 0]),
-                &p!([p: pos == 0] && [p: dorna_holding == p]),
-                &[a!(p: pos = 0), a!(p: dorna_holding = p)],
-                None,
-            );
-
-            // These levels quickly become tricky... We need to
-            // account for the auto trans that consumes all known
-            // products from the conveyor. Other wise we end with
-            // unnecessary replanning.
-            if pos.leaf() == "conveyor" && p != &100 {
-                m.add_op(
-                    &format!("place_{}_at_{}", p, pos.leaf()),
-                    true,
-                    &p!([p: pos == 0] && [p: dorna_holding == p]),
-                    &p!([p: pos == p] && [p: dorna_holding == 0]),
-                    &[a!(p: pos = 0), a!(p: dorna_holding = 0)],
-                    None,
-                );
-            } else {
-                m.add_op(
-                    &format!("place_{}_at_{}", p, pos.leaf()),
-                    true,
-                    &p!([p: pos == 0] && [p: dorna_holding == p]),
-                    &p!([p: pos == p] && [p: dorna_holding == 0]),
-                    &[a!(p: pos = p), a!(p: dorna_holding = 0)],
-                    None,
-                );
-            }
-        }
-    }
-
-    m.add_op(
-        "scan_op_1",
-        true,
-        &p!([p: dorna_holding == 100]),
-        &p!([p: dorna_holding == 1]),
-        &[a!(p: dorna_holding = 1)],
-        None,
-    );
-
-    m.add_op(
-        "scan_op_2",
-        true,
-        &p!([p: dorna_holding == 100]),
-        &p!([p: dorna_holding == 2]),
-        &[a!(p: dorna_holding = 2)],
-        None,
-    );
-
-    m.add_op(
-        "scan_op_3",
-        true,
-        &p!([p: dorna_holding == 100]),
-        &p!([p: dorna_holding == 3]),
-        &[a!(p: dorna_holding = 3)],
-        None,
-    );
-
-    m.add_op(
-        "consume",
-        true,
-        &p!([p: conveyor != 100]),
-        &p!([p: conveyor == 0]),
-        &[a!(p: conveyor = 0)],
-        None,
-    );
-
     // goal for testing
     // let g = p!([p:shelf1 == 1] && [p:shelf2 == 2] && [p:shelf3 == 3]);
     //let g = p!([p:shelf1 == 1]);
@@ -281,6 +198,16 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (ap2, pt.to_spvalue()),
     ]);
 
+    println!("MAKING OPERATION MODEL");
+    let products = vec![
+        shelf1,
+        shelf2,
+        shelf3,
+        conveyor,
+        dorna_holding,
+    ];
+    m.generate_operation_model(&products);
+
     println!("MAKING MODEL");
     let (m, s) = m.make_model();
     (m, s, g)
@@ -290,6 +217,26 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 mod test {
     use super::*;
     use serial_test::serial;
+
+    #[test]
+    #[serial]
+    fn operations() {
+        let (m, _s, _g) = cylinders();
+
+        m
+            .items()
+            .iter()
+            .flat_map(|i| match i {
+                SPItem::Operation(o) if !o.high_level => Some(o.clone()),
+                _ => None,
+            })
+            .for_each(|o| {
+                println!("{}", o.path());
+            });
+
+        assert!(false);
+    }
+
 
     #[test]
     #[serial]
