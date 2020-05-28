@@ -5,7 +5,7 @@ use sp_domain::*;
 use sp_runner::*;
 
 pub fn cylinders() -> (Model, SPState, Predicate) {
-    let mut m = GModel::new("cylinders");
+    let mut m = GModel::new("cylinders2");
 
     let pt = "pre_take";
     let scan = "scan";
@@ -16,6 +16,8 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     let dorna = m.use_named_resource("dorna", make_dorna("r1", &[pt, scan, t1, t2, t3, leave]));
     let dorna2 = m.use_named_resource("dorna", make_dorna("r2", &[pt, scan, t1, t2, t3, leave]));
+    let dorna3 = m.use_named_resource("dorna", make_dorna("r3", &[pt, scan, leave]));
+    let dorna4 = m.use_named_resource("dorna", make_dorna("r4", &[pt, scan, leave]));
 
     let cb = m.use_resource(make_control_box("control_box"));
     let camera = m.use_resource(make_camera("camera"));
@@ -33,6 +35,10 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let shelf3 = m.add_estimated_domain("shelf3", product_domain);
     let conveyor = m.add_estimated_domain("conveyor", product_domain);
     let dorna_holding = m.add_estimated_domain("dorna_holding", product_domain);
+    let dorna3_holding = m.add_estimated_domain("dorna3_holding", product_domain);
+    let conveyor2 = m.add_estimated_domain("conveyor2", product_domain);
+
+    let x = m.add_estimated_domain("x", &["left".to_spvalue(), "right".to_spvalue()]);
 
     let ap = &dorna["act_pos"];
     let rp = &dorna["ref_pos"];
@@ -119,6 +125,31 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     }
 
 
+    let ap3 = &dorna3["act_pos"];
+    m.add_delib(
+        "r3_take_conveyor1",
+        &p!([p: ap3 == leave] && [p: conveyor != 0] && [p: dorna3_holding == 0]),
+        &[a!(p:dorna3_holding <- p: conveyor), a!(p: conveyor = 0)],
+    );
+    m.add_delib(
+        "r3_leave_conveyor2",
+        &p!([p: ap3 == pt] && [p: conveyor2 == 0] && [p: dorna3_holding != 0]),
+        &[a!(p:conveyor2 <- p: dorna3_holding), a!(p: dorna3_holding = 0)],
+    );
+
+
+    let ap4 = &dorna4["act_pos"];
+    m.add_delib(
+        "r4_x_left",
+        &p!([p: ap4 == leave] && [p: x == "right"]),
+        &[a!(p:x = "left")],
+    );
+    m.add_delib(
+        "r4_x_right",
+        &p!([p: ap4 == scan] && [p: x == "left"]),
+        &[a!(p:x = "right")],
+    );
+
     // this is what we want
     // m.add_spec("take_scan_result1", camera.reset,
     //            &p!([p: dorna_holding == 100] && [p: cr == 1]),
@@ -136,21 +167,24 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                &p!([p: dorna_holding == 100] && [p: cf] && [p: cr == 3]),
                &[a!(!p: cd), a!(p: dorna_holding = 3)]);
 
-    // product sink is at conveyor, only accepts identified products.
+    // product sink is at conveyor2, only accepts identified products.
     m.add_auto(
         "consume_known_product",
-        &p!([p: conveyor != 0] && [p: conveyor != 100]),
-        &[a!(p: conveyor = 0)],
+        &p!([p: conveyor2 != 0] && [p: conveyor2 != 100]),
+        &[a!(p: conveyor2 = 0)],
     );
 
     // HIGH LEVEL OPS
 
     let np = |p: i32| {
         p!([p: shelf1 != p]
-            && [p: shelf2 != p]
-            && [p: shelf3 != p]
-            && [p: dorna_holding != p]
-            && [p: conveyor != p])
+           && [p: shelf2 != p]
+           && [p: shelf3 != p]
+           && [p: dorna_holding != p]
+           && [p: dorna3_holding != p]
+           && [p: conveyor != p]
+           && [p: conveyor2 != p]
+        )
     };
 
     let no_products = Predicate::AND(vec![np(1), np(2), np(3), np(100)]);
@@ -174,6 +208,24 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
+    m.add_hl_op(
+        "to_left",
+        true,
+        &p!([p: x == "right"]),
+        &p!(p: x == "left"),
+        &[],
+        None,
+    );
+
+    m.add_hl_op(
+        "to_right",
+        true,
+        &p!([p: x == "left"]),
+        &p!(p: x == "right"),
+        &[],
+        None,
+    );
+
     // goal for testing
     // let g = p!([p:shelf1 == 1] && [p:shelf2 == 2] && [p:shelf3 == 3]);
     //let g = p!([p:shelf1 == 1]);
@@ -182,20 +234,24 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let g = p!([p: ap == leave]);
 
     let pp2 = &dorna2["prev_pos"];
+    let pp3 = &dorna3["prev_pos"];
+    let pp4 = &dorna4["prev_pos"];
 
     // setup initial state of our estimated variables.
     // todo: do this interactively in some UI
     m.initial_state(&[
         (pp, pt.to_spvalue()), // TODO: move to measured in robot driver?
-        (pp2, pt.to_spvalue()), // TODO: move to measured in robot driver?
+        (pp2, pt.to_spvalue()),
+        (pp3, pt.to_spvalue()),
+        (pp4, leave.to_spvalue()),
         (&dorna_holding, 0.to_spvalue()),
+        (&dorna3_holding, 0.to_spvalue()),
         (&shelf1, 100.to_spvalue()), //SPValue::Unknown),
         (&shelf2, 100.to_spvalue()),
         (&shelf3, 100.to_spvalue()),
         (&conveyor, 0.to_spvalue()),
-        (ap, pt.to_spvalue()),
-        (rp, pt.to_spvalue()),
-        (ap2, pt.to_spvalue()),
+        (&conveyor2, 0.to_spvalue()),
+        (&x, "left".to_spvalue()),
     ]);
 
     println!("MAKING OPERATION MODEL");
@@ -204,7 +260,10 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         shelf2,
         shelf3,
         conveyor,
+        conveyor2,
         dorna_holding,
+        dorna3_holding,
+        x
     ];
     m.generate_operation_model(&products);
 
@@ -224,14 +283,11 @@ mod test {
         let (m, _s, _g) = cylinders();
 
         m
-            .items()
+            .all_operations()
             .iter()
-            .flat_map(|i| match i {
-                SPItem::Operation(o) if !o.high_level => Some(o.clone()),
-                _ => None,
-            })
             .for_each(|o| {
                 println!("{}", o.path());
+                o.transitions().iter().for_each(|t| println!("{}", t));
             });
 
         assert!(false);
