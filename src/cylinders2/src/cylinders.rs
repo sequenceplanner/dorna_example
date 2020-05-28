@@ -139,12 +139,12 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
 
     let ap4 = &dorna4["act_pos"];
-    m.add_delib(
+    m.add_auto(
         "r4_x_left",
         &p!([p: ap4 == leave] && [p: x == "right"]),
         &[a!(p:x = "left")],
     );
-    m.add_delib(
+    m.add_auto(
         "r4_x_right",
         &p!([p: ap4 == scan] && [p: x == "left"]),
         &[a!(p:x = "right")],
