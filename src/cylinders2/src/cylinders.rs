@@ -310,8 +310,13 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         "identify_types_1_2_3",
         false,
         &Predicate::FALSE,
-        &p!([p: shelf1 != 0] && [p: shelf2 != 0] && [p: shelf3 != 0] &&
-            [p: product_1_kind == 1] && [p: product_2_kind == 2] && [p: product_3_kind == 3]
+        &p!([[[p: product_1_kind == 1] && [p: product_2_kind == 2] && [p: product_3_kind == 3]] ||
+             [[p: product_1_kind == 2] && [p: product_2_kind == 3] && [p: product_3_kind == 1]] ||
+             [[p: product_1_kind == 3] && [p: product_2_kind == 1] && [p: product_3_kind == 2]] ||
+             [[p: product_1_kind == 1] && [p: product_2_kind == 3] && [p: product_3_kind == 2]] ||
+             [[p: product_1_kind == 2] && [p: product_2_kind == 1] && [p: product_3_kind == 3]] ||
+             [[p: product_1_kind == 3] && [p: product_2_kind == 2] && [p: product_3_kind == 1]]
+        ]
         ),
         &[],
         None,
@@ -321,9 +326,20 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         "sort_shelves_1_2_3",
         false,
         &Predicate::FALSE,
-        &p!([p: shelf1 == 1] && [p: shelf2 == 2] && [p: shelf3 == 3] &&
-            [p: product_1_kind == 1] && [p: product_2_kind == 2] && [p: product_3_kind == 3]
-        ),
+        &p!([[[p: product_1_kind == 1] => [p: shelf1 == 1]] &&
+             [[p: product_1_kind == 2] => [p: shelf2 == 1]] &&
+             [[p: product_1_kind == 3] => [p: shelf3 == 1]] &&
+             [[p: product_2_kind == 1] => [p: shelf1 == 2]] &&
+             [[p: product_2_kind == 2] => [p: shelf2 == 2]] &&
+             [[p: product_2_kind == 3] => [p: shelf2 == 3]] &&
+             [[p: product_3_kind == 1] => [p: shelf3 == 1]] &&
+             [[p: product_3_kind == 2] => [p: shelf3 == 2]] &&
+             [[p: product_3_kind == 3] => [p: shelf3 == 3]] &&
+             [[p: product_1_kind != 100] && [p: product_2_kind != 100] && [p: product_3_kind != 100]]
+        ]),
+        // &p!([p: shelf1 == 1] && [p: shelf2 == 2] && [p: shelf3 == 3] &&
+        //     [p: product_1_kind == 1] && [p: product_2_kind == 2] && [p: product_3_kind == 3]
+        // ),
         &[],
         None,
     );
