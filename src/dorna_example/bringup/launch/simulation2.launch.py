@@ -57,6 +57,12 @@ def generate_launch_description():
                 output='screen',
                 )
 
+    scene_master = launch_ros.actions.Node(
+                package='cylinders2_scene_master',
+                node_executable='cylinders2_scene_master',
+                output='screen'
+                )
+
     rviz_config_file = os.path.join(examples_dir, 'config', 'dorna.rviz')
     launch_rviz = launch.actions.DeclareLaunchArgument(name="rviz", default_value="False", description="Launch RViz?")
     rviz_cond = launch.conditions.IfCondition(launch.substitutions.LaunchConfiguration("rviz"))
@@ -65,7 +71,7 @@ def generate_launch_description():
                                    output='screen', condition = rviz_cond)
 
     rviz_nodes = [launch_rviz, rviz]
-    nodes = [scene_manipulation_service, camera_node, control_box, sp_ui, sp_operator, sp]
+    nodes = [scene_manipulation_service, camera_node, control_box, sp_ui, sp_operator, sp, scene_master]
     return launch.LaunchDescription(r1 + r2 + r3 + r4 + nodes + rviz_nodes)
 
 
