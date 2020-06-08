@@ -19,54 +19,54 @@ def generate_launch_description():
 
     scene_manipulation_service = launch_ros.actions.Node(
                 package='ros2_scene_manipulation',
-                node_executable='service_main',
+                executable='service_main',
                 output='screen',
                 parameters=[sm_parameters]
                 )
 
     camera_node = launch_ros.actions.Node(
                 package='camera_driver',
-                node_executable='camera_simulator',
-                node_namespace='/camera',
+                executable='camera_simulator',
+                namespace='/camera',
                 output='screen',
                 )
 
     control_box = launch_ros.actions.Node(
                 package='control_box_driver',
-                node_executable='control_box_simulator',
-                node_namespace='/control_box',
+                executable='control_box_simulator',
+                namespace='/control_box',
                 output='screen',
                 )
 
     sp_ui = launch_ros.actions.Node(
                 package='sp_ui',
-                node_executable='sp_ui',
-                node_namespace='/',
+                executable='sp_ui',
+                namespace='/',
                 output='screen',
                 )
     sp_operator = launch_ros.actions.Node(
                 package='sp_operator',
-                node_executable='sp_operator',
-                node_namespace='/sp_operator/op1',
+                executable='sp_operator',
+                namespace='/sp_operator/op1',
                 output='screen',
                 )
 
     sp = launch_ros.actions.Node(
                 package='cylinders2',
-                node_executable='cylinders2',
+                executable='cylinders2',
                 output='screen',
                 )
 
     scene_master = launch_ros.actions.Node(
                 package='cylinders2_scene_master',
-                node_executable='cylinders2_scene_master',
+                executable='cylinders2_scene_master',
                 output='screen'
                 )
 
     rviz_config_file = os.path.join(examples_dir, 'config', 'dorna.rviz')
     launch_rviz = launch.actions.DeclareLaunchArgument(name="rviz", default_value="False", description="Launch RViz?")
     rviz_cond = launch.conditions.IfCondition(launch.substitutions.LaunchConfiguration("rviz"))
-    rviz = launch_ros.actions.Node(package='rviz2', node_executable='rviz2',
+    rviz = launch_ros.actions.Node(package='rviz2', executable='rviz2',
                                    arguments=['-d', rviz_config_file],
                                    output='screen', condition = rviz_cond)
 
@@ -86,8 +86,8 @@ def make_dorna_simulation(name, poses_file):
         "robot_description": robot_desc,
     }
     rsp_node = launch_ros.actions.Node(package='robot_state_publisher',
-                                node_executable='robot_state_publisher',
-                                node_namespace='dorna/' + name,
+                                executable='robot_state_publisher',
+                                namespace='dorna/' + name,
                                 output='screen',
                                 parameters=[robot_state_publisher_params]
                                 )
@@ -106,8 +106,8 @@ def make_dorna_simulation(name, poses_file):
         "robot_state_initial_pose_name": "pre_take"
     }
     sim_node = launch_ros.actions.Node(package='robot_simulator',
-                 node_executable='robot_simulator',
-                 node_namespace='dorna/'+name,
+                 executable='robot_simulator',
+                 namespace='dorna/'+name,
                  output='screen',
                  parameters=[simulation_parameters]
                  )
@@ -138,8 +138,8 @@ def make_dorna_simulation(name, poses_file):
     }
     gui_node = launch_ros.actions.Node(
                 package='robot_gui',
-                node_executable='gui',
-                node_namespace='dorna/'+name,
+                executable='gui',
+                namespace='dorna/'+name,
                 output='screen',
                 parameters=[gui_parameters]
                 )
