@@ -331,9 +331,9 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
              [[p: product_1_kind == 3] => [p: shelf3 == 1]] &&
              [[p: product_2_kind == 1] => [p: shelf1 == 2]] &&
              [[p: product_2_kind == 2] => [p: shelf2 == 2]] &&
-             [[p: product_2_kind == 3] => [p: shelf2 == 3]] &&
-             [[p: product_3_kind == 1] => [p: shelf3 == 1]] &&
-             [[p: product_3_kind == 2] => [p: shelf3 == 2]] &&
+             [[p: product_2_kind == 3] => [p: shelf2 == 2]] &&
+             [[p: product_3_kind == 1] => [p: shelf3 == 3]] &&
+             [[p: product_3_kind == 2] => [p: shelf3 == 3]] &&
              [[p: product_3_kind == 3] => [p: shelf3 == 3]] &&
              [[p: product_1_kind != 100] && [p: product_2_kind != 100] && [p: product_3_kind != 100]]
         ]),
