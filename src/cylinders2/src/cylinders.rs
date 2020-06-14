@@ -123,37 +123,38 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     for (pos_name, pos) in pos.iter() {
         m.add_delib(
             &format!("r1_take_{}", pos.leaf()),
-            &p!([p: ap == pos_name] && [p: pos != 0] && [p: dorna_holding == 0]),
+            &p!([p: ap == pos_name] && [p: pos != 0] && [p: dorna_holding == 0] && [p: ap <-> p: rp]),
             &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
         );
 
         m.add_delib(
             &format!("r1_leave_{}", pos.leaf()),
-            &p!([p: ap == pos_name] && [p: dorna_holding != 0] && [p: pos == 0]),
+            &p!([p: ap == pos_name] && [p: dorna_holding != 0] && [p: pos == 0] && [p: ap <-> p: rp]),
             &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0)],
         );
     }
 
 
     let ap3 = &dorna3["act_pos"];
+    let rp3 = &dorna3["ref_pos"];
     m.add_delib(
         "r3_take_conveyor1",
-        &p!([p: ap3 == leave] && [p: conveyor != 0] && [p: dorna3_holding == 0]),
+        &p!([p: ap3 == leave] && [p: conveyor != 0] && [p: dorna3_holding == 0] && [p: ap3 <-> p: rp3]),
         &[a!(p:dorna3_holding <- p: conveyor), a!(p: conveyor = 0)],
     );
     m.add_delib(
         "r3_leave_conveyor1",
-        &p!([p: ap3 == leave] && [p: conveyor == 0] && [p: dorna3_holding != 0]),
+        &p!([p: ap3 == leave] && [p: conveyor == 0] && [p: dorna3_holding != 0] && [p: ap3 <-> p: rp3]),
         &[a!(p:conveyor <- p: dorna3_holding), a!(p: dorna3_holding = 0)],
     );
     m.add_delib(
         "r3_take_conveyor2",
-        &p!([p: ap3 == pt] && [p: conveyor2 != 0] && [p: dorna3_holding == 0]),
+        &p!([p: ap3 == pt] && [p: conveyor2 != 0] && [p: dorna3_holding == 0] && [p: ap3 <-> p: rp3]),
         &[a!(p:dorna3_holding <- p: conveyor2), a!(p: conveyor2 = 0)],
     );
     m.add_delib(
         "r3_leave_conveyor2",
-        &p!([p: ap3 == pt] && [p: conveyor2 == 0] && [p: dorna3_holding != 0]),
+        &p!([p: ap3 == pt] && [p: conveyor2 == 0] && [p: dorna3_holding != 0] && [p: ap3 <-> p: rp3]),
         &[a!(p:conveyor2 <- p: dorna3_holding), a!(p: dorna3_holding = 0)],
     );
 
@@ -255,17 +256,17 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     // unique product if there is room.
     m.add_delib(
         "add_conveyor2_1",
-        &Predicate::AND(vec![p!(p: conveyor2 == 0), np(1)]),
+        &Predicate::AND(vec![p!([p: conveyor2 == 0] && [[p:dorna3_holding == 0] || [p:ap3 != pt]]), np(1)]),
         &[a!(p:conveyor2 = 1), a!(p: product_1_kind = 100)],
     );
     m.add_delib(
         "add_conveyor2_2",
-        &Predicate::AND(vec![p!(p: conveyor2 == 0), np(2)]),
+        &Predicate::AND(vec![p!([p: conveyor2 == 0] && [[p:dorna3_holding == 0] || [p:ap3 != pt]]), np(2)]),
         &[a!(p:conveyor2 = 2), a!(p: product_2_kind = 100)],
     );
     m.add_delib(
         "add_conveyor2_3",
-        &Predicate::AND(vec![p!(p: conveyor2 == 0), np(3)]),
+        &Predicate::AND(vec![p!([p: conveyor2 == 0] && [[p:dorna3_holding == 0] || [p:ap3 != pt]]), np(3)]),
         &[a!(p:conveyor2 = 3), a!(p: product_3_kind = 100)],
     );
 
@@ -307,15 +308,16 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     );
 
     m.add_hl_op(
-        "identify_types_1_2_3",
+        "identify_types_r_g_b",
         false,
         &Predicate::FALSE,
-        &p!([[[p: product_1_kind == 1] && [p: product_2_kind == 2] && [p: product_3_kind == 3]] ||
+        &p!([[p: shelf1 != 0] && [p: shelf2 != 0] && [p: shelf3 != 0] && [
+            [[p: product_1_kind == 1] && [p: product_2_kind == 2] && [p: product_3_kind == 3]] ||
              [[p: product_1_kind == 2] && [p: product_2_kind == 3] && [p: product_3_kind == 1]] ||
              [[p: product_1_kind == 3] && [p: product_2_kind == 1] && [p: product_3_kind == 2]] ||
              [[p: product_1_kind == 1] && [p: product_2_kind == 3] && [p: product_3_kind == 2]] ||
              [[p: product_1_kind == 2] && [p: product_2_kind == 1] && [p: product_3_kind == 3]] ||
-             [[p: product_1_kind == 3] && [p: product_2_kind == 2] && [p: product_3_kind == 1]]
+             [[p: product_1_kind == 3] && [p: product_2_kind == 2] && [p: product_3_kind == 1]]]
         ]
         ),
         &[],
@@ -323,7 +325,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     );
 
     m.add_hl_op(
-        "sort_shelves_1_2_3",
+        "sort_shelves_r_g_b",
         false,
         &Predicate::FALSE,
         &p!([[[p: product_1_kind == 1] => [p: shelf1 == 1]] &&
@@ -331,9 +333,9 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
              [[p: product_1_kind == 3] => [p: shelf3 == 1]] &&
              [[p: product_2_kind == 1] => [p: shelf1 == 2]] &&
              [[p: product_2_kind == 2] => [p: shelf2 == 2]] &&
-             [[p: product_2_kind == 3] => [p: shelf2 == 2]] &&
-             [[p: product_3_kind == 1] => [p: shelf3 == 3]] &&
-             [[p: product_3_kind == 2] => [p: shelf3 == 3]] &&
+             [[p: product_2_kind == 3] => [p: shelf3 == 2]] &&
+             [[p: product_3_kind == 1] => [p: shelf1 == 3]] &&
+             [[p: product_3_kind == 2] => [p: shelf2 == 3]] &&
              [[p: product_3_kind == 3] => [p: shelf3 == 3]] &&
              [[p: product_1_kind != 100] && [p: product_2_kind != 100] && [p: product_3_kind != 100]]
         ]),
@@ -344,23 +346,23 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    m.add_hl_op(
-        "to_left",
-        true,
-        &p!([p: x == "right"]),
-        &p!(p: x == "left"),
-        &[],
-        None,
-    );
+    // m.add_hl_op(
+    //     "to_left",
+    //     true,
+    //     &p!([p: x == "right"]),
+    //     &p!(p: x == "left"),
+    //     &[],
+    //     None,
+    // );
 
-    m.add_hl_op(
-        "to_right",
-        true,
-        &p!([p: x == "left"]),
-        &p!(p: x == "right"),
-        &[],
-        None,
-    );
+    // m.add_hl_op(
+    //     "to_right",
+    //     true,
+    //     &p!([p: x == "left"]),
+    //     &p!(p: x == "right"),
+    //     &[],
+    //     None,
+    // );
 
     // goal for testing
     // let g = p!([p:shelf1 == 1] && [p:shelf2 == 2] && [p:shelf3 == 3]);

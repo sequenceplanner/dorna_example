@@ -55,6 +55,12 @@ class SceneMaster(Node):
             3: 'cylinders2/c3/cube',
         }
 
+        self.product_types = {
+            1: 100,
+            2: 100,
+            3: 100,
+        }
+
         red = ColorRGBA()
         red.a = 1.0
         red.r = 1.0
@@ -64,10 +70,16 @@ class SceneMaster(Node):
         blue = ColorRGBA()
         blue.a = 1.0
         blue.b = 1.0
+        white = ColorRGBA()
+        white.a = 1.0
+        white.r = 1.0
+        white.g = 1.0
+        white.b = 1.0
         self.product_colors = {
             1: red,
             2: green,
             3: blue,
+            100: white,
         }
 
         self.slot_to_frame = {
@@ -120,7 +132,8 @@ class SceneMaster(Node):
 
     def publish_markers(self):
         for key, frame in self.product_to_frame.items():
-            color = self.product_colors[key]
+            product_type = self.product_types[key]
+            color = self.product_colors[product_type]
             marker = self.cube_marker(frame, color)
             self.product_marker_publishers[key].publish(marker)
 
@@ -132,10 +145,18 @@ class SceneMaster(Node):
                 v = json.loads(s.value_as_json)
                 self.products[pn] = v
 
+            if s.path == "cylinders2/product_1_kind":
+                self.product_types[1] = json.loads(s.value_as_json)
+            elif s.path == "cylinders2/product_2_kind":
+                self.product_types[2] = json.loads(s.value_as_json)
+            elif s.path == "cylinders2/product_3_kind":
+                self.product_types[3] = json.loads(s.value_as_json)
+
         # update what has changed
         new = set(self.products.items())
         changes = new - old
         if changes != set():
+            print("moving")
             print(changes)
             for slot, prod in changes:
                 self.handle_change(slot, prod)
