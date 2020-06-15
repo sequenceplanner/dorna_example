@@ -1,6 +1,7 @@
 use crate::camera::*;
 use crate::control_box::*;
 use crate::dorna::*;
+use crate::operator::*;
 use sp_domain::*;
 use sp_runner::*;
 
@@ -21,6 +22,11 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     let cb = m.use_resource(make_control_box("control_box"));
     let camera = m.use_resource(make_camera("camera"));
+
+    let op = m.use_named_resource("op", make_operator("op1", &["place", "wait"]));
+    let op_to_do =  &op["to_do"];
+    let op_doing =  &op["doing"];
+
 
     let product_domain = &[
         100.to_spvalue(), // SPValue::Unknown,   macros need better support for Unknown
@@ -198,12 +204,12 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     m.add_hl_op(
         "identify_and_consume_parts",
         true,
-        &p!([p: shelf1 == 100] && [p: shelf2 == 100] && [p: shelf3 == 100]),
+        &p!([p: shelf1 != 0] && [p: shelf2 != 0] && [p: shelf3 != 0]),
         &no_products,
         &[
-            a!(p: shelf1 = 100),
-            a!(p: shelf2 = 100),
-            a!(p: shelf3 = 100),
+            // a!(p: shelf1 = 100),
+            // a!(p: shelf2 = 100),
+            // a!(p: shelf3 = 100),
         ],
         None,
     );
