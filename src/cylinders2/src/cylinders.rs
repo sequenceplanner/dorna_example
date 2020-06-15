@@ -1,9 +1,9 @@
 use crate::camera::*;
 use crate::control_box::*;
 use crate::dorna::*;
-use crate::operator::*;
 use sp_domain::*;
 use sp_runner::*;
+use std::collections::{HashMap, HashSet};
 
 pub fn cylinders() -> (Model, SPState, Predicate) {
     let mut m = GModel::new("cylinders2");
@@ -23,26 +23,31 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let cb = m.use_resource(make_control_box("control_box"));
     let camera = m.use_resource(make_camera("camera"));
 
-    let op = m.use_named_resource("op", make_operator("op1", &["place", "wait"]));
-    let op_to_do =  &op["to_do"];
-    let op_doing =  &op["doing"];
-
-
-    let product_domain = &[
-        100.to_spvalue(), // SPValue::Unknown,   macros need better support for Unknown
-        0.to_spvalue(),
+    let buffer_domain = &[
+        0.to_spvalue(), // buffer empty
         1.to_spvalue(),
         2.to_spvalue(),
         3.to_spvalue(),
     ];
 
-    let shelf1 = m.add_estimated_domain("shelf1", product_domain);
-    let shelf2 = m.add_estimated_domain("shelf2", product_domain);
-    let shelf3 = m.add_estimated_domain("shelf3", product_domain);
-    let conveyor = m.add_estimated_domain("conveyor", product_domain);
-    let dorna_holding = m.add_estimated_domain("dorna_holding", product_domain);
-    let dorna3_holding = m.add_estimated_domain("dorna3_holding", product_domain);
-    let conveyor2 = m.add_estimated_domain("conveyor2", product_domain);
+    let product_kinds = &[
+        100.to_spvalue(), // unknown type
+        1.to_spvalue(),
+        2.to_spvalue(),
+        3.to_spvalue(),
+    ];
+
+    let product_1_kind = m.add_estimated_domain("product_1_kind", product_kinds);
+    let product_2_kind = m.add_estimated_domain("product_2_kind", product_kinds);
+    let product_3_kind = m.add_estimated_domain("product_3_kind", product_kinds);
+
+    let shelf1 = m.add_estimated_domain("shelf1", buffer_domain);
+    let shelf2 = m.add_estimated_domain("shelf2", buffer_domain);
+    let shelf3 = m.add_estimated_domain("shelf3", buffer_domain);
+    let conveyor = m.add_estimated_domain("conveyor", buffer_domain);
+    let dorna_holding = m.add_estimated_domain("dorna_holding", buffer_domain);
+    let dorna3_holding = m.add_estimated_domain("dorna3_holding", buffer_domain);
+    let conveyor2 = m.add_estimated_domain("conveyor2", buffer_domain);
 
     let x = m.add_estimated_domain("x", &["left".to_spvalue(), "right".to_spvalue()]);
 
@@ -118,69 +123,122 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     for (pos_name, pos) in pos.iter() {
         m.add_delib(
-            &format!("take_{}", pos.leaf()),
-            &p!([p: ap == pos_name] && [p: pos != 0] && [p: dorna_holding == 0]),
+            &format!("r1_take_{}", pos.leaf()),
+            &p!([p: ap == pos_name] && [p: pos != 0] && [p: dorna_holding == 0] && [p: ap <-> p: rp]),
             &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
         );
 
         m.add_delib(
-            &format!("leave_{}", pos.leaf()),
-            &p!([p: ap == pos_name] && [p: dorna_holding != 0] && [p: pos == 0]),
+            &format!("r1_leave_{}", pos.leaf()),
+            &p!([p: ap == pos_name] && [p: dorna_holding != 0] && [p: pos == 0] && [p: ap <-> p: rp]),
             &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0)],
         );
     }
 
 
     let ap3 = &dorna3["act_pos"];
+    let rp3 = &dorna3["ref_pos"];
     m.add_delib(
         "r3_take_conveyor1",
-        &p!([p: ap3 == leave] && [p: conveyor != 0] && [p: dorna3_holding == 0]),
+        &p!([p: ap3 == leave] && [p: conveyor != 0] && [p: dorna3_holding == 0] && [p: ap3 <-> p: rp3]),
         &[a!(p:dorna3_holding <- p: conveyor), a!(p: conveyor = 0)],
     );
     m.add_delib(
+        "r3_leave_conveyor1",
+        &p!([p: ap3 == leave] && [p: conveyor == 0] && [p: dorna3_holding != 0] && [p: ap3 <-> p: rp3]),
+        &[a!(p:conveyor <- p: dorna3_holding), a!(p: dorna3_holding = 0)],
+    );
+    m.add_delib(
+        "r3_take_conveyor2",
+        &p!([p: ap3 == pt] && [p: conveyor2 != 0] && [p: dorna3_holding == 0] && [p: ap3 <-> p: rp3]),
+        &[a!(p:dorna3_holding <- p: conveyor2), a!(p: conveyor2 = 0)],
+    );
+    m.add_delib(
         "r3_leave_conveyor2",
-        &p!([p: ap3 == pt] && [p: conveyor2 == 0] && [p: dorna3_holding != 0]),
+        &p!([p: ap3 == pt] && [p: conveyor2 == 0] && [p: dorna3_holding != 0] && [p: ap3 <-> p: rp3]),
         &[a!(p:conveyor2 <- p: dorna3_holding), a!(p: dorna3_holding = 0)],
     );
 
 
     let ap4 = &dorna4["act_pos"];
-    m.add_delib(
+    m.add_auto(
         "r4_x_left",
         &p!([p: ap4 == leave] && [p: x == "right"]),
         &[a!(p:x = "left")],
     );
-    m.add_delib(
+    m.add_auto(
         "r4_x_right",
         &p!([p: ap4 == scan] && [p: x == "left"]),
         &[a!(p:x = "right")],
     );
+
+    // force dorna4 to move sometimes
+    // let ap4 = &dorna4["act_pos"];
+    // m.add_invar(
+    //     "dorna4_1",
+    //     &p!([p:ap2 == scan] => [p:ap4 == leave]),
+    // );
+
+    // m.add_invar(
+    //     "dorna4_2",
+    //     &p!([p:ap2 == leave] => [p:ap4 == scan]),
+    // );
+
+    // scan to figure out the which product we are holding
 
     // this is what we want
     // m.add_spec("take_scan_result1", camera.reset,
     //            &p!([p: dorna_holding == 100] && [p: cr == 1]),
     //            &[a!(p: dorna_holding = 1)]);
 
-    // scan to figure out the which product we are holding
-    m.add_auto("take_scan_result1",
-               &p!([p: dorna_holding == 100] && [p: cf] && [p: cr == 1]),
-               &[a!(!p: cd), a!(p: dorna_holding = 1)]);
+    m.add_auto("take_scan_1_result1",
+               &p!([p: dorna_holding == 1] && [p: product_1_kind == 100] && [p: cf] && [p: cr == 1]),
+               &[a!(!p: cd), a!(p: product_1_kind = 1)]);
+    m.add_auto("take_scan_1_result2",
+               &p!([p: dorna_holding == 1] && [p: product_1_kind == 100] && [p: cf] && [p: cr == 2]),
+               &[a!(!p: cd), a!(p: product_1_kind = 2)]);
+    m.add_auto("take_scan_1_result3",
+               &p!([p: dorna_holding == 1] && [p: product_1_kind == 100] && [p: cf] && [p: cr == 3]),
+               &[a!(!p: cd), a!(p: product_1_kind = 3)]);
 
-    m.add_auto("take_scan_result2",
-               &p!([p: dorna_holding == 100] && [p: cf] && [p: cr == 2]),
-               &[a!(!p: cd), a!(p: dorna_holding = 2)]);
-    m.add_auto("take_scan_result3",
-               &p!([p: dorna_holding == 100] && [p: cf] && [p: cr == 3]),
-               &[a!(!p: cd), a!(p: dorna_holding = 3)]);
+    m.add_auto("take_scan_2_result1",
+               &p!([p: dorna_holding == 2] && [p: product_2_kind == 100] && [p: cf] && [p: cr == 1]),
+               &[a!(!p: cd), a!(p: product_2_kind = 1)]);
+    m.add_auto("take_scan_2_result2",
+               &p!([p: dorna_holding == 2] && [p: product_2_kind == 100] && [p: cf] && [p: cr == 2]),
+               &[a!(!p: cd), a!(p: product_2_kind = 2)]);
+    m.add_auto("take_scan_2_result3",
+               &p!([p: dorna_holding == 2] && [p: product_2_kind == 100] && [p: cf] && [p: cr == 3]),
+               &[a!(!p: cd), a!(p: product_2_kind = 3)]);
+
+
+    m.add_auto("take_scan_3_result1",
+               &p!([p: dorna_holding == 3] && [p: product_3_kind == 100] && [p: cf] && [p: cr == 1]),
+               &[a!(!p: cd), a!(p: product_3_kind = 1)]);
+    m.add_auto("take_scan_3_result2",
+               &p!([p: dorna_holding == 3] && [p: product_3_kind == 100] && [p: cf] && [p: cr == 2]),
+               &[a!(!p: cd), a!(p: product_3_kind = 2)]);
+    m.add_auto("take_scan_3_result3",
+               &p!([p: dorna_holding == 3] && [p: product_3_kind == 100] && [p: cf] && [p: cr == 3]),
+               &[a!(!p: cd), a!(p: product_3_kind = 3)]);
+
 
     // product sink is at conveyor2, only accepts identified products.
     m.add_auto(
-        "consume_known_product",
-        &p!([p: conveyor2 != 0] && [p: conveyor2 != 100]),
+        "consume_known_product_1",
+        &p!([p: conveyor2 == 1] && [p: product_1_kind != 100]),
         &[a!(p: conveyor2 = 0)],
     );
-
-    // HIGH LEVEL OPS
+    m.add_auto(
+        "consume_known_product_2",
+        &p!([p: conveyor2 == 2] && [p: product_2_kind != 100]),
+        &[a!(p: conveyor2 = 0)],
+    );
+    m.add_auto(
+        "consume_known_product_3",
+        &p!([p: conveyor2 == 3] && [p: product_3_kind != 100]),
+        &[a!(p: conveyor2 = 0)],
+    );
 
     let np = |p: i32| {
         p!([p: shelf1 != p]
@@ -193,7 +251,30 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         )
     };
 
-    let no_products = Predicate::AND(vec![np(1), np(2), np(3), np(100)]);
+    let no_products = Predicate::AND(vec![np(1), np(2), np(3)]);
+
+    // product source also at conveyor2, we can add a new, unknown,
+    // unique product if there is room.
+    m.add_delib(
+        "add_conveyor2_1",
+        &Predicate::AND(vec![p!([p: conveyor2 == 0] && [[p:dorna3_holding == 0] || [p:ap3 != pt]]), np(1)]),
+        &[a!(p:conveyor2 = 1), a!(p: product_1_kind = 100)],
+    );
+    m.add_delib(
+        "add_conveyor2_2",
+        &Predicate::AND(vec![p!([p: conveyor2 == 0] && [[p:dorna3_holding == 0] || [p:ap3 != pt]]), np(2)]),
+        &[a!(p:conveyor2 = 2), a!(p: product_2_kind = 100)],
+    );
+    m.add_delib(
+        "add_conveyor2_3",
+        &Predicate::AND(vec![p!([p: conveyor2 == 0] && [[p:dorna3_holding == 0] || [p:ap3 != pt]]), np(3)]),
+        &[a!(p:conveyor2 = 3), a!(p: product_3_kind = 100)],
+    );
+
+
+
+    // HIGH LEVEL OPS
+
 
     // m.add_hl_op("identify_parts", true,
     //             &p!([p:shelf1 == 100] && [p:shelf2 == 100] && [p:shelf3 == 100]),
@@ -203,14 +284,66 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     m.add_hl_op(
         "identify_and_consume_parts",
-        true,
-        &p!([p: shelf1 != 0] && [p: shelf2 != 0] && [p: shelf3 != 0]),
+        false,
+        //&p!([p: shelf1 == 1] && [p: shelf2 == 2] && [p: shelf3 == 3]),
+        &Predicate::FALSE,
         &no_products,
         &[
-            // a!(p: shelf1 = 100),
-            // a!(p: shelf2 = 100),
-            // a!(p: shelf3 = 100),
+            // a!(p: shelf1 = 1),
+            // a!(p: shelf2 = 2),
+            // a!(p: shelf3 = 3),
+            // a!(p: product_1_kind = 100),
+            // a!(p: product_2_kind = 100),
+            // a!(p: product_3_kind = 100),
         ],
+        None,
+    );
+
+    m.add_hl_op(
+        "get_new_products",
+        false,
+        &Predicate::FALSE,
+        &p!([p: shelf1 == 1] && [p: shelf2 == 2] && [p: shelf3 == 3]),
+        &[],
+        None,
+    );
+
+    m.add_hl_op(
+        "identify_types_r_g_b",
+        false,
+        &Predicate::FALSE,
+        &p!([[p: shelf1 != 0] && [p: shelf2 != 0] && [p: shelf3 != 0] && [
+            [[p: product_1_kind == 1] && [p: product_2_kind == 2] && [p: product_3_kind == 3]] ||
+             [[p: product_1_kind == 2] && [p: product_2_kind == 3] && [p: product_3_kind == 1]] ||
+             [[p: product_1_kind == 3] && [p: product_2_kind == 1] && [p: product_3_kind == 2]] ||
+             [[p: product_1_kind == 1] && [p: product_2_kind == 3] && [p: product_3_kind == 2]] ||
+             [[p: product_1_kind == 2] && [p: product_2_kind == 1] && [p: product_3_kind == 3]] ||
+             [[p: product_1_kind == 3] && [p: product_2_kind == 2] && [p: product_3_kind == 1]]]
+        ]
+        ),
+        &[],
+        None,
+    );
+
+    m.add_hl_op(
+        "sort_shelves_r_g_b",
+        false,
+        &Predicate::FALSE,
+        &p!([[[p: product_1_kind == 1] => [p: shelf1 == 1]] &&
+             [[p: product_1_kind == 2] => [p: shelf2 == 1]] &&
+             [[p: product_1_kind == 3] => [p: shelf3 == 1]] &&
+             [[p: product_2_kind == 1] => [p: shelf1 == 2]] &&
+             [[p: product_2_kind == 2] => [p: shelf2 == 2]] &&
+             [[p: product_2_kind == 3] => [p: shelf3 == 2]] &&
+             [[p: product_3_kind == 1] => [p: shelf1 == 3]] &&
+             [[p: product_3_kind == 2] => [p: shelf2 == 3]] &&
+             [[p: product_3_kind == 3] => [p: shelf3 == 3]] &&
+             [[p: product_1_kind != 100] && [p: product_2_kind != 100] && [p: product_3_kind != 100]]
+        ]),
+        // &p!([p: shelf1 == 1] && [p: shelf2 == 2] && [p: shelf3 == 3] &&
+        //     [p: product_1_kind == 1] && [p: product_2_kind == 2] && [p: product_3_kind == 3]
+        // ),
+        &[],
         None,
     );
 
@@ -252,15 +385,30 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (pp4, leave.to_spvalue()),
         (&dorna_holding, 0.to_spvalue()),
         (&dorna3_holding, 0.to_spvalue()),
-        (&shelf1, 100.to_spvalue()), //SPValue::Unknown),
-        (&shelf2, 100.to_spvalue()),
-        (&shelf3, 100.to_spvalue()),
+        (&shelf1, 0.to_spvalue()), //SPValue::Unknown),
+        (&shelf2, 0.to_spvalue()),
+        (&shelf3, 0.to_spvalue()),
+        (&product_1_kind, 100.to_spvalue()), // unknown products
+        (&product_2_kind, 100.to_spvalue()),
+        (&product_3_kind, 100.to_spvalue()),
         (&conveyor, 0.to_spvalue()),
         (&conveyor2, 0.to_spvalue()),
         (&x, "left".to_spvalue()),
     ]);
 
     println!("MAKING OPERATION MODEL");
+
+    // hack for packing heuristic because we don't support arrays yet...
+    // in the guards we have written product_1_kind in a way that looks independent from
+    // the product variables when in fact we should have written it as product_kind[dorna_holding]
+    // which would catch the interdependency.
+    let mut related_variables: HashMap<SPPath, HashSet<SPPath>> = HashMap::new();
+    let mut kinds = HashSet::new();
+    kinds.insert(product_1_kind.clone());
+    kinds.insert(product_2_kind.clone());
+    kinds.insert(product_3_kind.clone());
+    related_variables.insert(dorna_holding.clone(), kinds.clone());
+
     let products = vec![
         shelf1,
         shelf2,
@@ -269,9 +417,12 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         conveyor2,
         dorna_holding,
         dorna3_holding,
+        product_1_kind,
+        product_2_kind,
+        product_3_kind,
         x
     ];
-    m.generate_operation_model(&products);
+    m.generate_operation_model2(&products, &related_variables);
 
     println!("MAKING MODEL");
     let (m, s) = m.make_model();
