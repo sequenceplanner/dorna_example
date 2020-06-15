@@ -3,6 +3,7 @@ use crate::control_box::*;
 use crate::dorna::*;
 use sp_domain::*;
 use sp_runner::*;
+use std::collections::{HashMap, HashSet};
 
 pub fn cylinders() -> (Model, SPState, Predicate) {
     let mut m = GModel::new("cylinders2");
@@ -346,23 +347,23 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    // m.add_hl_op(
-    //     "to_left",
-    //     true,
-    //     &p!([p: x == "right"]),
-    //     &p!(p: x == "left"),
-    //     &[],
-    //     None,
-    // );
+    m.add_hl_op(
+        "to_left",
+        true,
+        &p!([p: x == "right"]),
+        &p!(p: x == "left"),
+        &[],
+        None,
+    );
 
-    // m.add_hl_op(
-    //     "to_right",
-    //     true,
-    //     &p!([p: x == "left"]),
-    //     &p!(p: x == "right"),
-    //     &[],
-    //     None,
-    // );
+    m.add_hl_op(
+        "to_right",
+        true,
+        &p!([p: x == "left"]),
+        &p!(p: x == "right"),
+        &[],
+        None,
+    );
 
     // goal for testing
     // let g = p!([p:shelf1 == 1] && [p:shelf2 == 2] && [p:shelf3 == 3]);
@@ -396,6 +397,18 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     ]);
 
     println!("MAKING OPERATION MODEL");
+
+    // hack for packing heuristic because we don't support arrays yet...
+    // in the guards we have written product_1_kind in a way that looks independent from
+    // the product variables when in fact we should have written it as product_kind[dorna_holding]
+    // which would catch the interdependency.
+    let mut related_variables: HashMap<SPPath, HashSet<SPPath>> = HashMap::new();
+    let mut kinds = HashSet::new();
+    kinds.insert(product_1_kind.clone());
+    kinds.insert(product_2_kind.clone());
+    kinds.insert(product_3_kind.clone());
+    related_variables.insert(dorna_holding.clone(), kinds.clone());
+
     let products = vec![
         shelf1,
         shelf2,
@@ -409,7 +422,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         product_3_kind,
         x
     ];
-    m.generate_operation_model(&products);
+    m.generate_operation_model2(&products, &related_variables);
 
     println!("MAKING MODEL");
     let (m, s) = m.make_model();
