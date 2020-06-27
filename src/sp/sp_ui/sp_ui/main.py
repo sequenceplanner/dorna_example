@@ -188,7 +188,7 @@ class Window(QtWidgets.QWidget, Callbacks):
                     value_index = index.sibling(index.row(), 1)
                     value_item = self.state_model.itemFromIndex(value_index)
 
-                    if value_item.data(Qt.DisplayRole) != value:
+                    if value_item is not None and value_item.data(Qt.DisplayRole) != value:
                         value_item.setData(value, Qt.DisplayRole)
                         value_item.setData(value, Qt.ToolTipRole)
 
