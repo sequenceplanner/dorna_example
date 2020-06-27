@@ -31,7 +31,6 @@ setup(
     entry_points={
         'console_scripts': [
             'control_box_driver = control_box_driver.driver:main',
-            'control_box_simulator = control_box_driver.simulator:main',
         ],
     },
 )

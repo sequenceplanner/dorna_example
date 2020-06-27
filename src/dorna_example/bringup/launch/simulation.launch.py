@@ -30,7 +30,7 @@ def generate_launch_description():
                 )
 
     control_box = launch_ros.actions.Node(
-                package='control_box_driver',
+                package='control_box_simulator',
                 executable='control_box_simulator',
                 namespace='/control_box',
                 output='screen',
