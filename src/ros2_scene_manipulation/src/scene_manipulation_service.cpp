@@ -129,7 +129,7 @@ bool SceneManipulationService::updateRelatedTransform(RelatedTransform& related_
 		related_transform.transform = transform_stamped.transform;
         return true;
     }
-    catch (tf2::TransformException ex){
+    catch (tf2::TransformException& ex){
         //ROS_ERROR("%s", ex.what());
     }
     return false;

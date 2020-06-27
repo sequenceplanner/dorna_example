@@ -2,12 +2,11 @@
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
   <name>ros2_scene_manipulation</name>
-  <version>0.8.2</version>
-  <description>A minimal service server which adds two numbers</description>
-  <maintainer email="jacob@openrobotics.org">Jacob Perron</maintainer>
-  <license>Apache License 2.0</license>
-  <author>Mikael Arguedas</author>
-  <author>Morgan Quigley</author>
+  <version>0.0.1</version>
+  <description>A service that allows one to manipulate the tf tree</description>
+  <maintainer email="christian.larsen@fcc.chalmers.se">Christian Larsen</maintainer>
+  <license>MIT</license>
+  <author>Christian Larsen</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
@@ -25,4 +24,3 @@
     <build_type>ament_cmake</build_type>
   </export>
 </package>
-
