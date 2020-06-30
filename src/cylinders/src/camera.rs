@@ -27,6 +27,7 @@ pub fn make_camera(name: &str) -> Resource {
             started: p!([do_scan] && [!scanning]),
             executing : p!([do_scan] && [scanning] && [!done]),
             finished : p!([do_scan] && [scanning] && [done]),
+            resetting : p!([!do_scan] && [scanning] && [done]),
 
             *start : p!(enabled) => [ a!(do_scan) ] / [],
             starting : p!(started) => [] / [a!(scanning), a!(!done)],
@@ -34,7 +35,8 @@ pub fn make_camera(name: &str) -> Resource {
             finish_1 : p!(executing) => [] / [a!(done), a!(scanning), a!(result = 1)],
             finish_2 : p!(executing) => [] / [a!(done), a!(scanning), a!(result = 2)],
             finish_3 : p!(executing) => [] / [a!(done), a!(scanning), a!(result = 3)],
-            *reset : p!(finished) => [a!(!do_scan)] / [a!(!done), a!(!scanning), a!(result = 0)],
+            *reset : p!(finished) => [a!(!do_scan)] / [],
+            reset_effect : p!(resetting) => [] / [a!(!done), a!(!scanning), a!(result = 0)],
         },
     }
 }

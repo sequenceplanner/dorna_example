@@ -63,7 +63,7 @@ def generate_launch_description():
                 output='screen'
                 )
 
-    rviz_config_file = os.path.join(examples_dir, 'config', 'dorna.rviz')
+    rviz_config_file = os.path.join(examples_dir, 'config', 'cylinders2.rviz')
     launch_rviz = launch.actions.DeclareLaunchArgument(name="rviz", default_value="False", description="Launch RViz?")
     rviz_cond = launch.conditions.IfCondition(launch.substitutions.LaunchConfiguration("rviz"))
     rviz = launch_ros.actions.Node(package='rviz2', executable='rviz2',

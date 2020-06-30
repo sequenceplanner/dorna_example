@@ -473,7 +473,7 @@ checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 [[package]]
 name = "guard_extraction"
 version = "0.1.0"
-source = "git+https://github.com/m-dahl/guard_extraction.git?rev=a1c8121#a1c81213d243b36769ff0d9827d47781a0ea9f4d"
+source = "git+https://github.com/m-dahl/guard_extraction.git?rev=84c7832#84c7832384cd74966d6b37c526f268d4b790b45b"
 dependencies = [
  "buddy-rs",
  "itertools",
@@ -1089,6 +1089,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7cb5678e1615754284ec264d9bb5b4c27d2018577fd90ac0ceb578591ed5ee4"
 
 [[package]]
+name = "snap"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7fb9b0bb877b35a1cc1474a3b43d9c226a2625311760cdda2cbccbc0c7a8376"
+
+[[package]]
 name = "socket2"
 version = "0.3.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1103,7 +1109,7 @@ dependencies = [
 [[package]]
 name = "sp-domain"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=9261717#9261717ed0ac3bdb165c4d71188a87994bfe1d7f"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=2ceea87#2ceea87650fc9b72c1325f7c89a4ccc5c41cb1bf"
 dependencies = [
  "serde",
  "serde_json",
@@ -1113,7 +1119,7 @@ dependencies = [
 [[package]]
 name = "sp-ros"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=9261717#9261717ed0ac3bdb165c4d71188a87994bfe1d7f"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=2ceea87#2ceea87650fc9b72c1325f7c89a4ccc5c41cb1bf"
 dependencies = [
  "crossbeam",
  "failure",
@@ -1128,7 +1134,7 @@ dependencies = [
 [[package]]
 name = "sp-runner"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=9261717#9261717ed0ac3bdb165c4d71188a87994bfe1d7f"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=2ceea87#2ceea87650fc9b72c1325f7c89a4ccc5c41cb1bf"
 dependencies = [
  "chrono",
  "crossbeam",
@@ -1140,6 +1146,7 @@ dependencies = [
  "indoc",
  "serde",
  "serde_json",
+ "snap",
  "sp-domain",
  "sp-ros",
  "sp-runner-api",
@@ -1150,7 +1157,7 @@ dependencies = [
 [[package]]
 name = "sp-runner-api"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=9261717#9261717ed0ac3bdb165c4d71188a87994bfe1d7f"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=2ceea87#2ceea87650fc9b72c1325f7c89a4ccc5c41cb1bf"
 dependencies = [
  "failure",
  "failure_derive",

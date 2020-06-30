@@ -264,17 +264,17 @@ class Window(QtWidgets.QWidget, Callbacks):
                 if set_item:
                     set_value = set_item.data(Qt.EditRole)
                     if set_value == "true" or set_value == "t" or set_value == "T":
-                        set_value = True
-                    if set_value == "false" or set_value == "f" or set_value == "F":
-                        set_value = False
-                    if set_value:
+                        set_it.append(State(path = path, value_as_json = json.dumps(True)))
+                    elif set_value == "false" or set_value == "f" or set_value == "F":
+                        set_it.append(State(path = path, value_as_json = json.dumps(False)))
+                    elif set_value:
                         try:
                             val = ast.literal_eval(set_value)
                             set_it.append(State(path = path, value_as_json = json.dumps(val)))
                         except ValueError:
                             set_it.append(State(path = path, value_as_json = json.dumps(set_value)))
 
-                        set_item.setData("", Qt.EditRole)
+                    set_item.setData("", Qt.EditRole)
 
             print("SET STATE:")
             print(set_it)

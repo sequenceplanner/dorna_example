@@ -41,6 +41,8 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let product_2_kind = m.add_estimated_domain("product_2_kind", product_kinds);
     let product_3_kind = m.add_estimated_domain("product_3_kind", product_kinds);
 
+    let poison = m.add_estimated_bool("poison");
+
     let shelf1 = m.add_estimated_domain("shelf1", buffer_domain);
     let shelf2 = m.add_estimated_domain("shelf2", buffer_domain);
     let shelf3 = m.add_estimated_domain("shelf3", buffer_domain);
@@ -112,6 +114,8 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     // we can only scan the product in front of the camera
     m.add_invar("product_at_camera", &p!([p:cs] => [p:ap == scan]));
+    // we need to keep the product still while scanning
+    m.add_invar("product_still_at_camera", &p!([p:cd] => [p: ap <-> p: rp]));
 
     // dorna take/leave products
     let pos = vec![
@@ -130,7 +134,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
         m.add_delib(
             &format!("r1_leave_{}", pos.leaf()),
-            &p!([p: ap == pos_name] && [p: dorna_holding != 0] && [p: pos == 0] && [p: ap <-> p: rp]),
+            &p!([! p: poison] && [p: ap == pos_name] && [p: dorna_holding != 0] && [p: pos == 0] && [p: ap <-> p: rp]),
             &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0)],
         );
     }
@@ -161,6 +165,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
 
     let ap4 = &dorna4["act_pos"];
+    let rp4 = &dorna4["ref_pos"];
     m.add_auto(
         "r4_x_left",
         &p!([p: ap4 == leave] && [p: x == "right"]),
@@ -172,17 +177,16 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         &[a!(p:x = "right")],
     );
 
-    // force dorna4 to move sometimes
-    // let ap4 = &dorna4["act_pos"];
-    // m.add_invar(
-    //     "dorna4_1",
-    //     &p!([p:ap2 == scan] => [p:ap4 == leave]),
-    // );
+    // force dorna4 to move sometimes by connecting it to dorna 2
+    m.add_invar(
+        "dorna4_1",
+        &p!([p:ap2 == scan] => [p:rp4 == scan]),
+    );
 
-    // m.add_invar(
-    //     "dorna4_2",
-    //     &p!([p:ap2 == leave] => [p:ap4 == scan]),
-    // );
+    m.add_invar(
+        "dorna4_2",
+        &p!([p:ap2 == leave] => [p:rp4 == leave]),
+    );
 
     // scan to figure out the which product we are holding
 
@@ -251,7 +255,14 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         )
     };
 
-    let no_products = Predicate::AND(vec![np(1), np(2), np(3)]);
+    let no_products = p!([p: shelf1 == 0]
+           && [p: shelf2 == 0]
+           && [p: shelf3 == 0]
+           && [p: dorna_holding == 0]
+           && [p: dorna3_holding == 0]
+           && [p: conveyor == 0]
+           && [p: conveyor2 == 0]
+        );
 
     // product source also at conveyor2, we can add a new, unknown,
     // unique product if there is room.
@@ -303,7 +314,9 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         "get_new_products",
         false,
         &Predicate::FALSE,
-        &p!([p: shelf1 == 1] && [p: shelf2 == 2] && [p: shelf3 == 3]),
+        &p!([p: shelf1 == 1] && [p: shelf2 == 2] && [p: shelf3 == 3] &&
+            [p: product_1_kind == 100] && [p: product_2_kind == 100] &&
+            [p: product_3_kind == 100]),
         &[],
         None,
     );
@@ -394,6 +407,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (&conveyor, 0.to_spvalue()),
         (&conveyor2, 0.to_spvalue()),
         (&x, "left".to_spvalue()),
+        (&poison, false.to_spvalue()),
     ]);
 
     println!("MAKING OPERATION MODEL");
@@ -422,7 +436,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         product_3_kind,
         x
     ];
-    m.generate_operation_model2(&products, &related_variables);
+    m.generate_operation_model(&products, &related_variables);
 
     println!("MAKING MODEL");
     let (m, s) = m.make_model();
@@ -434,17 +448,43 @@ mod test {
     use super::*;
     use serial_test::serial;
 
+    fn compute_resource_use(o: &Operation) {
+        println!("{}", o.path());
+    }
+
     #[test]
     #[serial]
     fn operations() {
         let (m, _s, _g) = cylinders();
+        let ts_model = TransitionSystemModel::from(&m);
 
         m
             .all_operations()
             .iter()
+            .filter(|o| !o.high_level)
             .for_each(|o| {
-                println!("{}", o.path());
-                o.transitions().iter().for_each(|t| println!("{}", t));
+                let oo = o.transitions().iter()
+                    .find(|t| t.name() == "planning")
+                    //.map(|t|t.guard.clone())
+                    .expect("planning trans not found");
+                println!();
+                println!("OP: {}", oo);
+
+
+                if o.name() == "r1_take_conveyor_1" {
+
+                let g = o.goal().as_ref().map(|g|g.goal.clone()).unwrap();
+                let goal = vec![(g, None)];
+                let pre = o.transitions().iter()
+                    .find(|t| t.name() == "planning")
+                    .map(|t|t.guard.clone())
+                    .expect("planning trans not found");
+                let plan = plan_check(&ts_model, &pre, &goal, 50);
+                    println!("PLAN SUCCESS? {}", plan.plan_found);
+                }
+
+                // compute_resource_use(o);
+                // o.transitions().iter().for_each(|t| println!("{}", t));
             });
 
         assert!(false);
@@ -462,7 +502,7 @@ mod test {
 
         let mut new_specs = Vec::new();
         for s in &ts_model.specs {
-            new_specs.push(Spec::new(s.name(), refine_invariant(&m, s.invariant())));
+            new_specs.push(Spec::new(s.name(), refine_invariant(&ts_model, s.invariant())));
         }
         ts_model.specs = new_specs;
 

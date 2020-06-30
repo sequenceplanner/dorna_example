@@ -3,6 +3,7 @@ use crate::control_box::*;
 use crate::dorna::*;
 use sp_domain::*;
 use sp_runner::*;
+use std::collections::HashMap;
 
 pub fn cylinders() -> (Model, SPState, Predicate) {
     let mut m = GModel::new("cylinders");
@@ -206,7 +207,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         conveyor,
         dorna_holding,
     ];
-    m.generate_operation_model(&products);
+    m.generate_operation_model(&products, &HashMap::new());
 
     println!("MAKING MODEL");
     let (m, s) = m.make_model();
