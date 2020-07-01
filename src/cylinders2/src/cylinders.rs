@@ -132,9 +132,16 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
             &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
         );
 
+        let guard = if pos == &shelf1 {
+                // we can deadlock on leaving shelf1
+                p!([! p: poison] && [p: ap == pos_name] && [p: dorna_holding != 0] && [p: pos == 0] && [p: ap <-> p: rp])
+            } else {
+                p!([p: ap == pos_name] && [p: dorna_holding != 0] && [p: pos == 0] && [p: ap <-> p: rp])
+            };
+
         m.add_delib(
             &format!("r1_leave_{}", pos.leaf()),
-            &p!([! p: poison] && [p: ap == pos_name] && [p: dorna_holding != 0] && [p: pos == 0] && [p: ap <-> p: rp]),
+            &guard,
             &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0)],
         );
     }
@@ -334,6 +341,20 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
              [[p: product_1_kind == 3] && [p: product_2_kind == 2] && [p: product_3_kind == 1]]]
         ]
         ),
+        &[],
+        None,
+    );
+
+    m.add_hl_op(
+        "identify_two_blue",
+        false,
+        &Predicate::FALSE,
+        &p!([[[p: product_1_kind == 3] && [p: product_2_kind == 3]] &&
+             [[[p: shelf1 == 1] && [p: shelf2 == 2]] || [[p: shelf2 == 1] && [p: shelf3 == 2]] || [[p: shelf1 == 1] && [p: shelf3 == 2]]]] ||
+            [[[p: product_2_kind == 3] && [p: product_3_kind == 3]] &&
+             [[[p: shelf1 == 2] && [p: shelf2 == 3]] || [[p: shelf2 == 2] && [p: shelf3 == 3]] || [[p: shelf1 == 2] && [p: shelf3 == 3]]]] ||
+            [[[p: product_1_kind == 3] && [p: product_3_kind == 3]] &&
+             [[[p: shelf1 == 1] && [p: shelf2 == 3]] || [[p: shelf2 == 1] && [p: shelf3 == 3]] || [[p: shelf1 == 1] && [p: shelf3 == 3]]]]),
         &[],
         None,
     );
