@@ -18,16 +18,16 @@ fn main() -> Result<(), Error> {
     // goal callback
     let last_seen_goal_cb = last_seen_goal.clone();
     let state_publisher_cb = state_publisher.clone();
+    let nl_cb = node.logger().to_owned();
     let sp_goal_cb = move |msg: Goal| {
         if *last_seen_goal_cb.borrow() == msg {
             return ;
         }
         last_seen_goal_cb.replace(msg);
 
-        // todo: implement the rcl logger api
-        // self.get_logger().info("blue light is " + ('on' if self.blue_light else 'off'))
         let blue_light_on = last_seen_goal_cb.borrow().blue_light;
-        println!("blue light is {}", if blue_light_on { "on" } else { "off" });
+        r2r::log_info!(&nl_cb, "blue light is {}",
+                       if blue_light_on { "on" } else { "off" });
 
         let msg = State { blue_light_on };
         state_publisher_cb.publish(&msg).unwrap();

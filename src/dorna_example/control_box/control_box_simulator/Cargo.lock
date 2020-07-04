@@ -90,9 +90,9 @@ checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 
 [[package]]
 name = "cc"
-version = "1.0.55"
+version = "1.0.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1be3409f94d7bdceeb5f5fac551039d9b3f00e25da7a74fc4d33400a0d96368"
+checksum = "0fde55d2a2bfaa4c9668bbc63f531fbdeee3ffe188f4662511ce2c22b3eedebe"
 
 [[package]]
 name = "cexpr"
@@ -138,7 +138,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/r2r#827f97d07a9b182485baa47026d7b4ad9c5548ba"
+source = "git+https://github.com/sequenceplanner/r2r#0bb844c773d073dff6ba7aa82a333c5140690960"
 
 [[package]]
 name = "control_box_simulator"
@@ -284,7 +284,7 @@ dependencies = [
 [[package]]
 name = "msg_gen"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/r2r#827f97d07a9b182485baa47026d7b4ad9c5548ba"
+source = "git+https://github.com/sequenceplanner/r2r#0bb844c773d073dff6ba7aa82a333c5140690960"
 dependencies = [
  "bindgen",
  "common",
@@ -367,11 +367,12 @@ dependencies = [
 [[package]]
 name = "r2r"
 version = "0.0.4"
-source = "git+https://github.com/sequenceplanner/r2r#827f97d07a9b182485baa47026d7b4ad9c5548ba"
+source = "git+https://github.com/sequenceplanner/r2r#0bb844c773d073dff6ba7aa82a333c5140690960"
 dependencies = [
  "common",
  "failure",
  "failure_derive",
+ "lazy_static",
  "msg_gen",
  "rcl",
  "serde",
@@ -381,7 +382,7 @@ dependencies = [
 [[package]]
 name = "rcl"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/r2r#827f97d07a9b182485baa47026d7b4ad9c5548ba"
+source = "git+https://github.com/sequenceplanner/r2r#0bb844c773d073dff6ba7aa82a333c5140690960"
 dependencies = [
  "bindgen",
  "paste",
@@ -446,9 +447,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.55"
+version = "1.0.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec2c5d7e739bc07a3e73381a39d61fdb5f671c60c1df26a130690665803d8226"
+checksum = "3433e879a558dde8b5e8feb2a04899cf34fdde1fafb894687e52105fc1162ac3"
 dependencies = [
  "itoa",
  "ryu",
@@ -525,9 +526,9 @@ checksum = "e83e153d1053cbb5a118eeff7fd5be06ed99153f00dbcd8ae310c5fb2b22edc0"
 
 [[package]]
 name = "unicode-width"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "caaa9d531767d1ff2150b9332433f32a24622147e5ebb1f26409d5da67afd479"
+checksum = "9337591893a19b88d8d87f2cec1e73fad5cdfd10e5a6f349f498ad6ea2ffb1e3"
 
 [[package]]
 name = "unicode-xid"
