@@ -7,8 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "42b619d" }
-sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "42b619d" }
+sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "b984feb" }
+sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "b984feb" }
 
 failure = "0.1.5"
 

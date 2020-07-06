@@ -55,6 +55,7 @@ def generate_launch_description():
                 package='cylinders2',
                 executable='cylinders2',
                 output='screen',
+                arguments = ['--ros-args', '--log-level', 'DEBUG'],
                 )
 
     scene_master = launch_ros.actions.Node(

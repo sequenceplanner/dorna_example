@@ -53,6 +53,7 @@ def generate_launch_description():
                 package='cylinders',
                 executable='cylinders',
                 output='screen',
+                arguments = ['--ros-args', '--log-level', 'DEBUG'],
                 )
 
     rviz_config_file = os.path.join(examples_dir, 'config', 'cylinders.rviz')
