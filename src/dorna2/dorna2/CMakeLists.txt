@@ -23,14 +23,16 @@ find_package(sensor_msgs REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
-find_package(builtin_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-
-rosidl_generate_interfaces(dorna2
+set(msg_files
   "msg/Goal.msg"
   "msg/State.msg"
-  DEPENDENCIES builtin_interfaces
 )
+rosidl_generate_interfaces(${PROJECT_NAME}
+  ${msg_files}
+  DEPENDENCIES sensor_msgs
+)
+ament_export_dependencies(rosidl_default_runtime)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

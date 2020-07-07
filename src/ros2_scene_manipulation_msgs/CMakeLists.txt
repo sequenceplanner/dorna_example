@@ -20,7 +20,6 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(builtin_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 if(BUILD_TESTING)
@@ -34,10 +33,9 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-rosidl_generate_interfaces(ros2_scene_manipulation_msgs
+rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/ManipulateScene.srv"
   DEPENDENCIES
-    builtin_interfaces
     geometry_msgs
 )
 

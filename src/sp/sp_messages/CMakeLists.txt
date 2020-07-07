@@ -21,10 +21,8 @@ find_package(ament_cmake REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
-find_package(builtin_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-
-rosidl_generate_interfaces(sp_messages
+set(msg_files
   "msg/State.msg"
   "msg/ForcedGoal.msg"
   "msg/VariableInfo.msg"
@@ -37,8 +35,13 @@ rosidl_generate_interfaces(sp_messages
   "msg/RunnerCommand.msg"
   "msg/NodeCmd.msg"
   "msg/NodeMode.msg"
-  DEPENDENCIES builtin_interfaces
 )
+rosidl_generate_interfaces(${PROJECT_NAME}
+  ${msg_files}
+)
+ament_export_dependencies(rosidl_default_runtime)
+
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
