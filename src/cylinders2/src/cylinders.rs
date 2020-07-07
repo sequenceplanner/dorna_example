@@ -83,15 +83,15 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     // force dorna2 to move sometimes
     let ap2 = &dorna2["act_pos"];
-    m.add_invar(
-        "dorna2_1",
-        &p!([p:ap == scan] => [p:ap2 == leave]),
-    );
+    // m.add_invar(
+    //     "dorna2_1",
+    //     &p!([p:ap == scan] => [p:ap2 == leave]),
+    // );
 
-    m.add_invar(
-        "dorna2_2",
-        &p!([p:ap == leave] => [p:ap2 == scan]),
-    );
+    // m.add_invar(
+    //     "dorna2_2",
+    //     &p!([p:ap == leave] => [p:ap2 == scan]),
+    // );
 
 
     // scan and leave can only be reached from pre_take

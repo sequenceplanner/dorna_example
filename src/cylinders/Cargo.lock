@@ -149,9 +149,9 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
 name = "chrono"
-version = "0.4.12"
+version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0fee792e164f78f5fe0c296cc2eb3688a2ca2b70cdff33040922d298203f0c4"
+checksum = "c74d84029116787153e02106bf53e66828452a4b325cc8652b788b5967c0a0b6"
 dependencies = [
  "num-integer",
  "num-traits",
@@ -206,7 +206,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/r2r#0bb844c773d073dff6ba7aa82a333c5140690960"
+source = "git+https://github.com/sequenceplanner/r2r#5260d3ba8ea499391e3c9c529bce1b351e93cc60"
 
 [[package]]
 name = "crossbeam"
@@ -513,9 +513,9 @@ dependencies = [
 
 [[package]]
 name = "hermit-abi"
-version = "0.1.14"
+version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9586eedd4ce6b3c498bc3b4dd92fc9f11166aa908a914071953768066c67909"
+checksum = "3deed196b6e7f9e44a2ae8d94225d80302d81208b1bb673fd21fe634645c85a9"
 dependencies = [
  "libc",
 ]
@@ -740,7 +740,7 @@ dependencies = [
 [[package]]
 name = "msg_gen"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/r2r#0bb844c773d073dff6ba7aa82a333c5140690960"
+source = "git+https://github.com/sequenceplanner/r2r#5260d3ba8ea499391e3c9c529bce1b351e93cc60"
 dependencies = [
  "bindgen",
  "common",
@@ -963,8 +963,8 @@ dependencies = [
 
 [[package]]
 name = "r2r"
-version = "0.0.4"
-source = "git+https://github.com/sequenceplanner/r2r#0bb844c773d073dff6ba7aa82a333c5140690960"
+version = "0.0.5"
+source = "git+https://github.com/sequenceplanner/r2r#5260d3ba8ea499391e3c9c529bce1b351e93cc60"
 dependencies = [
  "common",
  "failure",
@@ -1020,7 +1020,7 @@ dependencies = [
 [[package]]
 name = "rcl"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/r2r#0bb844c773d073dff6ba7aa82a333c5140690960"
+source = "git+https://github.com/sequenceplanner/r2r#5260d3ba8ea499391e3c9c529bce1b351e93cc60"
 dependencies = [
  "bindgen",
  "paste",
@@ -1182,15 +1182,15 @@ checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 
 [[package]]
 name = "smallvec"
-version = "1.4.0"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7cb5678e1615754284ec264d9bb5b4c27d2018577fd90ac0ceb578591ed5ee4"
+checksum = "3757cb9d89161a2f24e1cf78efa0c1fcff485d18e3f55e0aa3480824ddaa0f3f"
 
 [[package]]
 name = "snap"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7fb9b0bb877b35a1cc1474a3b43d9c226a2625311760cdda2cbccbc0c7a8376"
+checksum = "da73c8f77aebc0e40c300b93f0a5f1bece7a248a36eee287d4e095f35c7b7d6e"
 
 [[package]]
 name = "socket2"
@@ -1207,7 +1207,7 @@ dependencies = [
 [[package]]
 name = "sp-domain"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=b984feb#b984feb4924bf1a7f6dfb40e044c22cf276b0105"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=6e87849#6e8784924878f4775119aa5df60c96721e1eb6a3"
 dependencies = [
  "peg",
  "serde",
@@ -1218,7 +1218,7 @@ dependencies = [
 [[package]]
 name = "sp-ros"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=b984feb#b984feb4924bf1a7f6dfb40e044c22cf276b0105"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=6e87849#6e8784924878f4775119aa5df60c96721e1eb6a3"
 dependencies = [
  "crossbeam",
  "failure",
@@ -1233,7 +1233,7 @@ dependencies = [
 [[package]]
 name = "sp-runner"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=b984feb#b984feb4924bf1a7f6dfb40e044c22cf276b0105"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=6e87849#6e8784924878f4775119aa5df60c96721e1eb6a3"
 dependencies = [
  "chrono",
  "crossbeam",
@@ -1256,7 +1256,7 @@ dependencies = [
 [[package]]
 name = "sp-runner-api"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=b984feb#b984feb4924bf1a7f6dfb40e044c22cf276b0105"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=6e87849#6e8784924878f4775119aa5df60c96721e1eb6a3"
 dependencies = [
  "failure",
  "failure_derive",
