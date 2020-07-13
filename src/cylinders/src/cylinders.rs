@@ -3,7 +3,6 @@ use crate::control_box::*;
 use crate::dorna::*;
 use sp_domain::*;
 use sp_runner::*;
-use std::collections::HashMap;
 
 pub fn cylinders() -> (Model, SPState, Predicate) {
     let mut m = GModel::new("cylinders");
@@ -29,11 +28,11 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         3.to_spvalue(),
     ];
 
-    let shelf1 = m.add_estimated_domain("shelf1", product_domain);
-    let shelf2 = m.add_estimated_domain("shelf2", product_domain);
-    let shelf3 = m.add_estimated_domain("shelf3", product_domain);
-    let conveyor = m.add_estimated_domain("conveyor", product_domain);
-    let dorna_holding = m.add_estimated_domain("dorna_holding", product_domain);
+    let shelf1 = m.add_estimated_domain("shelf1", product_domain, true);
+    let shelf2 = m.add_estimated_domain("shelf2", product_domain, true);
+    let shelf3 = m.add_estimated_domain("shelf3", product_domain, true);
+    let conveyor = m.add_estimated_domain("conveyor", product_domain, true);
+    let dorna_holding = m.add_estimated_domain("dorna_holding", product_domain, true);
 
     let ap = &dorna["act_pos"];
     let rp = &dorna["ref_pos"];
@@ -106,17 +105,29 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     ];
 
     for (pos_name, pos) in pos.iter() {
-        m.add_delib(
-            &format!("take_{}", pos.leaf()),
-            &p!([p: ap == pos_name] && [p: pos != 0] && [p: dorna_holding == 0]),
-            &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
-        );
+        m.add_op(&format!("take_{}", pos.leaf()),
+                 // operation model guard.
+                 &p!([p: pos != 0] && [p: dorna_holding == 0]),
+                 // operation model effects.
+                 &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
+                 // low level goal
+                 &p!(p: ap == pos_name),
+                 // low level actions (should not be needed)
+                 &[],
+                 // resets
+                 true);
 
-        m.add_delib(
-            &format!("leave_{}", pos.leaf()),
-            &p!([p: ap == pos_name] && [p: dorna_holding != 0] && [p: pos == 0]),
-            &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0)],
-        );
+        m.add_op(&format!("leave_{}", pos.leaf()),
+                 // operation model guard.
+                 &p!([p: dorna_holding != 0] && [p: pos == 0]),
+                 // operation model effects.
+                 &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0)],
+                 // low level goal
+                 &p!(p: ap == pos_name),
+                 // low level actions (should not be needed)
+                 &[],
+                 // resets
+                 true);
     }
 
 
@@ -126,26 +137,37 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     //            &[a!(p: dorna_holding = 1)]);
 
     // scan to figure out the which product we are holding
-    m.add_auto("take_scan_result1",
-               &p!([p: dorna_holding == 100] && [p: cf] && [p: cr == 1]),
-               &[a!(!p: cd), a!(p: dorna_holding = 1)]);
-
-    m.add_auto("take_scan_result2",
-               &p!([p: dorna_holding == 100] && [p: cf] && [p: cr == 2]),
-               &[a!(!p: cd), a!(p: dorna_holding = 2)]);
-    m.add_auto("take_scan_result3",
-               &p!([p: dorna_holding == 100] && [p: cf] && [p: cr == 3]),
-               &[a!(!p: cd), a!(p: dorna_holding = 3)]);
+    m.add_op_alt("scan",
+                 // operation model guard.
+                 &p!([p: dorna_holding == 100]),
+                 // operation model (alternative) effects.
+                 &[("1", &[a!(p: dorna_holding = 1)]),
+                   ("2", &[a!(p: dorna_holding = 2)]),
+                   ("3", &[a!(p: dorna_holding = 3)])],
+                 // low level goal
+                 &p!([p: cf] && [p: cr != 0]),
+                 // low level actions (should not be needed)
+                 &[a!(p: dorna_holding <- p: cr), a!(!p: cd)], // copy result regardless of outcome and reset camera
+                 // &[a!(!p: cd)],                             // only reset the camera. low level planner will scan until cr == 1
+                 // &[],                                       // no reset. low level planner will reuse the same result to avoid scanning
+                 // resets
+                 true);
 
     // product sink is at conveyor, only accepts identified products.
-    m.add_auto(
-        "consume_known_product",
-        &p!([p: conveyor != 0] && [p: conveyor != 100]),
-        &[a!(p: conveyor = 0)],
-    );
+    m.add_op("consume_known_product",
+             // operation model guard.
+             &p!([p: conveyor != 0] && [p: conveyor != 100]),
+             // operation model effects.
+             &[a!(p: conveyor = 0)],
+             // low level goal
+             &Predicate::TRUE,
+             // low level actions (should not be needed)
+             &[],
+             // resets
+             true);
 
-    // HIGH LEVEL OPS
 
+    // INTENTIONS
     let np = |p: i32| {
         p!([p: shelf1 != p]
             && [p: shelf2 != p]
@@ -155,12 +177,6 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     };
 
     let no_products = Predicate::AND(vec![np(1), np(2), np(3), np(100)]);
-
-    // m.add_hl_op("identify_parts", true,
-    //             &p!([p:shelf1 == 100] && [p:shelf2 == 100] && [p:shelf3 == 100]),
-    //             &p!([p:shelf1 == 1] && [p:shelf2 == 2] && [p:shelf3 == 3]),
-    //             &[a!(p:shelf1 = 100), a!(p:shelf2 = 100), a!(p:shelf3 = 100)],
-    //             None);
 
     m.add_hl_op(
         "identify_and_consume_parts",
@@ -199,16 +215,6 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (ap2, pt.to_spvalue()),
     ]);
 
-    println!("MAKING OPERATION MODEL");
-    let products = vec![
-        shelf1,
-        shelf2,
-        shelf3,
-        conveyor,
-        dorna_holding,
-    ];
-    m.generate_operation_model(&products, &HashMap::new());
-
     println!("MAKING MODEL");
     let (m, s) = m.make_model();
     (m, s, g)
@@ -228,7 +234,7 @@ mod test {
             .items()
             .iter()
             .flat_map(|i| match i {
-                SPItem::Operation(o) if !o.high_level => Some(o.clone()),
+                SPItem::Operation(o) => Some(o.clone()),
                 _ => None,
             })
             .for_each(|o| {
@@ -261,7 +267,7 @@ mod test {
 
         let mut new_specs = Vec::new();
         for s in &ts_model.specs {
-            new_specs.push(Spec::new(s.name(), refine_invariant(&m, s.invariant())));
+            new_specs.push(Spec::new(s.name(), refine_invariant(&ts_model, s.invariant())));
         }
         ts_model.specs = new_specs;
 

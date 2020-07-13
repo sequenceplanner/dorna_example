@@ -2,18 +2,18 @@
 # It is not intended for manual editing.
 [[package]]
 name = "addr2line"
-version = "0.12.2"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "602d785912f476e480434627e8732e6766b760c045bbf897d9dfaa9f4fbd399c"
+checksum = "1b6a2d3371669ab3ca9797670853d61402b03d0b4b9ebf33d677dfa720203072"
 dependencies = [
  "gimli",
 ]
 
 [[package]]
-name = "adler32"
-version = "1.1.0"
+name = "adler"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "567b077b825e468cc974f0020d4082ee6e03132512f207ef1a02fd5d00d1f32d"
+checksum = "ee2a4ec343196209d6594e19543ae87a39f96d5534d7174822a3ad825dd6ed7e"
 
 [[package]]
 name = "aho-corasick"
@@ -58,9 +58,9 @@ checksum = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
 
 [[package]]
 name = "backtrace"
-version = "0.3.49"
+version = "0.3.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05100821de9e028f12ae3d189176b41ee198341eb8f369956407fea2f5cc666c"
+checksum = "46254cf2fdcdf1badb5934448c1bcbe046a56537b3987d96c51a7afc5d03f293"
 dependencies = [
  "addr2line",
  "cfg-if",
@@ -128,9 +128,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.57"
+version = "1.0.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fde55d2a2bfaa4c9668bbc63f531fbdeee3ffe188f4662511ce2c22b3eedebe"
+checksum = "f9a06fb2e53271d7c279ec1efea6ab691c35a2ae67ec0d91d7acec0caf13b518"
 
 [[package]]
 name = "cexpr"
@@ -206,7 +206,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/r2r#5260d3ba8ea499391e3c9c529bce1b351e93cc60"
+source = "git+https://github.com/sequenceplanner/r2r#8a80f26e6e17fd6b606ff930a711e757022fb270"
 
 [[package]]
 name = "crossbeam"
@@ -483,9 +483,9 @@ dependencies = [
 
 [[package]]
 name = "gimli"
-version = "0.21.0"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcc8e0c9bce37868955864dbecd2b1ab2bdf967e6f28066d65aaac620444b65c"
+checksum = "aaf91faf136cb47367fa430cd46e37a788775e7fa104f8b4bcb3861dc389b724"
 
 [[package]]
 name = "glob"
@@ -600,9 +600,9 @@ checksum = "b294d6fa9ee409a054354afc4352b0b9ef7ca222c69b8812cbea9e7d2bf3783f"
 
 [[package]]
 name = "libc"
-version = "0.2.71"
+version = "0.2.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9457b06509d27052635f90d6466700c65095fdf75409b3fbdd903e988b886f49"
+checksum = "a9f8082297d534141b30c8d39e9b1773713ab50fdbe4ff30f750d063b3bfd701"
 
 [[package]]
 name = "libloading"
@@ -666,11 +666,11 @@ dependencies = [
 
 [[package]]
 name = "miniz_oxide"
-version = "0.3.7"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "791daaae1ed6889560f8c4359194f56648355540573244a5448a83ba1ecc7435"
+checksum = "be0f75932c1f6cfae3c04000e40114adf955636e19040f9c0a2c380702aa1c7f"
 dependencies = [
- "adler32",
+ "adler",
 ]
 
 [[package]]
@@ -740,7 +740,7 @@ dependencies = [
 [[package]]
 name = "msg_gen"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/r2r#5260d3ba8ea499391e3c9c529bce1b351e93cc60"
+source = "git+https://github.com/sequenceplanner/r2r#8a80f26e6e17fd6b606ff930a711e757022fb270"
 dependencies = [
  "bindgen",
  "common",
@@ -964,7 +964,7 @@ dependencies = [
 [[package]]
 name = "r2r"
 version = "0.0.5"
-source = "git+https://github.com/sequenceplanner/r2r#5260d3ba8ea499391e3c9c529bce1b351e93cc60"
+source = "git+https://github.com/sequenceplanner/r2r#8a80f26e6e17fd6b606ff930a711e757022fb270"
 dependencies = [
  "common",
  "failure",
@@ -1020,7 +1020,7 @@ dependencies = [
 [[package]]
 name = "rcl"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/r2r#5260d3ba8ea499391e3c9c529bce1b351e93cc60"
+source = "git+https://github.com/sequenceplanner/r2r#8a80f26e6e17fd6b606ff930a711e757022fb270"
 dependencies = [
  "bindgen",
  "paste",
@@ -1029,9 +1029,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.1.56"
+version = "0.1.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2439c63f3f6139d1b57529d16bc3b8bb855230c8efcc5d3a896c8bea7c3b1e84"
+checksum = "41cc0f7e4d5d4544e8861606a285bb08d3e70712ccc7d2b84d7c0ccfaf4b05ce"
 
 [[package]]
 name = "regex"
@@ -1207,7 +1207,7 @@ dependencies = [
 [[package]]
 name = "sp-domain"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=6e87849#6e8784924878f4775119aa5df60c96721e1eb6a3"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=453b3a6#453b3a60e2ec61fc13b8d46564b44a54b6af6136"
 dependencies = [
  "peg",
  "serde",
@@ -1218,7 +1218,7 @@ dependencies = [
 [[package]]
 name = "sp-ros"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=6e87849#6e8784924878f4775119aa5df60c96721e1eb6a3"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=453b3a6#453b3a60e2ec61fc13b8d46564b44a54b6af6136"
 dependencies = [
  "crossbeam",
  "failure",
@@ -1233,7 +1233,7 @@ dependencies = [
 [[package]]
 name = "sp-runner"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=6e87849#6e8784924878f4775119aa5df60c96721e1eb6a3"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=453b3a6#453b3a60e2ec61fc13b8d46564b44a54b6af6136"
 dependencies = [
  "chrono",
  "crossbeam",
@@ -1256,7 +1256,7 @@ dependencies = [
 [[package]]
 name = "sp-runner-api"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=6e87849#6e8784924878f4775119aa5df60c96721e1eb6a3"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=453b3a6#453b3a60e2ec61fc13b8d46564b44a54b6af6136"
 dependencies = [
  "failure",
  "failure_derive",
@@ -1273,9 +1273,9 @@ checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
 
 [[package]]
 name = "syn"
-version = "1.0.33"
+version = "1.0.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8d5d96e8cbb005d6959f119f773bfaebb5684296108fb32600c00cde305b2cd"
+checksum = "936cae2873c940d92e697597c5eee105fb570cd5689c695806f672883653349b"
 dependencies = [
  "proc-macro2",
  "quote",
