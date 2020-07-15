@@ -1,0 +1,217 @@
+Dorna(name, poses[] + ["unknown"]): {
+    goal: {
+        //name: domain (initial value)
+        ref_pos: poses ("unknown")  //(..) initial
+    },
+    measured: {
+        act_pos: poses ("unknown")
+        failure: bool(false);  // how to reset?
+    }
+    estimated: {
+        prev_pos: poses ("unknown")
+    }
+
+    abilities: {
+        move_to: {
+            //name: (pred_name:) pred / actions / [effects]
+            // If enabled, execute, finished is not defined, maybe guess from common names of transitions?
+            start: enabled: ref_pos == act_pos && !failure / prev_pos <- act_pos
+            *dummy_t: enabled / prev_pos <- prev_pos
+            *finished_effect: executing: ref_pos != act_pos / [act_pos <- ref_pos]  // _effect is just a name to make it easier to understand
+            reset: error: failure / some reset actions / [!failure]
+        }
+    }
+
+    specs: {
+        cannot_go_to_unknown: ref_pos != "unknown"
+    }
+
+    messages: {
+        //topic(message type): [variables] // variables can inlcude any path
+        goal("robot_msgs/msg/RobotGoal"): [ref_pos], //  maybe only include variables not in goal? 
+        measured("robot_msgs/msg/RobotState"): [act_pos, failure] // measured topic instead of state
+    }
+}
+
+Camera(name): {
+    goal: {
+        do_scan: bool (false)
+    },
+    measured: {
+        scanning: bool (false),
+        done : bool (false),
+        result : [0,1,2,3] (0)
+    }
+    abilities: {
+        scan: {
+            start: enabled: !do_scan && !scanning / do_scan
+            *starting_effect: do_scan && !scanning / [scanning, !done]
+            *finish_effect: executing: do_scan && scanning / [done, result?] // var? = the planner picks a value
+            reset: finished: executing && done / !do_scan / [!done, !scanning, result <- 0]
+        }
+    }
+
+
+    messages: {
+        goal("camera_msgs/msg/Goal"): [ref_pos],
+        measured("camera_msgs/msg/State"): [act_pos, failure] 
+    }
+}
+
+Control_box(name): {
+    goal: {
+        blue_light: bool (false)
+    },
+    measured: {
+        blue_light_on: bool (false)
+    }
+
+    abilities: {
+        blue_on: {
+            start: enabled: !blue_light_on / blue_light
+            *finish_effect: executing: !blue_light_on && blue_light / [blue_light_on]
+        }
+        blue_off: {
+            start: enabled: blue_light_on / !blue_light
+            *finish_effect: executing: blue_light_on && !blue_light / [!blue_light_on]
+        }
+    }
+
+    messages: {
+        goal("control_box_msgs/msg/Goal"): [blue_light], 
+        measured("control_box_msgs/msg/State"): [blue_light_on] 
+    }
+}
+
+Gripper(name): {
+    goal: {
+        close: bool (false) // false = open
+    },
+    measured: {
+        closed: bool (false)
+        part_sensor: bool (false)
+    }
+
+    abilities: {
+        open: {
+            start: enabled: closed / !close  // or maybe close <- false
+            *finish_effect: executing: close != closed / [!closed, !part_sensor]
+        }
+        close: {
+            start: enabled: !closed / close
+            *finish_effect: executing: close != closed / [closed, part_sensor]
+        }
+    }
+
+    messages: {
+        ...
+    }
+}
+
+
+Cylinders_operations(): {
+    r1 = Dorna(r1, [pre_take, scan, take1, take2, take3, leave])
+    r2 = Dorna(r2, [pre_take, scan, take1, take2, take3, leave])
+    g1 = Gripper(g1)
+    cb = Control_box(cb)
+    camera = Camera(c1)
+
+    products = [0, 1, 2, 3, 100]
+    variables: {
+        shelf1: products (0)
+        shelf2: products (0)
+        shelf3: products (0)
+        conv1: products (0)
+        r1_holding: products (0)
+        g_failed: [0,1,2,3] (0)
+    }
+
+    specs: {
+        r1_to_shelfs: r1.act_pos in [take1, take2, take3] 
+                      => r1.prev_pos in [take1, take2, take3, pre_take]
+
+        r1_to_scan: r1.act_pos == scan  => r1.prev_pos in [scan, pre_take]
+        r1_to_leave: r1.act_pos == leave  => r1.prev_pos in [leave, pre_take]
+
+        r2_move1: r1.act_pos == scan => r2.act_pos == leave
+        r2_move2: r1.act_pos == leave => r2.act_pos == scan
+
+        g1.open.start = r1.act_pos in [take1, take2, take3, leave] 
+        g1.close.start = r1.act_pos in [take1, take2, take3, leave] 
+
+        // maybe * before, like below when copy and create auto? then what about controlled? 
+        *g1.open.start.*: g1.closed && !g1.part_sensor && g_failed < 3 /  g_failed++
+        *gripper_made_it: g1.closed && g1.part_sensor / g_failed <- 0
+
+        // maybe do not need these? 
+        collide_shelf1: r1.act_pos == take1 => shelf1 == 0 || r1_holding == 0
+        collide_shelf2: r1.act_pos == take2 => shelf2 == 0 || r1_holding == 0
+        collide_shelf3: r1.act_pos == take3 => shelf3 == 0 || r1_holding == 0
+        collide_leave: r1.act_pos == leave => conv == 0 || r1_holding == 0
+
+        cb.blue_on.start.*: r1.ref_pos == scan 
+        cb.blue_off.start.*: r1.ref_pos != scan
+
+        camera.scan.start: r1.act_pos == scan
+    }
+
+    operations: {
+        take_at_1: shelf1 != 0 && r1_holding == 0 | r1.act_pos == take1 && g1.part_sensor / 
+                    r1_holding <- shelf1, shelf1 <- 0
+        take_at_2: shelf2 != 0 && r1_holding == 0 | r1.act_pos == take2 && g1.part_sensor / 
+                    r1_holding <- shelf2, shelf2 <- 0
+        take_at_3: shelf3 != 0 && r1_holding == 0 | r1.act_pos == take3 && g1.part_sensor / 
+                    r1_holding <- shelf2, shelf3 <- 0
+        take_at_conv1: conv1 != 0 && r1_holding == 0 | r1.act_pos == leave && g1.part_sensor / 
+                    r1_holding <- conv1, conv1 <- 0
+
+        leave_at_1: shelf1 == 0 && r1_holding != 0 | r1.act_pos == take1 && !g1.part_sensor / 
+                    shelf1 <- r1_holding, r1_holding <- 0
+        leave_at_2: shelf2 == 0 && r1_holding != 0 | r1.act_pos == take2 && !g1.part_sensor / 
+                    shelf2 <- r1_holding, r1_holding <- 0
+        leave_at_3: shelf3 == 0 && r1_holding != 0 | r1.act_pos == take3 && !g1.part_sensor / 
+                    shelf3 <- r1_holding, r1_holding <- 0
+        leave_at_conv1: conv1 == 0 && r1_holding != 0 | r1.act_pos == leave && !g1.part_sensor / 
+                    conv1 <- r1_holding, r1_holding <- 0
+
+        scan:  r1_holding == 100 | camera.scan.finished /
+                r1_holding <- camera.result[1,2,3], camera.scan.reset <- fire
+
+        sink_product: conv1 in [1, 2, 3] / conv1 <- 0
+        source_product: conv1 == 0 / conv1 <- 100
+        
+    }
+
+
+
+}
+
+Cylinders(): {
+    operations = Cylinders_operations()
+
+    intentions: {
+        identify_and_consume_parts: {
+            pre: shelf1==100 && shelf2==100 && shelf3==100 && conv1!=100
+            goal: shelf1==0 && shelf2==0 && shelf3==0 && r1_holding=0 && conv1==0
+            inv:conv1!=100
+            post: shelf1 <- 100 && shelf2 <- 100 && shelf3 <- 100
+            reset: [identify_and_consume_parts]
+        }
+        get_new_ones: {
+            pre: shelf1==0 && shelf2==0 && shelf3==0 
+            goal: shelf1!=0 && shelf2!=0 && shelf3!=0 && r1_holding=0 && conv1==0
+            reset: []
+        }
+        scan: {
+            goal: shelf1 in [1,2,3] && shelf2 in [1,2,3] && shelf3 in [1,2,3]
+            reset: []
+        }
+
+        get_and_scan: {
+            get_new_ones, 
+            scan
+        }
+    }
+
+}
+
