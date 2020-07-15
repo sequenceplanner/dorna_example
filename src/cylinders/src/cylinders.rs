@@ -178,7 +178,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     let no_products = Predicate::AND(vec![np(1), np(2), np(3), np(100)]);
 
-    m.add_hl_op(
+    m.add_intention(
         "identify_and_consume_parts",
         true,
         &p!([p: shelf1 == 100] && [p: shelf2 == 100] && [p: shelf3 == 100]),
@@ -204,7 +204,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     // todo: do this interactively in some UI
     m.initial_state(&[
         (pp, pt.to_spvalue()), // TODO: move to measured in robot driver?
-        (pp2, pt.to_spvalue()), // TODO: move to measured in robot driver?
+        (pp2, scan.to_spvalue()), // TODO: move to measured in robot driver?
         (&dorna_holding, 0.to_spvalue()),
         (&shelf1, 100.to_spvalue()), //SPValue::Unknown),
         (&shelf2, 100.to_spvalue()),

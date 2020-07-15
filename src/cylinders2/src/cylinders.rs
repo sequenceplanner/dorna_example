@@ -42,6 +42,10 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     // poison low level only
     let poison = m.add_estimated_bool("poison", false);
+    // r1 "part sensor"
+    let part_sensor = m.add_estimated_bool("part_sensor", false);
+    // r3 holding a cube
+    let r3_holding = m.add_estimated_bool("r3_holding", false);
 
     let shelf1 = m.add_estimated_domain("shelf1", buffer_domain, true);
     let shelf2 = m.add_estimated_domain("shelf2", buffer_domain, true);
@@ -81,6 +85,21 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         &p!([p:ap == t3] => [[p:pp == t1] || [p:pp == t2] || [p:pp == t3] || [p:pp == pt]]),
     );
 
+    // runner transition is special type of transition that does not
+    // exist in the planner systems. we can use them to move
+    // information between the layers
+
+    m.add_runner_transition("unexpectedly no part on robot1",
+                            &p!([p: dorna_holding != 0] && [!p: part_sensor]),
+                            &[a!(p: dorna_holding = 0)]);
+    m.add_runner_transition("copy_r3_holding1",
+                            &p!([!p: r3_holding] && [p: dorna3_holding != 0]),
+                            &[a!(p: r3_holding)]);
+    m.add_runner_transition("copy_r3_holding2",
+                            &p!([p: r3_holding] && [p: dorna3_holding == 0]),
+                            &[a!(!p: r3_holding)]);
+
+
     // force dorna2 to move sometimes
     let ap2 = &dorna2["act_pos"];
     // m.add_invar(
@@ -115,7 +134,8 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     // we can only scan the product in front of the camera
     m.add_invar("product_at_camera", &p!([p:cs] => [p:ap == scan]));
     // we need to keep the product still while scanning
-    m.add_invar("product_still_at_camera", &p!([p:cd] => [p: ap <-> p: rp]));
+    m.add_invar("product_still_at_camera", &p!([p:cd] => [p: ap
+                                                          <-> p: rp ]));
 
     // dorna take/leave products
     let pos = vec![
@@ -232,66 +252,6 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         &p!([p:ap2 == leave] => [p:rp4 == leave]),
     );
 
-    // scan to figure out the which product we are holding
-
-    // this is what we want
-    // m.add_spec("take_scan_result1", camera.reset,
-    //            &p!([p: dorna_holding == 100] && [p: cr == 1]),
-    //            &[a!(p: dorna_holding = 1)]);
-
-
-    // scan to figure out the which product we are holding
-    m.add_op_alt("scan1",
-                 // operation model guard.
-                 &p!([p: dorna_holding == 1] && [p: product_1_kind == 100]),
-                 // operation model (alternative) effects.
-                 &[("1", &[a!(p: product_1_kind = 1)]),
-                   ("2", &[a!(p: product_1_kind = 2)]),
-                   ("3", &[a!(p: product_1_kind = 3)])],
-                 // low level goal
-                 &p!([p: cf] && [p: cr != 0]),
-                 // low level actions (should not be needed)
-                 &[a!(p: product_1_kind <- p: cr), a!(!p: cd)], // copy result regardless of outcome and reset camera
-                 // &[a!(!p: cd)],                             // only reset the camera. low level planner will scan until cr == 1
-                 // &[],                                       // no reset. low level planner will reuse the same result to avoid scanning
-                 // resets
-                 true);
-
-    // scan to figure out the which product we are holding
-    m.add_op_alt("scan2",
-                 // operation model guard.
-                 &p!([p: dorna_holding == 2] && [p: product_2_kind == 100]),
-                 // operation model (alternative) effects.
-                 &[("1", &[a!(p: product_2_kind = 1)]),
-                   ("2", &[a!(p: product_2_kind = 2)]),
-                   ("3", &[a!(p: product_2_kind = 3)])],
-                 // low level goal
-                 &p!([p: cf] && [p: cr != 0]),
-                 // low level actions (should not be needed)
-                 &[a!(p: product_2_kind <- p: cr), a!(!p: cd)], // copy result regardless of outcome and reset camera
-                 // &[a!(!p: cd)],                             // only reset the camera. low level planner will scan until cr == 1
-                 // &[],                                       // no reset. low level planner will reuse the same result to avoid scanning
-                 // resets
-                 true);
-
-    // scan to figure out the which product we are holding
-    m.add_op_alt("scan3",
-                 // operation model guard.
-                 &p!([p: dorna_holding == 3] && [p: product_3_kind == 100]),
-                 // operation model (alternative) effects.
-                 &[("1", &[a!(p: product_3_kind = 1)]),
-                   ("2", &[a!(p: product_3_kind = 2)]),
-                   ("3", &[a!(p: product_3_kind = 3)])],
-                 // low level goal
-                 &p!([p: cf] && [p: cr != 0]),
-                 // low level actions (should not be needed)
-                 &[a!(p: product_3_kind <- p: cr), a!(!p: cd)], // copy result regardless of outcome and reset camera
-                 // &[a!(!p: cd)],                             // only reset the camera. low level planner will scan until cr == 1
-                 // &[],                                       // no reset. low level planner will reuse the same result to avoid scanning
-                 // resets
-                 true);
-
-
     let np = |p: i32| {
         p!([p: shelf1 != p]
            && [p: shelf2 != p]
@@ -308,14 +268,32 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                      (3, product_3_kind.clone())];
 
     for p in products {
-        // product sink is at conveyor2, only accepts identified products.
         let n = p.0;
+
+        // scan to figure out the which product we are holding
         let kind = p.1.clone();
-        m.add_op(&format!("consume_known_product_{}", p.0),
+        m.add_op_alt(&format!("scan_{}", n),
+                 // operation model guard.
+                 &p!([p: dorna_holding == n] && [p: kind == 100]),
+                 // operation model (alternative) effects.
+                 &[("1", &[a!(p: kind = 1)]),
+                   ("2", &[a!(p: kind = 2)]),
+                   ("3", &[a!(p: kind = 3)])],
+                 // low level goal
+                 &p!([p: cf] && [p: cr != 0]),
+                 // low level actions (should not be needed)
+                 &[a!(p: kind <- p: cr), a!(!p: cd)],          // copy result regardless of outcome and reset camera
+                 // &[a!(!p: cd)],                             // only reset the camera. low level planner will scan until cr == 1
+                 // &[],                                       // no reset. low level planner will reuse the same result to avoid scanning
+                 // resets
+                 true);
+
+        // product sink is at conveyor2, only accepts identified products.
+        m.add_op(&format!("consume_known_product_{}", n),
                  // operation model guard.
                  &p!([p: conveyor2 == n] && [p: kind != 100]),
                  // operation model effects.
-                 &[a!(p: conveyor2 = 0)],
+                 &[a!(p: conveyor2 = 0), a!(p: kind = 100)],
                  // low level goal
                  &Predicate::TRUE,
                  // low level actions (should not be needed)
@@ -325,14 +303,14 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
         // product source also at conveyor2, we can add a new, unknown,
         // unique product if there is room.
-        let kind = p.1.clone();
-        m.add_op(&format!("add_conveyor2_{}", p.0),
+        m.add_op(&format!("add_conveyor2_{}", n),
                  // operation model guard.n
                  &Predicate::AND(vec![p!([p: conveyor2 == 0] && [p: dorna3_holding == 0]), np(p.0)]),
                  // operation model effects.
                  &[a!(p:conveyor2 = p.0), a!(p: kind = 100)],
-                 // low level goal: away from buffer and not moving.
-                 &p!([p:ap3 != pt] && [p: ap3 <-> p: rp3]),
+                 // low level goal: away from buffer and not moving. OR the robot is not holding anything.
+                 &p!([[[p:ap3 != pt] && [p: ap3 <-> p: rp3]] || [! p: r3_holding]]),
+                 //&p!([p:ap3 != pt] && [p: ap3 <-> p: rp3]),
                  // low level actions (should not be needed)
                  &[],
                  // resets
@@ -351,16 +329,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
            && [p: conveyor2 == 0]
         );
 
-
-
-
-    // m.add_hl_op("identify_parts", true,
-    //             &p!([p:shelf1 == 100] && [p:shelf2 == 100] && [p:shelf3 == 100]),
-    //             &p!([p:shelf1 == 1] && [p:shelf2 == 2] && [p:shelf3 == 3]),
-    //             &[a!(p:shelf1 = 100), a!(p:shelf2 = 100), a!(p:shelf3 = 100)],
-    //             None);
-
-    m.add_hl_op(
+    m.add_intention(
         "identify_and_consume_parts",
         false,
         //&p!([p: shelf1 == 1] && [p: shelf2 == 2] && [p: shelf3 == 3]),
@@ -377,7 +346,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    m.add_hl_op(
+    m.add_intention(
         "get_new_products",
         false,
         &Predicate::FALSE,
@@ -388,7 +357,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    m.add_hl_op(
+    m.add_intention(
         "identify_types_r_g_b",
         false,
         &Predicate::FALSE,
@@ -405,7 +374,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    m.add_hl_op(
+    m.add_intention(
         "identify_two_blue",
         false,
         &Predicate::FALSE,
@@ -419,7 +388,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    m.add_hl_op(
+    m.add_intention(
         "sort_shelves_r_g_b",
         false,
         &Predicate::FALSE,
@@ -441,7 +410,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    m.add_hl_op(
+    m.add_intention(
         "to_left",
         true,
         &p!([p: x == "right"]),
@@ -450,7 +419,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    m.add_hl_op(
+    m.add_intention(
         "to_right",
         true,
         &p!([p: x == "left"]),
@@ -489,6 +458,8 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (&conveyor2, 0.to_spvalue()),
         (&x, "left".to_spvalue()),
         (&poison, false.to_spvalue()),
+        (&part_sensor, true.to_spvalue()),
+        (&r3_holding, false.to_spvalue()),
     ]);
 
     println!("MAKING MODEL");
@@ -505,43 +476,6 @@ mod test {
         println!("{}", o.path());
     }
 
-    #[test]
-    #[serial]
-    fn operations() {
-        let (m, _s, _g) = cylinders();
-        let ts_model = TransitionSystemModel::from(&m);
-
-        m
-            .all_operations()
-            .iter()
-            .filter(|o| !o.high_level)
-            .for_each(|o| {
-                let oo = o.transitions().iter()
-                    .find(|t| t.name() == "planning")
-                    //.map(|t|t.guard.clone())
-                    .expect("planning trans not found");
-                println!();
-                println!("OP: {}", oo);
-
-
-                if o.name() == "r1_take_conveyor_1" {
-
-                let g = o.goal().as_ref().map(|g|g.goal.clone()).unwrap();
-                let goal = vec![(g, None)];
-                let pre = o.transitions().iter()
-                    .find(|t| t.name() == "planning")
-                    .map(|t|t.guard.clone())
-                    .expect("planning trans not found");
-                let plan = plan_check(&ts_model, &pre, &goal, 50);
-                    println!("PLAN SUCCESS? {}", plan.plan_found);
-                }
-
-                // compute_resource_use(o);
-                // o.transitions().iter().for_each(|t| println!("{}", t));
-            });
-
-        assert!(false);
-    }
 
 
     #[test]

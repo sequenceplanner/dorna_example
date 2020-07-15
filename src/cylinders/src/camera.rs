@@ -38,6 +38,11 @@ pub fn make_camera(name: &str) -> Resource {
             *reset : p!(finished) => [a!(!do_scan)] / [],
             reset_effect : p!(resetting) => [] / [a!(!done), a!(!scanning), a!(result = 0)],
         },
+
+        never!{
+            name: state_does_not_exist,
+            prop: p!([!do_scan] && [scanning] && [!done])
+        }
     }
 }
 
