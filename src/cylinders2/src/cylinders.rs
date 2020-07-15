@@ -3,7 +3,6 @@ use crate::control_box::*;
 use crate::dorna::*;
 use sp_domain::*;
 use sp_runner::*;
-use std::collections::{HashMap, HashSet};
 
 pub fn cylinders() -> (Model, SPState, Predicate) {
     let mut m = GModel::new("cylinders2");
@@ -37,21 +36,26 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         3.to_spvalue(),
     ];
 
-    let product_1_kind = m.add_estimated_domain("product_1_kind", product_kinds);
-    let product_2_kind = m.add_estimated_domain("product_2_kind", product_kinds);
-    let product_3_kind = m.add_estimated_domain("product_3_kind", product_kinds);
+    let product_1_kind = m.add_estimated_domain("product_1_kind", product_kinds, true);
+    let product_2_kind = m.add_estimated_domain("product_2_kind", product_kinds, true);
+    let product_3_kind = m.add_estimated_domain("product_3_kind", product_kinds, true);
 
-    let poison = m.add_estimated_bool("poison");
+    // poison low level only
+    let poison = m.add_estimated_bool("poison", false);
+    // r1 "part sensor"
+    let part_sensor = m.add_estimated_bool("part_sensor", false);
+    // r3 holding a cube
+    let r3_holding = m.add_estimated_bool("r3_holding", false);
 
-    let shelf1 = m.add_estimated_domain("shelf1", buffer_domain);
-    let shelf2 = m.add_estimated_domain("shelf2", buffer_domain);
-    let shelf3 = m.add_estimated_domain("shelf3", buffer_domain);
-    let conveyor = m.add_estimated_domain("conveyor", buffer_domain);
-    let dorna_holding = m.add_estimated_domain("dorna_holding", buffer_domain);
-    let dorna3_holding = m.add_estimated_domain("dorna3_holding", buffer_domain);
-    let conveyor2 = m.add_estimated_domain("conveyor2", buffer_domain);
+    let shelf1 = m.add_estimated_domain("shelf1", buffer_domain, true);
+    let shelf2 = m.add_estimated_domain("shelf2", buffer_domain, true);
+    let shelf3 = m.add_estimated_domain("shelf3", buffer_domain, true);
+    let conveyor = m.add_estimated_domain("conveyor", buffer_domain, true);
+    let dorna_holding = m.add_estimated_domain("dorna_holding", buffer_domain, true);
+    let dorna3_holding = m.add_estimated_domain("dorna3_holding", buffer_domain, true);
+    let conveyor2 = m.add_estimated_domain("conveyor2", buffer_domain, true);
 
-    let x = m.add_estimated_domain("x", &["left".to_spvalue(), "right".to_spvalue()]);
+    let x = m.add_estimated_domain("x", &["left".to_spvalue(), "right".to_spvalue()], true);
 
     let ap = &dorna["act_pos"];
     let rp = &dorna["ref_pos"];
@@ -80,6 +84,21 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         "to_take3",
         &p!([p:ap == t3] => [[p:pp == t1] || [p:pp == t2] || [p:pp == t3] || [p:pp == pt]]),
     );
+
+    // runner transition is special type of transition that does not
+    // exist in the planner systems. we can use them to move
+    // information between the layers
+
+    m.add_runner_transition("unexpectedly no part on robot1",
+                            &p!([p: dorna_holding != 0] && [!p: part_sensor]),
+                            &[a!(p: dorna_holding = 0)]);
+    m.add_runner_transition("copy_r3_holding1",
+                            &p!([!p: r3_holding] && [p: dorna3_holding != 0]),
+                            &[a!(p: r3_holding)]);
+    m.add_runner_transition("copy_r3_holding2",
+                            &p!([p: r3_holding] && [p: dorna3_holding == 0]),
+                            &[a!(!p: r3_holding)]);
+
 
     // force dorna2 to move sometimes
     let ap2 = &dorna2["act_pos"];
@@ -115,7 +134,8 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     // we can only scan the product in front of the camera
     m.add_invar("product_at_camera", &p!([p:cs] => [p:ap == scan]));
     // we need to keep the product still while scanning
-    m.add_invar("product_still_at_camera", &p!([p:cd] => [p: ap <-> p: rp]));
+    m.add_invar("product_still_at_camera", &p!([p:cd] => [p: ap
+                                                          <-> p: rp ]));
 
     // dorna take/leave products
     let pos = vec![
@@ -125,64 +145,101 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (leave, conveyor.clone()),
     ];
 
+    let extra = p!([p: product_1_kind <-> p: product_1_kind] &&
+                   [p: product_2_kind <-> p: product_2_kind] &&
+                   [p: product_3_kind <-> p: product_3_kind]);
+
     for (pos_name, pos) in pos.iter() {
-        m.add_delib(
-            &format!("r1_take_{}", pos.leaf()),
-            &p!([p: ap == pos_name] && [p: pos != 0] && [p: dorna_holding == 0] && [p: ap <-> p: rp]),
-            &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
-        );
+        m.add_op(&format!("r1_take_{}", pos.leaf()),
+                 // operation model guard.
+                 &Predicate::AND(vec![p!([p: pos != 0] && [p: dorna_holding == 0]), extra.clone()]),
+                 // operation model effects.
+                 &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
+                 // low level goal
+                 &p!(p: ap == pos_name),
+                 // low level actions (should not be needed)
+                 &[],
+                 // resets
+                 true);
 
-        let guard = if pos == &shelf1 {
-                // we can deadlock on leaving shelf1
-                p!([! p: poison] && [p: ap == pos_name] && [p: dorna_holding != 0] && [p: pos == 0] && [p: ap <-> p: rp])
-            } else {
-                p!([p: ap == pos_name] && [p: dorna_holding != 0] && [p: pos == 0] && [p: ap <-> p: rp])
-            };
-
-        m.add_delib(
-            &format!("r1_leave_{}", pos.leaf()),
-            &guard,
-            &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0)],
-        );
+        let goal = if pos_name == &t1 {
+            p!([p: ap == pos_name] && [!p: poison])
+        } else {
+            p!(p: ap == pos_name)
+        };
+        m.add_op(&format!("r1_leave_{}", pos.leaf()),
+                 // operation model guard.
+                 &Predicate::AND(vec![p!([p: dorna_holding != 0] && [p: pos == 0]), extra.clone()]),
+                 // operation model effects.
+                 &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0)],
+                 // low level goal
+                 &goal,
+                 // low level actions (should not be needed)
+                 &[],
+                 // resets
+                 true);
     }
 
+    // dorna3 take/leave products
+    let pos = vec![
+        (leave, conveyor.clone()),
+        (pt, conveyor2.clone()),
+    ];
 
     let ap3 = &dorna3["act_pos"];
     let rp3 = &dorna3["ref_pos"];
-    m.add_delib(
-        "r3_take_conveyor1",
-        &p!([p: ap3 == leave] && [p: conveyor != 0] && [p: dorna3_holding == 0] && [p: ap3 <-> p: rp3]),
-        &[a!(p:dorna3_holding <- p: conveyor), a!(p: conveyor = 0)],
-    );
-    m.add_delib(
-        "r3_leave_conveyor1",
-        &p!([p: ap3 == leave] && [p: conveyor == 0] && [p: dorna3_holding != 0] && [p: ap3 <-> p: rp3]),
-        &[a!(p:conveyor <- p: dorna3_holding), a!(p: dorna3_holding = 0)],
-    );
-    m.add_delib(
-        "r3_take_conveyor2",
-        &p!([p: ap3 == pt] && [p: conveyor2 != 0] && [p: dorna3_holding == 0] && [p: ap3 <-> p: rp3]),
-        &[a!(p:dorna3_holding <- p: conveyor2), a!(p: conveyor2 = 0)],
-    );
-    m.add_delib(
-        "r3_leave_conveyor2",
-        &p!([p: ap3 == pt] && [p: conveyor2 == 0] && [p: dorna3_holding != 0] && [p: ap3 <-> p: rp3]),
-        &[a!(p:conveyor2 <- p: dorna3_holding), a!(p: dorna3_holding = 0)],
-    );
+
+    for (pos_name, pos) in pos.iter() {
+        m.add_op(&format!("r3_take_{}", pos.leaf()),
+                 // operation model guard.
+                 &p!([p: pos != 0] && [p: dorna3_holding == 0]),
+                 // operation model effects.
+                 &[a!(p:dorna3_holding <- p:pos), a!(p: pos = 0)],
+                 // low level goal
+                 &p!(p: ap3 == pos_name),
+                 // low level actions (should not be needed)
+                 &[],
+                 // resets
+                 true);
+
+        m.add_op(&format!("r3_leave_{}", pos.leaf()),
+                 // operation model guard.
+                 &p!([p: dorna3_holding != 0] && [p: pos == 0]),
+                 // operation model effects.
+                 &[a!(p:pos <- p:dorna3_holding), a!(p: dorna3_holding = 0)],
+                 // low level goal
+                 &p!(p: ap3 == pos_name),
+                 // low level actions (should not be needed)
+                 &[],
+                 // resets
+                 true);
+    }
 
 
     let ap4 = &dorna4["act_pos"];
     let rp4 = &dorna4["ref_pos"];
-    m.add_auto(
-        "r4_x_left",
-        &p!([p: ap4 == leave] && [p: x == "right"]),
-        &[a!(p:x = "left")],
-    );
-    m.add_auto(
-        "r4_x_right",
-        &p!([p: ap4 == scan] && [p: x == "left"]),
-        &[a!(p:x = "right")],
-    );
+    m.add_op("r4_x_left",
+             // operation model guard.
+             &p!(p: x == "right"),
+             // operation model effects.
+             &[a!(p:x = "left")],
+             // low level goal
+             &p!(p: ap4 == leave),
+             // low level actions (should not be needed)
+             &[],
+             // resets
+             true);
+    m.add_op("r4_x_right",
+             // operation model guard.
+             &p!(p: x == "left"),
+             // operation model effects.
+             &[a!(p:x = "right")],
+             // low level goal
+             &p!(p: ap4 == scan),
+             // low level actions (should not be needed)
+             &[],
+             // resets
+             true);
 
     // force dorna4 to move sometimes by connecting it to dorna 2
     m.add_invar(
@@ -193,62 +250,6 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     m.add_invar(
         "dorna4_2",
         &p!([p:ap2 == leave] => [p:rp4 == leave]),
-    );
-
-    // scan to figure out the which product we are holding
-
-    // this is what we want
-    // m.add_spec("take_scan_result1", camera.reset,
-    //            &p!([p: dorna_holding == 100] && [p: cr == 1]),
-    //            &[a!(p: dorna_holding = 1)]);
-
-    m.add_auto("take_scan_1_result1",
-               &p!([p: dorna_holding == 1] && [p: product_1_kind == 100] && [p: cf] && [p: cr == 1]),
-               &[a!(!p: cd), a!(p: product_1_kind = 1)]);
-    m.add_auto("take_scan_1_result2",
-               &p!([p: dorna_holding == 1] && [p: product_1_kind == 100] && [p: cf] && [p: cr == 2]),
-               &[a!(!p: cd), a!(p: product_1_kind = 2)]);
-    m.add_auto("take_scan_1_result3",
-               &p!([p: dorna_holding == 1] && [p: product_1_kind == 100] && [p: cf] && [p: cr == 3]),
-               &[a!(!p: cd), a!(p: product_1_kind = 3)]);
-
-    m.add_auto("take_scan_2_result1",
-               &p!([p: dorna_holding == 2] && [p: product_2_kind == 100] && [p: cf] && [p: cr == 1]),
-               &[a!(!p: cd), a!(p: product_2_kind = 1)]);
-    m.add_auto("take_scan_2_result2",
-               &p!([p: dorna_holding == 2] && [p: product_2_kind == 100] && [p: cf] && [p: cr == 2]),
-               &[a!(!p: cd), a!(p: product_2_kind = 2)]);
-    m.add_auto("take_scan_2_result3",
-               &p!([p: dorna_holding == 2] && [p: product_2_kind == 100] && [p: cf] && [p: cr == 3]),
-               &[a!(!p: cd), a!(p: product_2_kind = 3)]);
-
-
-    m.add_auto("take_scan_3_result1",
-               &p!([p: dorna_holding == 3] && [p: product_3_kind == 100] && [p: cf] && [p: cr == 1]),
-               &[a!(!p: cd), a!(p: product_3_kind = 1)]);
-    m.add_auto("take_scan_3_result2",
-               &p!([p: dorna_holding == 3] && [p: product_3_kind == 100] && [p: cf] && [p: cr == 2]),
-               &[a!(!p: cd), a!(p: product_3_kind = 2)]);
-    m.add_auto("take_scan_3_result3",
-               &p!([p: dorna_holding == 3] && [p: product_3_kind == 100] && [p: cf] && [p: cr == 3]),
-               &[a!(!p: cd), a!(p: product_3_kind = 3)]);
-
-
-    // product sink is at conveyor2, only accepts identified products.
-    m.add_auto(
-        "consume_known_product_1",
-        &p!([p: conveyor2 == 1] && [p: product_1_kind != 100]),
-        &[a!(p: conveyor2 = 0)],
-    );
-    m.add_auto(
-        "consume_known_product_2",
-        &p!([p: conveyor2 == 2] && [p: product_2_kind != 100]),
-        &[a!(p: conveyor2 = 0)],
-    );
-    m.add_auto(
-        "consume_known_product_3",
-        &p!([p: conveyor2 == 3] && [p: product_3_kind != 100]),
-        &[a!(p: conveyor2 = 0)],
     );
 
     let np = |p: i32| {
@@ -262,6 +263,63 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         )
     };
 
+    let products = &[(1, product_1_kind.clone()),
+                     (2, product_2_kind.clone()),
+                     (3, product_3_kind.clone())];
+
+    for p in products {
+        let n = p.0;
+
+        // scan to figure out the which product we are holding
+        let kind = p.1.clone();
+        m.add_op_alt(&format!("scan_{}", n),
+                 // operation model guard.
+                 &p!([p: dorna_holding == n] && [p: kind == 100]),
+                 // operation model (alternative) effects.
+                 &[("1", &[a!(p: kind = 1)]),
+                   ("2", &[a!(p: kind = 2)]),
+                   ("3", &[a!(p: kind = 3)])],
+                 // low level goal
+                 &p!([p: cf] && [p: cr != 0]),
+                 // low level actions (should not be needed)
+                 &[a!(p: kind <- p: cr), a!(!p: cd)],          // copy result regardless of outcome and reset camera
+                 // &[a!(!p: cd)],                             // only reset the camera. low level planner will scan until cr == 1
+                 // &[],                                       // no reset. low level planner will reuse the same result to avoid scanning
+                 // resets
+                 true);
+
+        // product sink is at conveyor2, only accepts identified products.
+        m.add_op(&format!("consume_known_product_{}", n),
+                 // operation model guard.
+                 &p!([p: conveyor2 == n] && [p: kind != 100]),
+                 // operation model effects.
+                 &[a!(p: conveyor2 = 0), a!(p: kind = 100)],
+                 // low level goal
+                 &Predicate::TRUE,
+                 // low level actions (should not be needed)
+                 &[],
+                 // resets
+                 true);
+
+        // product source also at conveyor2, we can add a new, unknown,
+        // unique product if there is room.
+        m.add_op(&format!("add_conveyor2_{}", n),
+                 // operation model guard.n
+                 &Predicate::AND(vec![p!([p: conveyor2 == 0] && [p: dorna3_holding == 0]), np(p.0)]),
+                 // operation model effects.
+                 &[a!(p:conveyor2 = p.0), a!(p: kind = 100)],
+                 // low level goal: away from buffer and not moving. OR the robot is not holding anything.
+                 &p!([[[p:ap3 != pt] && [p: ap3 <-> p: rp3]] || [! p: r3_holding]]),
+                 //&p!([p:ap3 != pt] && [p: ap3 <-> p: rp3]),
+                 // low level actions (should not be needed)
+                 &[],
+                 // resets
+                 true);
+    }
+
+
+    // HIGH LEVEL OPS
+
     let no_products = p!([p: shelf1 == 0]
            && [p: shelf2 == 0]
            && [p: shelf3 == 0]
@@ -271,36 +329,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
            && [p: conveyor2 == 0]
         );
 
-    // product source also at conveyor2, we can add a new, unknown,
-    // unique product if there is room.
-    m.add_delib(
-        "add_conveyor2_1",
-        &Predicate::AND(vec![p!([p: conveyor2 == 0] && [[p:dorna3_holding == 0] || [p:ap3 != pt]]), np(1)]),
-        &[a!(p:conveyor2 = 1), a!(p: product_1_kind = 100)],
-    );
-    m.add_delib(
-        "add_conveyor2_2",
-        &Predicate::AND(vec![p!([p: conveyor2 == 0] && [[p:dorna3_holding == 0] || [p:ap3 != pt]]), np(2)]),
-        &[a!(p:conveyor2 = 2), a!(p: product_2_kind = 100)],
-    );
-    m.add_delib(
-        "add_conveyor2_3",
-        &Predicate::AND(vec![p!([p: conveyor2 == 0] && [[p:dorna3_holding == 0] || [p:ap3 != pt]]), np(3)]),
-        &[a!(p:conveyor2 = 3), a!(p: product_3_kind = 100)],
-    );
-
-
-
-    // HIGH LEVEL OPS
-
-
-    // m.add_hl_op("identify_parts", true,
-    //             &p!([p:shelf1 == 100] && [p:shelf2 == 100] && [p:shelf3 == 100]),
-    //             &p!([p:shelf1 == 1] && [p:shelf2 == 2] && [p:shelf3 == 3]),
-    //             &[a!(p:shelf1 = 100), a!(p:shelf2 = 100), a!(p:shelf3 = 100)],
-    //             None);
-
-    m.add_hl_op(
+    m.add_intention(
         "identify_and_consume_parts",
         false,
         //&p!([p: shelf1 == 1] && [p: shelf2 == 2] && [p: shelf3 == 3]),
@@ -317,7 +346,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    m.add_hl_op(
+    m.add_intention(
         "get_new_products",
         false,
         &Predicate::FALSE,
@@ -328,7 +357,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    m.add_hl_op(
+    m.add_intention(
         "identify_types_r_g_b",
         false,
         &Predicate::FALSE,
@@ -345,7 +374,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    m.add_hl_op(
+    m.add_intention(
         "identify_two_blue",
         false,
         &Predicate::FALSE,
@@ -359,7 +388,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    m.add_hl_op(
+    m.add_intention(
         "sort_shelves_r_g_b",
         false,
         &Predicate::FALSE,
@@ -381,7 +410,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    m.add_hl_op(
+    m.add_intention(
         "to_left",
         true,
         &p!([p: x == "right"]),
@@ -390,7 +419,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    m.add_hl_op(
+    m.add_intention(
         "to_right",
         true,
         &p!([p: x == "left"]),
@@ -429,35 +458,9 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (&conveyor2, 0.to_spvalue()),
         (&x, "left".to_spvalue()),
         (&poison, false.to_spvalue()),
+        (&part_sensor, true.to_spvalue()),
+        (&r3_holding, false.to_spvalue()),
     ]);
-
-    println!("MAKING OPERATION MODEL");
-
-    // hack for packing heuristic because we don't support arrays yet...
-    // in the guards we have written product_1_kind in a way that looks independent from
-    // the product variables when in fact we should have written it as product_kind[dorna_holding]
-    // which would catch the interdependency.
-    let mut related_variables: HashMap<SPPath, HashSet<SPPath>> = HashMap::new();
-    let mut kinds = HashSet::new();
-    kinds.insert(product_1_kind.clone());
-    kinds.insert(product_2_kind.clone());
-    kinds.insert(product_3_kind.clone());
-    related_variables.insert(dorna_holding.clone(), kinds.clone());
-
-    let products = vec![
-        shelf1,
-        shelf2,
-        shelf3,
-        conveyor,
-        conveyor2,
-        dorna_holding,
-        dorna3_holding,
-        product_1_kind,
-        product_2_kind,
-        product_3_kind,
-        x
-    ];
-    m.generate_operation_model(&products, &related_variables);
 
     println!("MAKING MODEL");
     let (m, s) = m.make_model();
@@ -468,49 +471,6 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 mod test {
     use super::*;
     use serial_test::serial;
-
-    fn compute_resource_use(o: &Operation) {
-        println!("{}", o.path());
-    }
-
-    #[test]
-    #[serial]
-    fn operations() {
-        let (m, _s, _g) = cylinders();
-        let ts_model = TransitionSystemModel::from(&m);
-
-        m
-            .all_operations()
-            .iter()
-            .filter(|o| !o.high_level)
-            .for_each(|o| {
-                let oo = o.transitions().iter()
-                    .find(|t| t.name() == "planning")
-                    //.map(|t|t.guard.clone())
-                    .expect("planning trans not found");
-                println!();
-                println!("OP: {}", oo);
-
-
-                if o.name() == "r1_take_conveyor_1" {
-
-                let g = o.goal().as_ref().map(|g|g.goal.clone()).unwrap();
-                let goal = vec![(g, None)];
-                let pre = o.transitions().iter()
-                    .find(|t| t.name() == "planning")
-                    .map(|t|t.guard.clone())
-                    .expect("planning trans not found");
-                let plan = plan_check(&ts_model, &pre, &goal, 50);
-                    println!("PLAN SUCCESS? {}", plan.plan_found);
-                }
-
-                // compute_resource_use(o);
-                // o.transitions().iter().for_each(|t| println!("{}", t));
-            });
-
-        assert!(false);
-    }
-
 
     #[test]
     #[serial]

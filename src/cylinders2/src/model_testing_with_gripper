@@ -144,10 +144,10 @@ Cylinders_operations(): {
         *gripper_made_it: g1.closed && g1.part_sensor / g_failed <- 0
 
         // maybe do not need these? 
-        collide_shelf1 = r1.act_pos == take1 => shelf1 == 0 || r1_holding == 0
-        collide_shelf2 = r1.act_pos == take2 => shelf2 == 0 || r1_holding == 0
-        collide_shelf3 = r1.act_pos == take3 => shelf3 == 0 || r1_holding == 0
-        collide_leave = r1.act_pos == leave => conv == 0 || r1_holding == 0
+        collide_shelf1: r1.act_pos == take1 => shelf1 == 0 || r1_holding == 0
+        collide_shelf2: r1.act_pos == take2 => shelf2 == 0 || r1_holding == 0
+        collide_shelf3: r1.act_pos == take3 => shelf3 == 0 || r1_holding == 0
+        collide_leave: r1.act_pos == leave => conv == 0 || r1_holding == 0
 
         cb.blue_on.start.*: r1.ref_pos == scan 
         cb.blue_off.start.*: r1.ref_pos != scan
@@ -214,5 +214,4 @@ Cylinders(): {
     }
 
 }
-
 
