@@ -472,12 +472,6 @@ mod test {
     use super::*;
     use serial_test::serial;
 
-    fn compute_resource_use(o: &Operation) {
-        println!("{}", o.path());
-    }
-
-
-
     #[test]
     #[serial]
     fn test_cylinders() {

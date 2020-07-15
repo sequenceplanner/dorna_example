@@ -227,37 +227,6 @@ mod test {
 
     #[test]
     #[serial]
-    fn operations() {
-        let (m, _s, _g) = cylinders();
-
-        m
-            .items()
-            .iter()
-            .flat_map(|i| match i {
-                SPItem::Operation(o) => Some(o.clone()),
-                _ => None,
-            })
-            .for_each(|o| {
-                println!("{}", o.path());
-            });
-
-        println!("ts model");
-        let ts_model = TransitionSystemModel::from_op(&m);
-
-        ts_model.transitions.iter().for_each(|t| {
-            println!("transition {}", t.path());
-        });
-
-        ts_model.vars.iter().for_each(|t| {
-            println!("var {}", t.path());
-        });
-
-        assert!(false);
-    }
-
-
-    #[test]
-    #[serial]
     fn test_cylinders() {
         let (m, s, g) = cylinders();
 
