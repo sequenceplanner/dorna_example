@@ -36,10 +36,6 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let conveyor = m.add_estimated_domain("conveyor", product_domain, true);
     let dorna_holding = m.add_estimated_domain("dorna_holding", product_domain, true);
 
-    // hack to set dorna holding after we finish the operation...
-    // should be auto generated and hidden?
-    let temp_camera_result = m.add_estimated_domain("temp_camera_result", product_domain, true);
-
     let ap = &dorna["act_pos"];
     let rp = &dorna["ref_pos"];
     let pp = &dorna["prev_pos"];
@@ -155,11 +151,10 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                    ("3", &[a!(p: dorna_holding = 3)])],
                  // low level goals and actions
                  &[
-                     // camera finish => copy result to temporary value
-                     (p!([p: cf] && [p: cr != 0]), &[a!(p: temp_camera_result <- p: cr)]),
-                     // reset the camera to force a fresh value next time and finish the operation
-                     // by copying the temporary value
-                     (p!([p: ce]), &[a!(p: dorna_holding <- p: temp_camera_result)])
+                     // first enable the camera to clear out any old result
+                     (p!(p: ce), &[]),
+                     // on camera finish => copy camera result into dorna_holding
+                     (p!(p: cf), &[a!(p: dorna_holding <- p: cr)]),
                  ],
                  // resets
                  true);
@@ -219,7 +214,6 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (&shelf2, 100.to_spvalue()),
         (&shelf3, 100.to_spvalue()),
         (&conveyor, 0.to_spvalue()),
-        (&temp_camera_result, 0.to_spvalue()),
         (ap, pt.to_spvalue()),
         (rp, pt.to_spvalue()),
         (ap2, pt.to_spvalue()),
