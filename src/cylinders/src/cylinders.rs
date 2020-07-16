@@ -1,5 +1,6 @@
 use crate::camera::*;
 use crate::control_box::*;
+use crate::gripper::*;
 use crate::dorna::*;
 use sp_domain::*;
 use sp_runner::*;
@@ -19,6 +20,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     let cb = m.use_resource(make_control_box("control_box"));
     let camera = m.use_resource(make_camera("camera"));
+    let gripper = m.use_resource(make_gripper("gripper"));
 
     let product_domain = &[
         100.to_spvalue(), // SPValue::Unknown,   macros need better support for Unknown
@@ -34,15 +36,22 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let conveyor = m.add_estimated_domain("conveyor", product_domain, true);
     let dorna_holding = m.add_estimated_domain("dorna_holding", product_domain, true);
 
+    // hack to set dorna holding after we finish the operation...
+    // should be auto generated and hidden?
+    let temp_camera_result = m.add_estimated_domain("temp_camera_result", product_domain, true);
+
     let ap = &dorna["act_pos"];
     let rp = &dorna["ref_pos"];
     let pp = &dorna["prev_pos"];
     let blue = &cb["blue_light_on"];
 
+    let ce = camera.find_item("enabled", &[]);
     let cf = camera.find_item("finished", &[]);
     let cs = camera.find_item("started", &[]);
     let cr = &camera["result"];
-    let cd = &camera["do_scan"];
+
+    let gripper_part = &gripper["part_sensor"];
+    let gripper_closed = &gripper["closed"];
 
     // define robot movement
 
@@ -110,10 +119,13 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                  &p!([p: pos != 0] && [p: dorna_holding == 0]),
                  // operation model effects.
                  &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
-                 // low level goal
-                 &p!(p: ap == pos_name),
-                 // low level actions (should not be needed)
-                 &[],
+                 // low level goals and actions
+                 &[
+                     // move in with gripper open
+                     (p!([p: ap == pos_name] && [!p: gripper_closed]), &[]),
+                     // make sure we get a part
+                     (p!([p: ap == pos_name] && [p: gripper_part]), &[])
+                 ],
                  // resets
                  true);
 
@@ -122,19 +134,16 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                  &p!([p: dorna_holding != 0] && [p: pos == 0]),
                  // operation model effects.
                  &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0)],
-                 // low level goal
-                 &p!(p: ap == pos_name),
-                 // low level actions (should not be needed)
-                 &[],
+                 // low level goals and actions
+                 &[
+                     // move to position with the part
+                     (p!([p: ap == pos_name] && [p: gripper_part]), &[]),
+                     // release it
+                     (p!([p: ap == pos_name] && [!p: gripper_part]), &[]),
+                 ],
                  // resets
                  true);
     }
-
-
-    // this is what we want
-    // m.add_spec("take_scan_result1", camera.reset,
-    //            &p!([p: dorna_holding == 100] && [p: cr == 1]),
-    //            &[a!(p: dorna_holding = 1)]);
 
     // scan to figure out the which product we are holding
     m.add_op_alt("scan",
@@ -144,12 +153,14 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                  &[("1", &[a!(p: dorna_holding = 1)]),
                    ("2", &[a!(p: dorna_holding = 2)]),
                    ("3", &[a!(p: dorna_holding = 3)])],
-                 // low level goal
-                 &p!([p: cf] && [p: cr != 0]),
-                 // low level actions (should not be needed)
-                 &[a!(p: dorna_holding <- p: cr), a!(!p: cd)], // copy result regardless of outcome and reset camera
-                 // &[a!(!p: cd)],                             // only reset the camera. low level planner will scan until cr == 1
-                 // &[],                                       // no reset. low level planner will reuse the same result to avoid scanning
+                 // low level goals and actions
+                 &[
+                     // camera finish => copy result to temporary value
+                     (p!([p: cf] && [p: cr != 0]), &[a!(p: temp_camera_result <- p: cr)]),
+                     // reset the camera to force a fresh value next time and finish the operation
+                     // by copying the temporary value
+                     (p!([p: ce]), &[a!(p: dorna_holding <- p: temp_camera_result)])
+                 ],
                  // resets
                  true);
 
@@ -159,9 +170,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
              &p!([p: conveyor != 0] && [p: conveyor != 100]),
              // operation model effects.
              &[a!(p: conveyor = 0)],
-             // low level goal
-             &Predicate::TRUE,
-             // low level actions (should not be needed)
+             // low level goals and actions (there are none for this operation)
              &[],
              // resets
              true);
@@ -210,6 +219,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (&shelf2, 100.to_spvalue()),
         (&shelf3, 100.to_spvalue()),
         (&conveyor, 0.to_spvalue()),
+        (&temp_camera_result, 0.to_spvalue()),
         (ap, pt.to_spvalue()),
         (rp, pt.to_spvalue()),
         (ap2, pt.to_spvalue()),
