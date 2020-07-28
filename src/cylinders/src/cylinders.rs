@@ -141,7 +141,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                  true);
     }
 
-    // scan to figure out the which product we are holding
+    // scan to figure out which product we are holding
     m.add_op_alt("scan",
                  // operation model guard.
                  &p!([p: dorna_holding == 100]),
@@ -169,6 +169,20 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
              &[],
              // resets
              true);
+
+
+
+    // Some SOP-testing
+    let my_goal = m.add_estimated_bool("my_goal", false);
+    m.add_op("the_sop",
+        &Predicate::TRUE,
+        &[a!(p: my_goal)],
+        &[],
+        true,
+    );
+    let sop_path = m.find("state", &["the_sop", "operations"]);
+
+    m.add_auto("step_1", &p!(p: sop_path == "e"), &[]);
 
 
     // INTENTIONS
