@@ -173,20 +173,20 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
 
     // Some SOP-testing
-    let my_goal = m.add_estimated_bool("my_goal", false);
+    let my_goal = m.add_estimated_bool("my_goal", true);
     m.add_op("the_sop",
-        &Predicate::TRUE,
-        &[a!(p: my_goal)],
+        &p!(p: my_goal == false),
+        &[a!(p: my_goal = true)],
         &[],
         true,
     );
     let sop_path = m.find("state", &["the_sop", "operations"]);
     
-    m.add_auto_op("step1", &p!(p: sop_path == "e"), &[], &[(p!(p: ap==scan),&[])], false);
-    let step1_path = m.find("state", &["step1", "operations"]);
-    m.add_auto_op("step2", &p!([p: sop_path == "e"] && [p: step1_path == "f"]), &[], &[(p!(p: ap==leave),&[])], false);
-    let step2_path = m.find("state", &["step2", "operations"]);
-    m.add_auto_op("step3", &p!([p: sop_path == "e"] && [p: step2_path == "f"]), &[], &[(p!(p: ap==scan),&[a!(p: my_goal = true)])], false);
+    // m.add_auto_op("step1", &p!(p: sop_path == "e"), &[], &[(p!(p: ap==scan),&[])], false);
+    // let step1_path = m.find("state", &["step1", "operations"]);
+    // m.add_auto_op("step2", &p!([p: sop_path == "e"] && [p: step1_path == "f"]), &[], &[(p!(p: ap==leave),&[])], false);
+    // let step2_path = m.find("state", &["step2", "operations"]);
+    // m.add_auto_op("step3", &p!([p: sop_path == "e"] && [p: step2_path == "f"]), &[], &[(p!(p: ap==scan),&[a!(p: my_goal = true)])], false);
 
 
 
@@ -237,6 +237,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (ap, pt.to_spvalue()),
         (rp, pt.to_spvalue()),
         (ap2, pt.to_spvalue()),
+        (&my_goal, false.to_spvalue()),
     ]);
 
     println!("MAKING MODEL");

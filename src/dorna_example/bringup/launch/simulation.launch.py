@@ -7,8 +7,8 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     examples_dir = FindPackageShare('dorna_example').find('dorna_example')
 
-    r1 = make_dorna_simulation("r1",  os.path.join(examples_dir, 'poses', 'r1_joint_poses.csv'))
-    r2 = make_dorna_simulation("r2",  os.path.join(examples_dir, 'poses', 'r2_joint_poses.csv'))
+    r1 = make_dorna_simulation("r1",  os.path.join(examples_dir, 'poses', 'r1_joint_poses.csv'), False)
+    r2 = make_dorna_simulation("r2",  os.path.join(examples_dir, 'poses', 'r2_joint_poses.csv'), False)
 
     sm_parameters = {
         "active_transforms": os.path.join(examples_dir, 'transforms', 'active_transforms.json'),
@@ -49,12 +49,12 @@ def generate_launch_description():
                 namespace='/',
                 output='screen',
                 )
-    sp_operator = launch_ros.actions.Node(
-                package='sp_operator',
-                executable='sp_operator',
-                namespace='/sp_operator/op1',
-                output='screen',
-                )
+    # sp_operator = launch_ros.actions.Node(
+    #             package='sp_operator',
+    #             executable='sp_operator',
+    #             namespace='/sp_operator/op1',
+    #             output='screen',
+    #             )
 
     sp = launch_ros.actions.Node(
                 package='cylinders',
@@ -72,12 +72,12 @@ def generate_launch_description():
 
     rviz_nodes = [launch_rviz, rviz]
     nodes = [scene_manipulation_service, camera_node, control_box,
-             gripper, sp_ui, sp_operator, sp]
+             gripper, sp_ui, sp]
     return launch.LaunchDescription(r1 + r2 + nodes + rviz_nodes)
 
 
 
-def make_dorna_simulation(name, poses_file):
+def make_dorna_simulation(name, poses_file, gui):
     dorna2_share = FindPackageShare('dorna2').find('dorna2')
     urdf = os.path.join(dorna2_share, 'urdf', 'dorna.urdf')
     with open(urdf, 'r') as infp:
@@ -137,6 +137,7 @@ def make_dorna_simulation(name, poses_file):
             -180,
         ]
     }
+        
     gui_node = launch_ros.actions.Node(
                 package='robot_gui',
                 executable='gui',
@@ -145,4 +146,7 @@ def make_dorna_simulation(name, poses_file):
                 parameters=[gui_parameters]
                 )
 
-    return [rsp_node, sim_node, gui_node]
+    if gui:
+        return [rsp_node, sim_node, gui_node]
+
+    return [rsp_node, sim_node]
