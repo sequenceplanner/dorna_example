@@ -116,14 +116,11 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                  // operation model effects.
                  &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
                  // low level goals and actions
-                 &[
-                     // move in with gripper open
-                     (p!([p: ap == pos_name] && [!p: gripper_closed]), &[]),
-                     // make sure we get a part
-                     (p!([p: ap == pos_name] && [p: gripper_part]), &[])
-                 ],
+                 &p!([p: ap == pos_name] && [p: gripper_part]),
                  // resets
-                 true);
+                 &[],
+                 true, 
+                 false);
 
         m.add_op(&format!("leave_{}", pos.leaf()),
                  // operation model guard.
@@ -131,14 +128,11 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                  // operation model effects.
                  &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0)],
                  // low level goals and actions
-                 &[
-                     // move to position with the part
-                     (p!([p: ap == pos_name] && [p: gripper_part]), &[]),
-                     // release it
-                     (p!([p: ap == pos_name] && [!p: gripper_part]), &[]),
-                 ],
+                 &p!([p: ap == pos_name] && [!p: gripper_part]),
                  // resets
-                 true);
+                 &[],
+                 true, 
+                 false);
     }
 
     // scan to figure out which product we are holding
