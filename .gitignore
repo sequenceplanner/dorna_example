@@ -16,3 +16,6 @@
 
 # MAC
 .DS_Store
+
+# local store
+*.sz
