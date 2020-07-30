@@ -7,7 +7,8 @@ Requirements:
 -----------------
 1. [ROS2 Foxy](https://index.ros.org/doc/ros2/Releases/Release-Foxy-Fitzroy/)
 2. [Rust](https://rustup.rs/)
-3. llvm and clang (?)
+3. [NuXmv](https://nuxmv.fbk.eu)
+4. llvm and clang (?)
 
 Building:
 -----------------

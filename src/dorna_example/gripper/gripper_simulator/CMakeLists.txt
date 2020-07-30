@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(cylinders)
+project(gripper_simulator)
 
 # create our own AMENT_PREFIX_PATH just for this package. this allows
 # us to build our stuff without colcon by pulling in all ros deps
@@ -14,14 +14,9 @@ function(ros_deps)
 endfunction()
 
 # put ros package dependencies here.
-ros_deps(std_msgs
-         rcl
-         sp_operator_msgs
-         sp_messages
-         control_box_msgs
-         camera_msgs
-         robot_msgs
+ros_deps(sp_messages
          gripper_msgs
+         rcl
         )
 
 # this works fine except that it will be called both on make all and again on make install...

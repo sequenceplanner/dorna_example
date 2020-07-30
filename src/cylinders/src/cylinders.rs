@@ -1,5 +1,6 @@
 use crate::camera::*;
 use crate::control_box::*;
+use crate::gripper::*;
 use crate::dorna::*;
 use sp_domain::*;
 use sp_runner::*;
@@ -15,10 +16,12 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let leave = "leave"; // down at conveyor
 
     let dorna = m.use_named_resource("dorna", make_dorna("r1", &[pt, scan, t1, t2, t3, leave]));
+    let dorna_moving = dorna.find_item("executing", &["move_to"]);
     let dorna2 = m.use_named_resource("dorna", make_dorna("r2", &[pt, scan, t1, t2, t3, leave]));
 
     let cb = m.use_resource(make_control_box("control_box"));
     let camera = m.use_resource(make_camera("camera"));
+    let gripper = m.use_resource(make_gripper("gripper"));
 
     let product_domain = &[
         100.to_spvalue(), // SPValue::Unknown,   macros need better support for Unknown
@@ -41,8 +44,14 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     let cf = camera.find_item("finished", &[]);
     let cs = camera.find_item("started", &[]);
+    let ce = camera.find_item("executing", &[]);
     let cr = &camera["result"];
     let cd = &camera["do_scan"];
+
+    let gripper_part = &gripper["part_sensor"];
+    let gripper_closed = &gripper["closed"];
+    let gripper_opening = gripper.find_item("executing", &["open"]);
+    let gripper_closing = gripper.find_item("executing", &["close"]);
 
     // define robot movement
 
@@ -60,6 +69,41 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     m.add_invar(
         "to_take3",
         &p!([p:ap == t3] => [[p:pp == t1] || [p:pp == t2] || [p:pp == t3] || [p:pp == pt]]),
+    );
+
+    // if we are holding a part, we cannot open the gripper freely
+    m.add_invar(
+        "gripper_open",
+        &p!([[p:gripper_opening] && [p: dorna_holding !=0]] => [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]),
+    );
+
+    // we can only close the gripper
+    m.add_invar(
+        "gripper_close",
+        &p!([p:gripper_closing] => [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]),
+    );
+
+    m.add_invar("close_gripper_while_dorna_moving", &p!(![[p:gripper_closing] && [p:dorna_moving]]));
+    m.add_invar("open_gripper_while_dorna_moving", &p!(![[p:gripper_opening] && [p:dorna_moving]]));
+
+    // dont open gripper again after failure unless we have moved away.
+    m.add_invar("dont_open_gripper_after_failure_shelf1",
+                &p!([[p:gripper_opening] && [[p:ap == t1] || [p:ap == t2] || [p:ap == t3]]] => [p:gripper_part]));
+
+    // if there is something on the shelves, we can only try to move there with the gripper open.
+    m.add_invar(
+        "to_take1_occupied",
+        &p!([[p:rp == t1] && [p: dorna_moving]] => [[p:shelf1 == 0] || [! p:gripper_closed]]),
+    );
+
+    m.add_invar(
+        "to_take2_occupied",
+        &p!([[p:rp == t2] && [p: dorna_moving]] => [[p:shelf2 == 0] || [! p:gripper_closed]]),
+    );
+
+    m.add_invar(
+        "to_take3_occupied",
+        &p!([[p:rp == t3] && [p: dorna_moving]] => [[p:shelf3 == 0] || [! p:gripper_closed]]),
     );
 
     // force dorna2 to move sometimes
@@ -94,7 +138,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     );
 
     // we can only scan the product in front of the camera
-    m.add_invar("product_at_camera", &p!([p:cs] => [p:ap == scan]));
+    m.add_invar("product_at_camera", &p!([[p:cs] || [p:ce]]=> [p:ap == scan]));
 
     // dorna take/leave products
     let pos = vec![
@@ -111,11 +155,11 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                  // operation model effects.
                  &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
                  // low level goal
-                 &p!(p: ap == pos_name),
+                 &p!([p: ap == pos_name] && [p: gripper_part]),
                  // low level actions (should not be needed)
                  &[],
                  // resets
-                 true);
+                 true, true);
 
         m.add_op(&format!("leave_{}", pos.leaf()),
                  // operation model guard.
@@ -123,11 +167,11 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                  // operation model effects.
                  &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0)],
                  // low level goal
-                 &p!(p: ap == pos_name),
+                 &p!([p: ap == pos_name] && [! p: gripper_part]),
                  // low level actions (should not be needed)
                  &[],
                  // resets
-                 true);
+                 true, true);
     }
 
 
@@ -137,21 +181,18 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     //            &[a!(p: dorna_holding = 1)]);
 
     // scan to figure out the which product we are holding
-    m.add_op_alt("scan",
+    for i in 1..=3 {
+        m.add_op(&format!("scan_{}", i),
                  // operation model guard.
                  &p!([p: dorna_holding == 100]),
                  // operation model (alternative) effects.
-                 &[("1", &[a!(p: dorna_holding = 1)]),
-                   ("2", &[a!(p: dorna_holding = 2)]),
-                   ("3", &[a!(p: dorna_holding = 3)])],
+                 &[a!(p: dorna_holding = i)],
                  // low level goal
-                 &p!([p: cf] && [p: cr != 0]),
+                 &p!([p: cf] && [p: cr == i] && [p: ap == scan]),
                  // low level actions (should not be needed)
-                 &[a!(p: dorna_holding <- p: cr), a!(!p: cd)], // copy result regardless of outcome and reset camera
-                 // &[a!(!p: cd)],                             // only reset the camera. low level planner will scan until cr == 1
-                 // &[],                                       // no reset. low level planner will reuse the same result to avoid scanning
-                 // resets
-                 true);
+                 &[a!(!p: cd)], // reset camera
+                 true, true);
+    }
 
     // product sink is at conveyor, only accepts identified products.
     m.add_op("consume_known_product",
@@ -164,7 +205,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
              // low level actions (should not be needed)
              &[],
              // resets
-             true);
+             true, true);
 
 
     // INTENTIONS
@@ -190,6 +231,13 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         ],
         None,
     );
+
+    // copy of the intention action to low level (testing)....
+    m.add_auto("reset_intention", &no_products, &[
+        a!(p: shelf1 = 100),
+        a!(p: shelf2 = 100),
+        a!(p: shelf3 = 100),
+    ]);
 
     // goal for testing
     // let g = p!([p:shelf1 == 1] && [p:shelf2 == 2] && [p:shelf3 == 3]);

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="2">
+  <name>opc_ros2</name>
+  <version>0.0.1</version>
+  <description>OPC communication for ROS2</description>
+  <maintainer email="kristofer.bengtsson@chalmers.se">Kristofer Bengtsson</maintainer>
+  <license>MIT</license>
+  <author>Kristofer Bengtsson</author>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <build_depend>rcl</build_depend>
+  <build_depend>sp_messages</build_depend>
+  
+  <exec_depend>rcl</exec_depend>
+  <build_depend>sp_messages</build_depend>
+  
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

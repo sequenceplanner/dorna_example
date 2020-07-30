@@ -3,6 +3,7 @@ use sp_runner::*;
 
 mod camera;
 mod control_box;
+mod gripper;
 mod cylinders;
 mod dorna;
 

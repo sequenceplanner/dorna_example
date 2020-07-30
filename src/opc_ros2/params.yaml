@@ -1,0 +1,8 @@
+/**:
+    ros__parameters:
+        message_type: ""
+        opc_namespace: ""
+        opc_server: "opc.tcp://localhost:4855/"
+        opc_variables:
+          v1: "opc_v1"
+          v2: "opc_v2"

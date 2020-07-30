@@ -23,18 +23,18 @@ find_package(sensor_msgs REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
-find_package(builtin_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-
-rosidl_generate_interfaces(robot_msgs
-# sp messages
+set(msg_files
   "msg/RobotGoal.msg"
   "msg/RobotState.msg"
-# internal messages
+  # internal messages
   "msg/GuiToRobot.msg"
   "msg/RobotToGui.msg"
-  DEPENDENCIES builtin_interfaces
 )
+rosidl_generate_interfaces(${PROJECT_NAME}
+  ${msg_files}
+)
+ament_export_dependencies(rosidl_default_runtime)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
