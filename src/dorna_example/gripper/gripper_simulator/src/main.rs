@@ -43,7 +43,7 @@ fn main() -> Result<(), Error> {
 
             // take transition slowly so we see what's going on
             std::thread::sleep(Duration::from_millis(2000));
-            let fail = rand::thread_rng().gen_range(0,5) < 2;
+            let fail = rand::thread_rng().gen_range(0,5) < 1;
             if fail {
                 r2r::log_warn!(&nl_cb, "closed without a part");
                 state_cb.replace(GripperState::ClosedWithoutPart);

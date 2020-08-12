@@ -21,6 +21,7 @@ ros_deps(std_msgs
          control_box_msgs
          camera_msgs
          robot_msgs
+         gripper_msgs
         )
 
 # this works fine except that it will be called both on make all and again on make install...
