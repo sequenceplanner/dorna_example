@@ -1,5 +1,6 @@
 use crate::camera::*;
 use crate::control_box::*;
+use crate::gripper::*;
 use crate::dorna::*;
 use sp_domain::*;
 use sp_runner::*;
@@ -15,12 +16,15 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let leave = "leave"; // down at conveyor
 
     let dorna = m.use_named_resource("dorna", make_dorna("r1", &[pt, scan, t1, t2, t3, leave]));
+    let dorna_moving = dorna.find_item("executing", &["move_to"]);
     let dorna2 = m.use_named_resource("dorna", make_dorna("r2", &[pt, scan, t1, t2, t3, leave]));
     let dorna3 = m.use_named_resource("dorna", make_dorna("r3", &[pt, scan, leave]));
+    let dorna3_moving = dorna3.find_item("executing", &["move_to"]);
     let dorna4 = m.use_named_resource("dorna", make_dorna("r4", &[pt, scan, leave]));
 
     let cb = m.use_resource(make_control_box("control_box"));
     let camera = m.use_resource(make_camera("camera"));
+    let gripper = m.use_resource(make_gripper("gripper"));
 
     let buffer_domain = &[
         0.to_spvalue(), // buffer empty
@@ -42,10 +46,6 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     // poison low level only
     let poison = m.add_estimated_bool("poison", false);
-    // r1 "part sensor"
-    let part_sensor = m.add_estimated_bool("part_sensor", false);
-    // r3 holding a cube
-    let r3_holding = m.add_estimated_bool("r3_holding", false);
 
     let shelf1 = m.add_estimated_domain("shelf1", buffer_domain, true);
     let shelf2 = m.add_estimated_domain("shelf2", buffer_domain, true);
@@ -67,6 +67,12 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let cr = &camera["result"];
     let cd = &camera["do_scan"];
 
+    let gripper_part = &gripper["part_sensor"];
+    let gripper_closed = &gripper["closed"];
+    let gripper_opening = gripper.find_item("executing", &["open"]);
+    let gripper_closing = gripper.find_item("executing", &["close"]);
+    let gripper_fc = &gripper["fail_count"];
+
     // define robot movement
 
     // pre_take can be reached from all positions.
@@ -85,19 +91,54 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         &p!([p:ap == t3] => [[p:pp == t1] || [p:pp == t2] || [p:pp == t3] || [p:pp == pt]]),
     );
 
-    // runner transition is special type of transition that does not
-    // exist in the planner systems. we can use them to move
-    // information between the layers
 
-    m.add_runner_transition("unexpectedly no part on robot1",
-                            &p!([p: dorna_holding != 0] && [!p: part_sensor]),
-                            &[a!(p: dorna_holding = 0)]);
-    m.add_runner_transition("copy_r3_holding1",
-                            &p!([!p: r3_holding] && [p: dorna3_holding != 0]),
-                            &[a!(p: r3_holding)]);
-    m.add_runner_transition("copy_r3_holding2",
-                            &p!([p: r3_holding] && [p: dorna3_holding == 0]),
-                            &[a!(!p: r3_holding)]);
+    // if we are holding a part, we cannot open the gripper freely!
+    m.add_invar(
+        "gripper_open",
+        &p!([[p:gripper_opening] && [p: dorna_holding !=0]] =>
+            [[[p:ap == t1] && [p:shelf1 == 0]] ||
+             [[p:ap == t2] && [p:shelf2 == 0]] ||
+             [[p:ap == t3] && [p:shelf3 == 0]] ||
+             [[p:ap == leave] && [p:conveyor == 0]]]),
+    );
+
+    // we can only close the gripper
+    m.add_invar(
+        "gripper_close",
+        &p!([p:gripper_closing] => [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]),
+    );
+
+    m.add_invar("close_gripper_while_dorna_moving", &p!(![[p:gripper_closing] && [p:dorna_moving]]));
+    m.add_invar("open_gripper_while_dorna_moving", &p!(![[p:gripper_opening] && [p:dorna_moving]]));
+
+    // dont open gripper again after failure unless we have moved away.
+    m.add_invar("dont_open_gripper_after_failure",
+                &p!([[p:gripper_opening] && [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]] => [p:gripper_part]));
+
+    // if the gripper is closed, with no part in it, it is impossible for it to hold a part.
+    // m.add_invar("gripper_no_sensor_implies_no_part",
+    //             &p!([[p:gripper_closed] && [!p:gripper_part]] => [ p:dorna_holding == 0 ]));
+
+    // if there is something on the shelves, we can only try to move there with the gripper open.
+    m.add_invar(
+        "to_take1_occupied",
+        &p!([[p:rp == t1] && [p: dorna_moving]] => [[p:shelf1 == 0] || [! p:gripper_closed]]),
+    );
+
+    m.add_invar(
+        "to_take2_occupied",
+        &p!([[p:rp == t2] && [p: dorna_moving]] => [[p:shelf2 == 0] || [! p:gripper_closed]]),
+    );
+
+    m.add_invar(
+        "to_take3_occupied",
+        &p!([[p:rp == t3] && [p: dorna_moving]] => [[p:shelf3 == 0] || [! p:gripper_closed]]),
+    );
+
+    m.add_invar(
+        "to_conveyor_occupied",
+        &p!([[p:rp == leave] && [p: dorna_moving]] => [[p:conveyor == 0] || [! p:gripper_closed]]),
+    );
 
 
     // force dorna2 to move sometimes
@@ -156,17 +197,18 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                  // operation model effects.
                  &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
                  // low level goal
-                 &p!(p: ap == pos_name),
+                 &p!([p: ap == pos_name] && [p: gripper_part]),
                  // low level actions (should not be needed)
                  &[],
                  // resets
-                 true);
+                 true, true, Some(p!([p: gripper_fc == 0] || [p: gripper_fc == 1])));
 
         let goal = if pos_name == &t1 {
-            p!([p: ap == pos_name] && [!p: poison])
+            p!([p: ap == pos_name] && [! p: gripper_part] && [!p: poison])
         } else {
-            p!(p: ap == pos_name)
+            p!([p: ap == pos_name] && [! p: gripper_part])
         };
+
         m.add_op(&format!("r1_leave_{}", pos.leaf()),
                  // operation model guard.
                  &Predicate::AND(vec![p!([p: dorna_holding != 0] && [p: pos == 0]), extra.clone()]),
@@ -177,7 +219,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                  // low level actions (should not be needed)
                  &[],
                  // resets
-                 true);
+                 true, true, Some(p!([p: gripper_fc == 0] || [p: gripper_fc == 1])));
     }
 
     // dorna3 take/leave products
@@ -190,17 +232,25 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let rp3 = &dorna3["ref_pos"];
 
     for (pos_name, pos) in pos.iter() {
+        let buffer_predicate = if pos_name == &pt {
+            // when taking the product, because we have an auto transition that consumes it,
+            // we need to be sure that the product will still be there
+            p!([p: pos == 100] && [p: dorna3_holding == 0])
+        } else {
+            p!([p: pos != 0] && [p: dorna3_holding == 0])
+        };
+
         m.add_op(&format!("r3_take_{}", pos.leaf()),
                  // operation model guard.
-                 &p!([p: pos != 0] && [p: dorna3_holding == 0]),
+                 &p!([p: pos != 0] && [p: dorna3_holding == 0]), // &buffer_predicate,
                  // operation model effects.
                  &[a!(p:dorna3_holding <- p:pos), a!(p: pos = 0)],
                  // low level goal
-                 &p!(p: ap3 == pos_name),
+                 &p!([p: ap3 == pos_name] && [!p: dorna3_moving]),
                  // low level actions (should not be needed)
                  &[],
                  // resets
-                 true);
+                 true, false, None);
 
         m.add_op(&format!("r3_leave_{}", pos.leaf()),
                  // operation model guard.
@@ -208,11 +258,11 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                  // operation model effects.
                  &[a!(p:pos <- p:dorna3_holding), a!(p: dorna3_holding = 0)],
                  // low level goal
-                 &p!(p: ap3 == pos_name),
+                 &p!([p: ap3 == pos_name] && [!p: dorna3_moving]),
                  // low level actions (should not be needed)
                  &[],
                  // resets
-                 true);
+                 true, false, None);
     }
 
 
@@ -228,7 +278,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
              // low level actions (should not be needed)
              &[],
              // resets
-             true);
+             true, true, None);
     m.add_op("r4_x_right",
              // operation model guard.
              &p!(p: x == "left"),
@@ -239,7 +289,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
              // low level actions (should not be needed)
              &[],
              // resets
-             true);
+             true, true, None);
 
     // force dorna4 to move sometimes by connecting it to dorna 2
     m.add_invar(
@@ -272,21 +322,20 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
         // scan to figure out the which product we are holding
         let kind = p.1.clone();
-        m.add_op_alt(&format!("scan_{}", n),
-                 // operation model guard.
-                 &p!([p: dorna_holding == n] && [p: kind == 100]),
-                 // operation model (alternative) effects.
-                 &[("1", &[a!(p: kind = 1)]),
-                   ("2", &[a!(p: kind = 2)]),
-                   ("3", &[a!(p: kind = 3)])],
-                 // low level goal
-                 &p!([p: cf] && [p: cr != 0]),
-                 // low level actions (should not be needed)
-                 &[a!(p: kind <- p: cr), a!(!p: cd)],          // copy result regardless of outcome and reset camera
-                 // &[a!(!p: cd)],                             // only reset the camera. low level planner will scan until cr == 1
-                 // &[],                                       // no reset. low level planner will reuse the same result to avoid scanning
-                 // resets
-                 true);
+
+        for r in 1..=3 {
+            m.add_op(&format!("scan_{}_{}", n, r),
+                     // operation model guard.
+                     &p!([p: dorna_holding == n] && [p: kind == 100]),
+                     // operation model (alternative) effects.
+                     &[a!(p: kind = r)],
+                     // low level goal
+                     &p!([p: cf] && [p: cr == r] && [p: ap == scan]),
+                     // low level actions (should not be needed)
+                     &[a!(!p: cd)], // reset camera
+                     true, true, None);
+        }
+
 
         // product sink is at conveyor2, only accepts identified products.
         m.add_op(&format!("consume_known_product_{}", n),
@@ -299,7 +348,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                  // low level actions (should not be needed)
                  &[],
                  // resets
-                 true);
+                 true, true, None);
 
         // product source also at conveyor2, we can add a new, unknown,
         // unique product if there is room.
@@ -309,12 +358,12 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
                  // operation model effects.
                  &[a!(p:conveyor2 = p.0), a!(p: kind = 100)],
                  // low level goal: away from buffer and not moving. OR the robot is not holding anything.
-                 &p!([[[p:ap3 != pt] && [p: ap3 <-> p: rp3]] || [! p: r3_holding]]),
+                 &p!([[[p:ap3 != pt] && [p: ap3 <-> p: rp3]] || [p: dorna3_holding == 0]]),
                  //&p!([p:ap3 != pt] && [p: ap3 <-> p: rp3]),
                  // low level actions (should not be needed)
                  &[],
                  // resets
-                 true);
+                 true, false, None);
     }
 
 
@@ -458,8 +507,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (&conveyor2, 0.to_spvalue()),
         (&x, "left".to_spvalue()),
         (&poison, false.to_spvalue()),
-        (&part_sensor, true.to_spvalue()),
-        (&r3_holding, false.to_spvalue()),
+        (gripper_fc, 0.to_spvalue()),
     ]);
 
     println!("MAKING MODEL");

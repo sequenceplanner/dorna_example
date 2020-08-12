@@ -5,6 +5,7 @@ mod camera;
 mod control_box;
 mod cylinders;
 mod dorna;
+mod gripper;
 
 fn main() -> Result<(), Error> {
     let (model, initial_state, _) = cylinders::cylinders();
