@@ -35,6 +35,9 @@ set(msg_files
   "msg/RunnerCommand.msg"
   "msg/NodeCmd.msg"
   "msg/NodeMode.msg"
+  "msg/Resource.msg"
+  "msg/ResourceGoal.msg"
+  "msg/ResourceMeasured.msg"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}

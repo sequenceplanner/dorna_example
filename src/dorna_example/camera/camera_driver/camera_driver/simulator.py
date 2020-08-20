@@ -12,7 +12,7 @@ import random
 from rclpy.node import Node
 
 from camera_msgs.msg import Goal
-from camera_msgs.msg import State
+from camera_msgs.msg import Measured
 
 from sp_messages.msg import NodeCmd
 from sp_messages.msg import NodeMode
@@ -50,8 +50,8 @@ class CameraSimulator(Node):
             10)
 
         self.state_publisher = self.create_publisher(
-            State,
-            "state",
+            Measured,
+            "measured",
             10)
 
         self.sp_mode_publisher = self.create_publisher(
@@ -63,10 +63,11 @@ class CameraSimulator(Node):
         self.get_logger().info('Camera up and running!')
 
     def publish_state(self):
-        msg = State()
+        msg = Measured()
         msg.scanning = self.scanning
         msg.done = self.done
         msg.result = self.result
+        msg.act_mode = self.mode.mode
         self.state_publisher.publish(msg)
 
     def tick(self):
