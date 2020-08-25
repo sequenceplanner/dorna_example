@@ -5,7 +5,7 @@ use crate::dorna::*;
 use sp_domain::*;
 use sp_runner::*;
 
-pub fn cylinders() -> (Model, SPState, Predicate) {
+pub fn cylinders() -> (Model, SPState) {
     let mut m = GModel::new("cylinders");
 
     let pt = "pre_take";
@@ -259,13 +259,6 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         a!(p: shelf3 = 100),
     ]);
 
-    // goal for testing
-    // let g = p!([p:shelf1 == 1] && [p:shelf2 == 2] && [p:shelf3 == 3]);
-    //let g = p!([p:shelf1 == 1]);
-    //let g = p!([p: conveyor == 0]);
-
-    let g = p!([p: ap == leave]);
-
     let pp2 = &dorna2["prev_pos"];
 
     // setup initial state of our estimated variables.
@@ -285,8 +278,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     ]);
 
     println!("MAKING MODEL");
-    let (m, s) = m.make_model();
-    (m, s, g)
+    m.make_model()
 }
 
 #[cfg(test)]
@@ -297,31 +289,12 @@ mod test {
     #[test]
     #[serial]
     fn test_cylinders() {
-        let (m, s, g) = cylinders();
+        let (m, s) = cylinders();
 
-        make_runner_model(&m);
+        // generate stuff
+        make_new_runner(&m, s, true);
 
-        let mut ts_model = TransitionSystemModel::from(&m);
-
-        let mut new_specs = Vec::new();
-        for s in &ts_model.specs {
-            new_specs.push(Spec::new(s.name(), refine_invariant(&ts_model, s.invariant())));
-        }
-        ts_model.specs = new_specs;
-
-        let goal = (g, None);
-        let plan = plan(&ts_model, &[goal], &s, 50);
-
-        println!("\n\n\n");
-
-        if plan.plan_found {
-            plan.trace.iter().enumerate().skip(1).for_each(|(i, t)| {
-                println!("{}: {}", i, t.transition);
-            });
-        } else {
-            println!("no plan found");
-        }
-
+        println!("done");
         println!("\n\n\n");
     }
 }
