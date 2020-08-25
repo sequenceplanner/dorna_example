@@ -36,7 +36,7 @@ class CameraSimulator(Node):
         # sp node mode
         self.sp_node_cmd = NodeCmd()
         self.mode = NodeMode()
-        self.mode.mode = "initialize"
+        self.mode.mode = "init"
 
         self.subscriber = self.create_subscription(
             Goal,
@@ -93,8 +93,7 @@ class CameraSimulator(Node):
             self.done = False
             self.result = 0
 
-        self.last_seen_goal.do_scan = data.do_scan
-        self.last_seen_goal.ref_mode = data.ref_mode
+        self.last_seen_goal = data
         self.publish_state()
 
     def sp_node_cmd_callback(self, data):
