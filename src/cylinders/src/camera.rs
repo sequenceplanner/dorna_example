@@ -10,7 +10,7 @@ pub fn make_camera(name: &str) -> Resource {
             msg_type: "camera_msgs/msg/Goal",
 
             do_scan : bool,
-            ref_mode: vec!["init", "run"],
+            ref_mode: vec!["initialize", "run"],
         },
         measured!{
             topic: "measured",
@@ -19,7 +19,7 @@ pub fn make_camera(name: &str) -> Resource {
             scanning : bool,
             done : bool,
             result : vec![0,1,2,3],
-            act_mode: vec!["init", "starting", "running", "error"],
+            act_mode: vec!["initializing", "starting", "running", "error"],
         },
 
         ability!{

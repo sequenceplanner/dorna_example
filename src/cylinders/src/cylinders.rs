@@ -15,9 +15,11 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let t3 = "take3";
     let leave = "leave"; // down at conveyor
 
-    let dorna = m.use_named_resource("dorna", make_dorna("r1", &[pt, scan, t1, t2, t3, leave]));
+    let poses = &[pt, scan, t1, t2, t3, leave];
+
+    let dorna = m.use_named_resource("dorna", make_dorna("r1", poses));
     let dorna_moving = dorna.find_item("executing", &["move_to"]);
-    let dorna2 = m.use_named_resource("dorna", make_dorna("r2", &[pt, scan, t1, t2, t3, leave]));
+    let dorna2 = m.use_named_resource("dorna", make_dorna("r2", poses));
 
     let cb = m.use_resource(make_control_box("control_box"));
     let camera = m.use_resource(make_camera("camera"));
@@ -47,6 +49,9 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     let cr = &camera["result"];
     let cd = &camera["do_scan"];
+
+    let camera_node_ref = &camera["ref_mode"];
+    let camera_node_act = &camera["act_mode"];
 
     let gripper_part = &gripper["part_sensor"];
     let gripper_closed = &gripper["closed"];
@@ -282,6 +287,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (rp, pt.to_spvalue()),
         (ap2, pt.to_spvalue()),
         (gripper_fc, 0.to_spvalue()),
+        (camera_node_ref, "initialize".to_spvalue()),
     ]);
 
     println!("MAKING MODEL");
