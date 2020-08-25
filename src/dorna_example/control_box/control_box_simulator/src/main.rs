@@ -3,16 +3,16 @@ use failure::Error;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use r2r::control_box_msgs::msg::{Goal, State};
+use r2r::control_box_msgs::msg::{Goal, Measured};
 use r2r::sp_messages::msg::{NodeCmd, NodeMode};
 
 fn main() -> Result<(), Error> {
     let ctx = r2r::Context::create()?;
     let mut node = r2r::Node::create(ctx, "control_box_simulator", "")?;
 
-    let state_publisher = node.create_publisher::<State>("state")?;
+    let state_publisher = node.create_publisher::<Measured>("measured")?;
     let mode_publisher = node.create_publisher::<NodeMode>("mode")?;
-    let last_seen_goal = Rc::new(RefCell::new(Goal::default()));
+    let last_seen_goal = Rc::new(RefCell::new(r2r::control_box_msgs::msg::Goal{blue_light: false, ref_mode: "initialize".to_string()}));
     let node_mode = Rc::new(RefCell::new(NodeMode { mode: "init".into(), echo: "".into() }));
 
     // goal callback
@@ -29,7 +29,7 @@ fn main() -> Result<(), Error> {
         r2r::log_info!(&nl_cb, "blue light is {}",
                        if blue_light_on { "on" } else { "off" });
 
-        let msg = State { blue_light_on };
+        let msg = Measured { blue_light_on, act_mode: "running".to_string() };
         state_publisher_cb.publish(&msg).unwrap();
     };
 
@@ -57,7 +57,7 @@ fn main() -> Result<(), Error> {
         node.spin_once(std::time::Duration::from_millis(1000));
 
         // publish the state once in a while
-        let msg = State { blue_light_on: last_seen_goal.borrow().blue_light };
+        let msg = Measured { blue_light_on: last_seen_goal.borrow().blue_light, act_mode: "running".to_string() };
         state_publisher.publish(&msg).unwrap();
     }
 }

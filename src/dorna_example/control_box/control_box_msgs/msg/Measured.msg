@@ -1,1 +1,2 @@
 bool blue_light_on
+string act_mode

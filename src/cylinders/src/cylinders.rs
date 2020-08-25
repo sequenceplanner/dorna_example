@@ -43,6 +43,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let rp = &dorna["ref_pos"];
     let pp = &dorna["prev_pos"];
     let blue = &cb["blue_light_on"];
+    let control_box_ref = &cb["ref_mode"];
 
     let cf = camera.find_item("finished", &[]);
     let ce = camera.find_item("enabled", &[]);
@@ -288,7 +289,8 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (ap2, pt.to_spvalue()),
         (gripper_fc, 0.to_spvalue()),
         (camera_node_ref, "initialize".to_spvalue()),
-    ]);
+        (control_box_ref, "initialize".to_spvalue()),
+        ]);
 
     println!("MAKING MODEL");
     let (m, s) = m.make_model();

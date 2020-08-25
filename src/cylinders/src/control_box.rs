@@ -10,12 +10,14 @@ pub fn make_control_box(name: &str) -> Resource {
             msg_type: "control_box_msgs/msg/Goal",
 
             blue_light : bool,
+            ref_mode: vec!["initialize", "run"],
         },
         measured!{
-            topic: "state",
-            msg_type: "control_box_msgs/msg/State",
+            topic: "measured",
+            msg_type: "control_box_msgs/msg/Measured",
 
             blue_light_on : bool,
+            act_mode: vec!["initializing", "starting", "running", "error"],
         },
 
         ability!{

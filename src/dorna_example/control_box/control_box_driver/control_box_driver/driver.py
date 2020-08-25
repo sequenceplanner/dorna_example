@@ -12,7 +12,7 @@ import pyfirmata
 from rclpy.node import Node
 
 from control_box_msgs.msg import Goal
-from control_box_msgs.msg import State
+from control_box_msgs.msg import Measured
 
 from sp_messages.msg import NodeCmd
 from sp_messages.msg import NodeMode
@@ -34,6 +34,7 @@ class ControlBoxDriver(Node):
         # remember last goal
         self.last_seen_goal = Goal()
         self.last_seen_goal.blue_light = self.blue_light
+        self.last_seen_goal.ref_mode = "initialized"
 
         # sp node mode
         self.sp_node_cmd = NodeCmd()
@@ -53,8 +54,8 @@ class ControlBoxDriver(Node):
             10)
 
         self.state_publisher = self.create_publisher(
-            State,
-            "state",
+            Measured,
+            "measured",
             10)
 
         self.sp_mode_publisher = self.create_publisher(
@@ -75,8 +76,9 @@ class ControlBoxDriver(Node):
         self.board.digital[3].write(self.blue_light == False)
         self.get_logger().info("blue light is " + ('on' if self.blue_light else 'off'))
 
-        msg = State()
+        msg = Measured()
         msg.blue_light_on = self.blue_light
+        msg.act_mode = self.mode.mode
         self.state_publisher.publish(msg)
 
 
@@ -98,7 +100,7 @@ class ControlBoxDriver(Node):
         self.sp_mode_publisher.publish(self.mode)
         # because this node is not ticking, we also publish our
         # measured states here
-        msg = State()
+        msg = Measured()
         msg.blue_light_on = self.blue_light
         self.state_publisher.publish(msg)
 
