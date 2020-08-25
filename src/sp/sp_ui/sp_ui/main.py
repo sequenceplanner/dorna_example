@@ -108,7 +108,7 @@ class Window(QtWidgets.QWidget, Callbacks):
         grid.addWidget(self.tree_widget())
         self.setLayout(grid)
         self.setWindowTitle("Sequence Planner Control UI")
-        self.resize(600, 800)
+        self.resize(750, 1000)
 
         self.init = True
 
@@ -290,7 +290,9 @@ class Window(QtWidgets.QWidget, Callbacks):
 
         self.tree.setModel(self.state_model_proxy)
         self.tree.setColumnWidth(0, 200)
+        self.tree.setColumnWidth(1, 400)
         self.tree.setSortingEnabled(True)
+        self.tree.sortByColumn(0, QtCore.Qt.AscendingOrder)
         tree_l.addWidget(self.tree, 2, 0, 1, 4)
 
         box = QtWidgets.QGroupBox("State")
