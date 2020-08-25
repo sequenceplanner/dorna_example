@@ -1,1 +1,2 @@
 string ref_pos
+string ref_mode

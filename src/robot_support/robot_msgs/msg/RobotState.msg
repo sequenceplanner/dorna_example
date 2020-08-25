@@ -1,1 +1,2 @@
 string act_pos
+string act_mode

@@ -16,7 +16,7 @@ from sensor_msgs.msg import JointState
 from dorna2.msg import DornaGuiToEsd
 from dorna2.msg import DornaEsdToGui
 from dorna2.msg import Goal
-from dorna2.msg import State
+from dorna2.msg import Measured
 
 # from sp_messages.msg import NodeCmd
 # from sp_messages.msg import NodeMode
@@ -126,7 +126,7 @@ class Ros2DornaDriver(Node):
             self.joint_state_publisher_callback)
 
         # esd to sp:
-        self.esd_to_sp_msg = State()
+        self.esd_to_sp_msg = Measured()
         self.esd_to_sp_msg.act_pos = ""
 
         self.esd_to_sp_publisher_ = self.create_publisher(
