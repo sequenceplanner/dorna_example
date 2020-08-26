@@ -1,2 +1,1 @@
 bool blue_light
-string ref_mode

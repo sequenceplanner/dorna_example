@@ -130,8 +130,8 @@ class Ros2DornaDriver(Node):
         self.esd_to_sp_msg.act_pos = ""
 
         self.esd_to_sp_publisher_ = self.create_publisher(
-            State,
-            "/dorna/state",
+            Measured,
+            "/dorna/measured",
             10)
 
         # node management

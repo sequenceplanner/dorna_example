@@ -34,7 +34,6 @@ class ControlBoxDriver(Node):
         # remember last goal
         self.last_seen_goal = Goal()
         self.last_seen_goal.blue_light = self.blue_light
-        self.last_seen_goal.ref_mode = "initialized"
 
         # sp node mode
         self.sp_node_cmd = NodeCmd()
@@ -78,7 +77,6 @@ class ControlBoxDriver(Node):
 
         msg = Measured()
         msg.blue_light_on = self.blue_light
-        msg.act_mode = self.mode.mode
         self.state_publisher.publish(msg)
 
 

@@ -13,14 +13,12 @@ pub fn make_dorna(name: &str, poses: &[&str]) -> Resource {
             msg_type: "robot_msgs/msg/RobotGoal",
 
             ref_pos : domain,
-            ref_mode: vec!["initialize", "run"],
         },
         measured!{
             topic: "measured",
             msg_type: "robot_msgs/msg/RobotState",
 
             act_pos : domain,
-            act_mode: vec!["initializing", "starting", "running", "error"],
         },
         estimated!{
             prev_pos: domain,

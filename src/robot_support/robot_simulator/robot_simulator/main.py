@@ -73,7 +73,6 @@ class RobotSimulator(Node):
         # sp to robot:
         self.robot_goal_msg = RobotGoal()
         self.robot_goal_msg.ref_pos = self.pose_from_position(self.poses, self.ref_pos)
-        self.robot_goal_msg.ref_mode = "initialize"
 
 
         self.robot_goal_subscriber = self.create_subscription(
@@ -204,7 +203,6 @@ class RobotSimulator(Node):
         self.joint_state_publisher_.publish(self.joint_state)
 
     def robot_state_ticker(self):
-        self.robot_state_msg.act_mode = "running"
         self.robot_state_msg.act_pos = self.pose_from_position(self.poses, self.act_pos)
         self.robot_state_publisher_.publish(self.robot_state_msg)
 

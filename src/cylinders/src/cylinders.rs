@@ -41,19 +41,14 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     let ap = &dorna["act_pos"];
     let rp = &dorna["ref_pos"];
-    let rm = &dorna["ref_mode"];
     let pp = &dorna["prev_pos"];
     let blue = &cb["blue_light_on"];
-    let control_box_ref = &cb["ref_mode"];
 
     let cf = camera.find_item("finished", &[]);
     let ce = camera.find_item("enabled", &[]);
 
     let cr = &camera["result"];
     let cd = &camera["do_scan"];
-
-    let camera_node_ref = &camera["ref_mode"];
-    let camera_node_act = &camera["act_mode"];
 
     let gripper_part = &gripper["part_sensor"];
     let gripper_closed = &gripper["closed"];
@@ -289,9 +284,6 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         (rp, pt.to_spvalue()),
         (ap2, pt.to_spvalue()),
         (gripper_fc, 0.to_spvalue()),
-        (camera_node_ref, "initialize".to_spvalue()),
-        (control_box_ref, "initialize".to_spvalue()),
-        (rm, "initialize".to_spvalue()),
         ]);
 
     println!("MAKING MODEL");
@@ -309,7 +301,7 @@ mod test {
     fn test_cylinders() {
         let (m, s, g) = cylinders();
 
-        make_runner_model(&m);
+        //make_runner_model(&m);
 
         let mut ts_model = TransitionSystemModel::from(&m);
 

@@ -31,7 +31,6 @@ class CameraSimulator(Node):
         # remember last goal
         self.last_seen_goal = Goal()
         self.last_seen_goal.do_scan = False
-        self.last_seen_goal.ref_mode = "initialize"
 
         # sp node mode
         self.sp_node_cmd = NodeCmd()
@@ -68,7 +67,6 @@ class CameraSimulator(Node):
         msg.scanning = self.scanning
         msg.done = self.done
         msg.result = self.result
-        msg.act_mode = self.mode.mode
         self.state_publisher.publish(msg)
 
     def tick(self):
