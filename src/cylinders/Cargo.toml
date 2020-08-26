@@ -12,6 +12,8 @@ edition = "2018"
 sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "8fc16d2" }
 sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "8fc16d2" }
 
+sp-resources = {path = "../sp_resources/"}
+
 failure = "0.1.5"
 
 [dev-dependencies]

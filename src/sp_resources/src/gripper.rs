@@ -2,7 +2,7 @@ use sp_domain::*;
 use sp_runner::*;
 use std::collections::HashMap; // todo: macro depends on this...
 
-pub fn make_gripper(name: &str) -> Resource {
+pub fn create_instance(name: &str) -> Resource {
     resource! {
         name: name,
         command!{

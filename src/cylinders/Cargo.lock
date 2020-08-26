@@ -293,6 +293,7 @@ dependencies = [
  "failure",
  "serial_test",
  "sp-domain",
+ "sp-resources",
  "sp-runner",
 ]
 
@@ -1156,6 +1157,15 @@ dependencies = [
  "serde",
  "serde_json",
  "uuid",
+]
+
+[[package]]
+name = "sp-resources"
+version = "0.1.0"
+dependencies = [
+ "failure",
+ "sp-domain",
+ "sp-runner",
 ]
 
 [[package]]

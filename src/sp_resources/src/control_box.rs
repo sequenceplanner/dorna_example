@@ -2,7 +2,7 @@ use sp_domain::*;
 use sp_runner::*;
 use std::collections::HashMap; // todo: macro depends on this...
 
-pub fn make_control_box(name: &str) -> Resource {
+pub fn create_instance(name: &str) -> Resource {
     resource! {
         name: name,
         command!{
@@ -50,7 +50,7 @@ mod test {
     #[test]
     #[serial]
     fn test_control_box() {
-        let control_box = make_control_box("cb");
+        let control_box = create_instance("cb");
         println!("{:#?}", control_box);
 
         let bl = control_box

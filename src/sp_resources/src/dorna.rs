@@ -2,7 +2,7 @@ use sp_domain::*;
 use sp_runner::*;
 use std::collections::HashMap; // todo: macro depends on this...
 
-pub fn make_dorna(name: &str, poses: &[&str]) -> Resource {
+pub fn create_instance(name: &str, poses: &[&str]) -> Resource {
     // domain is a list of saved poses. add "unknown" to this list.
     let mut domain = vec!["unknown"];
     domain.extend(poses.iter());
@@ -51,7 +51,7 @@ mod test {
     #[test]
     #[serial]
     fn test_dorna() {
-        let dorna = make_dorna("dorna", &["at", "away"]);
+        let dorna = create_instance("dorna", &["at", "away"]);
         println!("{:#?}", dorna);
 
         let dorna_act = dorna
