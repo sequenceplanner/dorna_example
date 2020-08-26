@@ -293,6 +293,7 @@ dependencies = [
  "failure",
  "serial_test",
  "sp-domain",
+ "sp-resources",
  "sp-runner",
 ]
 
@@ -1150,7 +1151,6 @@ dependencies = [
 [[package]]
 name = "sp-domain"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=c1c125b#c1c125b275b72b828eef15b6e8ddfdad87fa0c84"
 dependencies = [
  "peg",
  "serde",
@@ -1159,9 +1159,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp-resources"
+version = "0.1.0"
+dependencies = [
+ "failure",
+ "sp-domain",
+ "sp-runner",
+]
+
+[[package]]
 name = "sp-ros"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=c1c125b#c1c125b275b72b828eef15b6e8ddfdad87fa0c84"
 dependencies = [
  "crossbeam",
  "failure",
@@ -1176,7 +1184,6 @@ dependencies = [
 [[package]]
 name = "sp-runner"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=c1c125b#c1c125b275b72b828eef15b6e8ddfdad87fa0c84"
 dependencies = [
  "chrono",
  "crossbeam",
@@ -1199,7 +1206,6 @@ dependencies = [
 [[package]]
 name = "sp-runner-api"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=c1c125b#c1c125b275b72b828eef15b6e8ddfdad87fa0c84"
 dependencies = [
  "failure",
  "failure_derive",

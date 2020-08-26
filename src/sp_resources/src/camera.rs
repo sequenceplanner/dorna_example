@@ -2,7 +2,7 @@ use sp_domain::*;
 use sp_runner::*;
 use std::collections::HashMap; // todo: macro depends on this...
 
-pub fn make_camera(name: &str) -> Resource {
+pub fn create_instance(name: &str) -> Resource {
     resource! {
         name: name,
         command!{
@@ -54,7 +54,7 @@ mod test {
     #[test]
     #[serial]
     fn test_camera() {
-        let camera = make_camera("camera");
+        let camera = create_instance("camera");
         println!("{:#?}", camera);
     }
 }

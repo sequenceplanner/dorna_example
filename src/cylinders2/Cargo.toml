@@ -7,10 +7,12 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# sp-domain = { path = "/home/martin/sp/sp-domain" }
-# sp-runner = { path = "/home/martin/sp/sp-runner" }
-sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "c1c125b" }
-sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "c1c125b" }
+sp-domain = { path = "/Users/kristofer/sw/sp-rust/sp-domain"}
+sp-runner = { path = "/Users/kristofer/sw/sp-rust/sp-runner"}
+#sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "c1c125b" }
+#sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "c1c125b" }
+
+sp-resources = {path = "../sp_resources/"} 
 
 failure = "0.1.5"
 

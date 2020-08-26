@@ -1,5 +1,5 @@
 [package]
-name = "cylinders"
+name = "sp-resources"
 version = "0.1.0"
 authors = ["Martin Dahl <martin.dahl@gmail.com>"]
 edition = "2018"
@@ -11,8 +11,6 @@ sp-domain = { path = "/Users/kristofer/sw/sp-rust/sp-domain"}
 sp-runner = { path = "/Users/kristofer/sw/sp-rust/sp-runner"}
 # sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "c1c125b" }
 # sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "c1c125b" }
-
-sp-resources = {path = "../sp_resources/"}
 
 failure = "0.1.5"
 
