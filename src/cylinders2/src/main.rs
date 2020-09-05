@@ -24,10 +24,10 @@ pub fn cylinders() -> (Model, SPState) {
     let leave = "leave"; // down at conveyor
 
     let dorna = m.use_named_resource("dorna", dorna::create_instance("r1", &[pt, scan, t1, t2, t3, leave]));
-    let dorna_moving = dorna.find_item("executing", &["move_to"]);
+    let dorna_moving = dorna.find_item("moving", &[]);
     let dorna2 = m.use_named_resource("dorna", dorna::create_instance("r2", &[pt, scan, t1, t2, t3, leave]));
     let dorna3 = m.use_named_resource("dorna", dorna::create_instance("r3", &[pt, scan, leave]));
-    let dorna3_moving = dorna3.find_item("executing", &["move_to"]);
+    let dorna3_moving = dorna3.find_item("moving", &[]);
     let dorna4 = m.use_named_resource("dorna", dorna::create_instance("r4", &[pt, scan, leave]));
 
     let cb = m.use_resource(control_box::create_instance("control_box"));
@@ -77,8 +77,8 @@ pub fn cylinders() -> (Model, SPState) {
 
     let gripper_part = &gripper["part_sensor"];
     let gripper_closed = &gripper["closed"];
-    let gripper_opening = gripper.find_item("executing", &["open"]);
-    let gripper_closing = gripper.find_item("executing", &["close"]);
+    let gripper_opening = gripper.find_item("opening", &[]);
+    let gripper_closing = gripper.find_item("closing", &[]);
     let gripper_fc = &gripper["fail_count"];
 
     // define robot movement

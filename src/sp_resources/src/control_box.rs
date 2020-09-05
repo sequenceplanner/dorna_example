@@ -1,6 +1,5 @@
 use sp_domain::*;
 use sp_runner::*;
-use std::collections::HashMap; // todo: macro depends on this...
 
 pub fn create_instance(name: &str) -> Resource {
     resource! {
@@ -18,26 +17,12 @@ pub fn create_instance(name: &str) -> Resource {
             blue_light_on : bool,
         },
 
-        ability!{
-            name: blue_on,
+        transitions!{
+            c_blue_on_start : p!(!blue_light_on), vec![ a!(blue_light) ],
+            e_blue_on_finish : p!([blue_light] && [!blue_light_on]), vec![a!(blue_light_on)],
 
-            enabled : p!(!blue_light_on),
-            executing : p!([blue_light] && [!blue_light_on]),
-            finished : p!(blue_light_on),
-
-            *start : p!(enabled) => [ a!(blue_light) ] / [],
-            finish : p!(executing) => [] / [a!(blue_light_on)],
-        },
-
-        ability!{
-            name: blue_off,
-
-            enabled : p!(blue_light_on),
-            executing : p!([!blue_light] && [blue_light_on]),
-            finished : p!(!blue_light_on),
-
-            *start : p!(enabled) => [ a!(!blue_light) ] / [],
-            finish : p!(executing) => [] / [a!(!blue_light_on)],
+            c_blue_off_start : p!(blue_light_on), vec![ a!(!blue_light) ],
+            e_blue_off_finish : p!([!blue_light] && [blue_light_on]), vec![a!(!blue_light_on)],
         },
     }
 }

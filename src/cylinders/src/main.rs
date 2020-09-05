@@ -26,7 +26,7 @@ pub fn cylinders() -> (Model, SPState) {
     let poses = &[pt, scan, t1, t2, t3, leave];
 
     let dorna = m.use_named_resource("dorna", dorna::create_instance("r1", poses));
-    let dorna_moving = dorna.find_item("executing", &["move_to"]);
+    let dorna_moving = dorna.find_item("moving", &[]);
     let dorna2 = m.use_named_resource("dorna", dorna::create_instance("r2", poses));
 
     let cb = m.use_resource(control_box::create_instance("control_box"));
@@ -52,6 +52,8 @@ pub fn cylinders() -> (Model, SPState) {
     let pp = &dorna["prev_pos"];
     let blue = &cb["blue_light_on"];
 
+    m.make_product_var(ap);
+
     let cf = camera.find_item("finished", &[]);
     let ce = camera.find_item("enabled", &[]);
 
@@ -60,8 +62,8 @@ pub fn cylinders() -> (Model, SPState) {
 
     let gripper_part = &gripper["part_sensor"];
     let gripper_closed = &gripper["closed"];
-    let gripper_opening = gripper.find_item("executing", &["open"]);
-    let gripper_closing = gripper.find_item("executing", &["close"]);
+    let gripper_opening = gripper.find_item("opening", &[]);
+    let gripper_closing = gripper.find_item("closing", &[]);
     let gripper_fc = &gripper["fail_count"];
 
     // define robot movement
@@ -183,7 +185,7 @@ pub fn cylinders() -> (Model, SPState) {
                  // operation model guard.
                  &buffer_predicate,
                  // operation model effects.
-                 &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
+                 &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0), a!(p:ap = pos_name)],
                  // low level goal
                  &p!([p: ap == pos_name] && [p: gripper_part]),
                  // low level actions (should not be needed)
@@ -195,7 +197,7 @@ pub fn cylinders() -> (Model, SPState) {
                  // operation model guard.
                  &p!([p: dorna_holding != 0] && [p: pos == 0]),
                  // operation model effects.
-                 &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0)],
+                 &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0), a!(p:ap = pos_name)],
                  // low level goal
                  &p!([p: ap == pos_name] && [! p: gripper_part]),
                  // low level actions (should not be needed)
@@ -216,7 +218,7 @@ pub fn cylinders() -> (Model, SPState) {
                  // operation model guard.
                  &p!([p: dorna_holding == 100]),
                  // operation model (alternative) effects.
-                 &[a!(p: dorna_holding = i)],
+                 &[a!(p: dorna_holding = i), a!(p:ap = scan)],
                  // low level goal
                  &p!([p: cf] && [p: cr == i] && [p: ap == scan]),
                  // low level actions (should not be needed)
@@ -237,6 +239,52 @@ pub fn cylinders() -> (Model, SPState) {
              // resets
              true, true, None);
 
+
+    // testing our new "resource product"
+    m.add_op("move_dorna_to_pre_take",
+             // operation model guard.
+             // &p!(p:ap == scan), we cant have a guard here...
+             &Predicate::TRUE,
+             // operation model effects.
+             &[a!(p:ap = pt)],
+             // low level goal
+             &p!(p: ap == pt),
+             // low level actions (should not be needed)
+             &[],
+             // resets
+             true, true, None);
+
+    m.add_op("move_dorna_to_scan",
+             // operation model guard.
+             // &p!(p:ap == pt), we cant have a guard here...
+             &Predicate::TRUE,
+             // operation model effects.
+             &[a!(p:ap = scan)],
+             // low level goal
+             &p!(p: ap == scan),
+             // low level actions (should not be needed)
+             &[],
+             // resets
+             true, true, None);
+
+
+    m.add_intention(
+        "testing1",
+        true,
+        &p!(p: ap == pt),
+        &p!(p: ap == scan),
+        &[],
+        None,
+    );
+
+    m.add_intention(
+        "testing2",
+        true,
+        &p!(p: ap == scan),
+        &p!(p: ap == pt),
+        &[],
+        None,
+    );
 
     // INTENTIONS
     let np = |p: i32| {
@@ -300,30 +348,9 @@ mod test {
     #[test]
     #[serial]
     fn test_cylinders() {
-        let (m, s, g) = cylinders();
+        let (m, s) = cylinders();
 
-        //make_runner_model(&m);
-
-        let mut ts_model = TransitionSystemModel::from(&m);
-
-        let mut new_specs = Vec::new();
-        for s in &ts_model.specs {
-            new_specs.push(Spec::new(s.name(), refine_invariant(&ts_model, s.invariant())));
-        }
-        ts_model.specs = new_specs;
-
-        let goal = (g, None);
-        let plan = plan(&ts_model, &[goal], &s, 50);
-
-        println!("\n\n\n");
-
-        if plan.plan_found {
-            plan.trace.iter().enumerate().skip(1).for_each(|(i, t)| {
-                println!("{}: {}", i, t.transition);
-            });
-        } else {
-            println!("no plan found");
-        }
+        make_new_runner(&m, s, true);
 
         println!("\n\n\n");
     }
