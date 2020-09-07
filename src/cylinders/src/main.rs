@@ -55,7 +55,7 @@ pub fn cylinders() -> (Model, SPState) {
     m.make_product_var(ap);
 
     let cf = camera.find_item("finished", &[]);
-    let ce = camera.find_item("enabled", &[]);
+    let camera_start = camera.find_item("start", &[]);
 
     let cr = &camera["result"];
     let cd = &camera["do_scan"];
@@ -161,7 +161,8 @@ pub fn cylinders() -> (Model, SPState) {
     );
 
     // we can only scan the product in front of the camera
-    m.add_invar("product_at_camera", &p!([!p:ce] => [[p:ap == scan] && [!p:dorna_moving]]));
+    m.synchronize(&camera_start, "scan_with_dorna_in_place",
+                  p!([p:ap == scan] && [!p:dorna_moving]), &[]);
 
     // dorna take/leave products
     let pos = vec![
