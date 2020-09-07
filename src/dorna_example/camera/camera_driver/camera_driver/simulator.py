@@ -16,6 +16,7 @@ from camera_msgs.msg import Measured
 
 from sp_messages.msg import NodeCmd
 from sp_messages.msg import NodeMode
+from sp_messages.msg import RegisterResource
 from ament_index_python.packages import get_package_share_directory
 
 class CameraSimulator(Node):
@@ -36,6 +37,12 @@ class CameraSimulator(Node):
         self.sp_node_cmd = NodeCmd()
         self.mode = NodeMode()
         self.mode.mode = "init"
+
+        # Resource
+        self.resource = RegisterResource()
+        self.resource.path = "sp/camera/" + self.get_name()  # get name from node
+        self.resource.model = ""
+        self.resource.last_goal_from_sp = ""
 
         self.subscriber = self.create_subscription(
             Goal,
@@ -59,6 +66,11 @@ class CameraSimulator(Node):
             "mode",
             10)
 
+        self.sp_resource_publisher = self.create_publisher(
+            RegisterResource,
+            "/sp/resource",
+            10)
+
         self.timer = self.create_timer(2, self.tick)
         self.get_logger().info('Camera up and running!')
 
@@ -77,6 +89,7 @@ class CameraSimulator(Node):
             self.done = True
 
         self.publish_state()
+        self.sp_resource_publisher.publish(self.resource)
 
 
     def sp_goal_callback(self, data):
