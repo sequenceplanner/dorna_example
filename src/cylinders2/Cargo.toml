@@ -9,8 +9,8 @@ edition = "2018"
 [dependencies]
 # sp-domain = { path = "/home/martin/sp/sp-domain" }
 # sp-runner = { path = "/home/martin/sp/sp-runner" }
-sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "283db0d" }
-sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "283db0d" }
+sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "e07b8bd" }
+sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "e07b8bd" }
 
 sp-resources = {path = "../sp_resources/"}
 
