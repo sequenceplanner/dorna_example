@@ -1,6 +1,5 @@
 use sp_domain::*;
 use sp_runner::*;
-use std::collections::HashMap; // todo: macro depends on this...
 
 pub fn create_instance(name: &str) -> Resource {
     resource! {
@@ -22,29 +21,22 @@ pub fn create_instance(name: &str) -> Resource {
             fail_count : vec![0,1,2],
         },
 
-        ability!{
-            name: close,
-
-            enabled : p!(!closed),
-            executing : p!([close] && [!closed]),
-            finished : p!(closed),
-
-            *start0 : p!([enabled] && [fail_count == 0]) => [ a!(close), a!(fail_count = 1) ] / [],
-            *start1 : p!([enabled] && [fail_count == 1]) => [ a!(close), a!(fail_count = 2) ] / [],
-            finish_part : p!(executing) => [] / [a!(closed), a!(part_sensor)],
-            finish_no_part : p!(executing) => [] / [a!(closed), a!(!part_sensor)],
-            finished_reset_fc : p!([finished] && [part_sensor] && [fail_count != 0]) => [a!(fail_count = 0)] / [],
+        predicates!{
+            opening: p!([!close] && [closed]),
+            closing: p!([close] && [!closed]),
         },
 
-        ability!{
-            name: open,
+        transitions!{
+            // close
+            c_close_start0 : p!([!closed] && [fail_count == 0]), vec![ a!(close), a!(fail_count = 1) ],
+            c_close_start1 : p!([!closed] && [fail_count == 1]), vec![ a!(close), a!(fail_count = 2) ],
+            e_close_finish_part : p!(closing), vec![a!(closed), a!(part_sensor)],
+            e_close_finish_no_part : p!(closing), vec![a!(closed), a!(!part_sensor)],
+            a_close_finished_reset_fc : p!([closed] && [part_sensor] && [fail_count != 0]), vec![a!(fail_count = 0)],
 
-            enabled : p!(closed),
-            executing : p!([!close] && [closed]),
-            finished : p!(!closed),
-
-            *start : p!(enabled) => [ a!(!close) ] / [],
-            finish : p!(executing) => [] / [a!(!closed), a!(!part_sensor)],
+            // open
+            c_open_start : p!(closed), vec![ a!(!close) ],
+            e_open_finish : p!(opening), vec![a!(!closed), a!(!part_sensor)],
         },
 
         never!{

@@ -1,6 +1,5 @@
 use sp_domain::*;
 use sp_runner::*;
-use std::collections::HashMap; // todo: macro depends on this...
 
 pub fn create_instance(name: &str) -> Resource {
     resource! {
@@ -20,23 +19,23 @@ pub fn create_instance(name: &str) -> Resource {
             result : vec![0,1,2,3],
         },
 
-        ability!{
-            name: scan,
-
+        predicates!{
             enabled : p!([!do_scan] && [!scanning]),
             started: p!([do_scan] && [!scanning]),
             executing : p!([do_scan] && [scanning] && [!done]),
             finished : p!([do_scan] && [scanning] && [done]),
             resetting : p!([!do_scan] && [scanning] && [done]),
+        },
 
-            *start : p!(enabled) => [ a!(do_scan) ] / [],
-            starting : p!(started) => [] / [a!(scanning), a!(!done)],
-            finish_0 : p!(executing) => [] / [a!(done), a!(scanning), a!(result = 0)],
-            finish_1 : p!(executing) => [] / [a!(done), a!(scanning), a!(result = 1)],
-            finish_2 : p!(executing) => [] / [a!(done), a!(scanning), a!(result = 2)],
-            finish_3 : p!(executing) => [] / [a!(done), a!(scanning), a!(result = 3)],
-            *reset : p!(finished) => [a!(!do_scan)] / [],
-            reset_effect : p!(resetting) => [] / [a!(!done), a!(!scanning), a!(result = 0)],
+        transitions!{
+            c_start : p!(enabled), vec![ a!(do_scan) ],
+            e_starting : p!(started), vec![a!(scanning), a!(!done)],
+            e_finish_0 : p!(executing), vec![a!(done), a!(scanning), a!(result = 0)],
+            e_finish_1 : p!(executing), vec![a!(done), a!(scanning), a!(result = 1)],
+            e_finish_2 : p!(executing), vec![a!(done), a!(scanning), a!(result = 2)],
+            e_finish_3 : p!(executing), vec![a!(done), a!(scanning), a!(result = 3)],
+            c_reset : p!(finished), vec![a!(!do_scan)],
+            e_reset_effect : p!(resetting), vec![a!(!done), a!(!scanning), a!(result = 0)],
         },
 
         never!{

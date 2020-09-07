@@ -5,7 +5,7 @@ use sp_resources::*;
 
 
 fn main() -> Result<(), Error> {
-    let (model, initial_state, _) = cylinders();
+    let (model, initial_state) = cylinders();
 
     launch_model(model, initial_state)?;
 
@@ -13,7 +13,7 @@ fn main() -> Result<(), Error> {
 }
 
 
-pub fn cylinders() -> (Model, SPState, Predicate) {
+pub fn cylinders() -> (Model, SPState) {
     let mut m = GModel::new("cylinders2");
 
     let pt = "pre_take";
@@ -24,10 +24,10 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     let leave = "leave"; // down at conveyor
 
     let dorna = m.use_named_resource("dorna", dorna::create_instance("r1", &[pt, scan, t1, t2, t3, leave]));
-    let dorna_moving = dorna.find_item("executing", &["move_to"]);
+    let dorna_moving = dorna.find_item("moving", &[]);
     let dorna2 = m.use_named_resource("dorna", dorna::create_instance("r2", &[pt, scan, t1, t2, t3, leave]));
     let dorna3 = m.use_named_resource("dorna", dorna::create_instance("r3", &[pt, scan, leave]));
-    let dorna3_moving = dorna3.find_item("executing", &["move_to"]);
+    let dorna3_moving = dorna3.find_item("moving", &[]);
     let dorna4 = m.use_named_resource("dorna", dorna::create_instance("r4", &[pt, scan, leave]));
 
     let cb = m.use_resource(control_box::create_instance("control_box"));
@@ -77,8 +77,8 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
 
     let gripper_part = &gripper["part_sensor"];
     let gripper_closed = &gripper["closed"];
-    let gripper_opening = gripper.find_item("executing", &["open"]);
-    let gripper_closing = gripper.find_item("executing", &["close"]);
+    let gripper_opening = gripper.find_item("opening", &[]);
+    let gripper_closing = gripper.find_item("closing", &[]);
     let gripper_fc = &gripper["fail_count"];
 
     // define robot movement
@@ -485,12 +485,6 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
         None,
     );
 
-    // goal for testing
-    // let g = p!([p:shelf1 == 1] && [p:shelf2 == 2] && [p:shelf3 == 3]);
-    //let g = p!([p:shelf1 == 1]);
-    //let g = p!([p: conveyor == 0]);
-
-    let g = p!([p: ap == leave]);
 
     let pp2 = &dorna2["prev_pos"];
     let pp3 = &dorna3["prev_pos"];
@@ -519,8 +513,7 @@ pub fn cylinders() -> (Model, SPState, Predicate) {
     ]);
 
     println!("MAKING MODEL");
-    let (m, s) = m.make_model();
-    (m, s, g)
+    m.make_model()
 }
 
 #[cfg(test)]
