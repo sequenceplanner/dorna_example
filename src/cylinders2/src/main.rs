@@ -240,13 +240,14 @@ pub fn cylinders() -> (Model, SPState) {
     let rp3 = &dorna3["ref_pos"];
 
     for (pos_name, pos) in pos.iter() {
-        let buffer_predicate = if pos_name == &pt {
-            // when taking the product, because we have an auto transition that consumes it,
-            // we need to be sure that the product will still be there
-            p!([p: pos == 100] && [p: dorna3_holding == 0])
-        } else {
-            p!([p: pos != 0] && [p: dorna3_holding == 0])
-        };
+        // let buffer_predicate = if pos_name == &pt {
+        //     // when taking the product, because we have an auto transition that consumes it,
+        //     // we need to be sure that the product will still be there
+        //     p!([p: pos == 100] && [p: dorna3_holding == 0])
+        // } else {
+        //     p!([p: pos != 0] && [p: dorna3_holding == 0])
+        // };
+        // ^ commented out to see of model checker catches it. it does.
 
         m.add_op(&format!("r3_take_{}", pos.leaf()),
                  // operation model guard.
@@ -331,19 +332,15 @@ pub fn cylinders() -> (Model, SPState) {
         // scan to figure out the which product we are holding
         let kind = p.1.clone();
 
-        for r in 1..=3 {
-            m.add_op(&format!("scan_{}_{}", n, r),
-                     // operation model guard.
+        m.add_op_alt(&format!("scan_{}", n),
                      &p!([p: dorna_holding == n] && [p: kind == 100]),
-                     // operation model (alternative) effects.
-                     &[a!(p: kind = r)],
-                     // low level goal
-                     &p!([p: cf] && [p: cr == r] && [p: ap == scan]),
-                     // low level actions (should not be needed)
+                     &[
+                         (&[a!(p: kind = 1)], &p!([p: cf] && [p: cr == 1] && [p: ap == scan])),
+                         (&[a!(p: kind = 2)], &p!([p: cf] && [p: cr == 2] && [p: ap == scan])),
+                         (&[a!(p: kind = 3)], &p!([p: cf] && [p: cr == 3] && [p: ap == scan])),
+                     ],
                      &[a!(!p: cd)], // reset camera
                      true, true, None);
-        }
-
 
         // product sink is at conveyor2, only accepts identified products.
         m.add_op(&format!("consume_known_product_{}", n),
@@ -524,30 +521,9 @@ mod test {
     #[test]
     #[serial]
     fn test_cylinders() {
-        let (m, s, g) = cylinders();
+        let (m, s) = cylinders();
 
-        //make_runner_model(&m);
-
-        let mut ts_model = TransitionSystemModel::from(&m);
-
-        let mut new_specs = Vec::new();
-        for s in &ts_model.specs {
-            new_specs.push(Spec::new(s.name(), refine_invariant(&ts_model, s.invariant())));
-        }
-        ts_model.specs = new_specs;
-
-        let goal = (g, None);
-        let plan = plan(&ts_model, &[goal], &s, 50);
-
-        println!("\n\n\n");
-
-        if plan.plan_found {
-            plan.trace.iter().enumerate().skip(1).for_each(|(i, t)| {
-                println!("{}: {}", i, t.transition);
-            });
-        } else {
-            println!("no plan found");
-        }
+        make_new_runner(&m, s, true);
 
         println!("\n\n\n");
     }

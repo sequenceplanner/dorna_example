@@ -227,15 +227,15 @@ pub fn cylinders() -> (Model, SPState) {
     //              true, true, None);
     // }
 
-    m.add_op_nd("new_scan",
-                &p!([p: dorna_holding == 100]),
-                &[
-                    (&[a!(p: dorna_holding = 1)], &p!([p: cf] && [p: cr == 1] && [p: ap == scan])),
-                    (&[a!(p: dorna_holding = 2)], &p!([p: cf] && [p: cr == 2] && [p: ap == scan])),
-                    (&[a!(p: dorna_holding = 3)], &p!([p: cf] && [p: cr == 3] && [p: ap == scan])),
-                ],
-                &[a!(!p: cd)], // reset camera
-                true, true, None);
+    m.add_op_alt("scan",
+                 &p!([p: dorna_holding == 100]),
+                 &[
+                     (&[a!(p: dorna_holding = 1)], &p!([p: cf] && [p: cr == 1] && [p: ap == scan])),
+                     (&[a!(p: dorna_holding = 2)], &p!([p: cf] && [p: cr == 2] && [p: ap == scan])),
+                     (&[a!(p: dorna_holding = 3)], &p!([p: cf] && [p: cr == 3] && [p: ap == scan])),
+                 ],
+                 &[a!(!p: cd)], // reset camera
+                 true, true, None);
 
     // product sink is at conveyor, only accepts identified products.
     m.add_op("consume_known_product",
