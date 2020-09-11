@@ -214,18 +214,28 @@ pub fn cylinders() -> (Model, SPState) {
     //            &[a!(p: dorna_holding = 1)]);
 
     // scan to figure out the which product we are holding
-    for i in 1..=3 {
-        m.add_op(&format!("scan_{}", i),
-                 // operation model guard.
-                 &p!([p: dorna_holding == 100]),
-                 // operation model (alternative) effects.
-                 &[a!(p: dorna_holding = i), a!(p:ap = scan)],
-                 // low level goal
-                 &p!([p: cf] && [p: cr == i] && [p: ap == scan]),
-                 // low level actions (should not be needed)
-                 &[a!(!p: cd)], // reset camera
-                 true, true, None);
-    }
+    // for i in 1..=3 {
+    //     m.add_op(&format!("scan_{}", i),
+    //              // operation model guard.
+    //              &p!([p: dorna_holding == 100]),
+    //              // operation model (alternative) effects.
+    //              &[a!(p: dorna_holding = i), a!(p:ap = scan)],
+    //              // low level goal
+    //              &p!([p: cf] && [p: cr == i] && [p: ap == scan]),
+    //              // low level actions (should not be needed)
+    //              &[a!(!p: cd)], // reset camera
+    //              true, true, None);
+    // }
+
+    m.add_op_nd("new_scan",
+                &p!([p: dorna_holding == 100]),
+                &[
+                    (&[a!(p: dorna_holding = 1)], &p!([p: cf] && [p: cr == 1] && [p: ap == scan])),
+                    (&[a!(p: dorna_holding = 2)], &p!([p: cf] && [p: cr == 2] && [p: ap == scan])),
+                    (&[a!(p: dorna_holding = 3)], &p!([p: cf] && [p: cr == 3] && [p: ap == scan])),
+                ],
+                &[a!(!p: cd)], // reset camera
+                true, true, None);
 
     // product sink is at conveyor, only accepts identified products.
     m.add_op("consume_known_product",
