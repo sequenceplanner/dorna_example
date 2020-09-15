@@ -12,8 +12,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from sp_operator_msgs.msg import Goal
 from sp_operator_msgs.msg import State
-from sp_messages.msg import NodeCmd
-from sp_messages.msg import NodeMode
+from .spnode import SPNode
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -31,17 +30,12 @@ class Callbacks():
     def __init__(self):
         super(Callbacks, self).__init__()
 
-class OperatorUI(Node, Callbacks):
+class OperatorUI(SPNode, Callbacks):
     def __init__(self):
         Node.__init__(self, "sp_operator")
         Callbacks.__init__(self)
 
         Callbacks.trigger_node = self.trigger
-
-        # sp node mode
-        self.sp_node_cmd = NodeCmd()
-        self.mode = NodeMode()
-        self.mode.mode = "init"
 
         self.subscriber = self.create_subscription(
             Goal,
@@ -49,20 +43,9 @@ class OperatorUI(Node, Callbacks):
             self.sp_cmd_callback,
             10)
 
-        self.sp_node_cmd_subscriber = self.create_subscription(
-            NodeCmd,
-            "node_cmd",
-            self.sp_node_cmd_callback,
-            10)
-
         self.state_publisher = self.create_publisher(
             State,
             "state",
-            10)
-
-        self.sp_mode_publisher = self.create_publisher(
-            NodeMode,
-            "mode",
             10)
 
         print('Up and running...')
@@ -75,29 +58,11 @@ class OperatorUI(Node, Callbacks):
         Callbacks.goal = data
         self.get_logger().info('goal: "%s"' % data)
         Callbacks.trigger_ui()
+        self.goal_to_json(Goal, data)
 
         self.state_publisher.publish(Callbacks.state)
 
 
-    def sp_node_cmd_callback(self, data):
-        self.get_logger().info('"%s"' % data)
-        self.node_cmd = data
-        Callbacks.goal.to_do = data.mode
-        Callbacks.trigger_ui()
-
-        # move to general function in sp
-        echo_msg = {}
-        for k in Goal.get_fields_and_field_types().keys():
-            echo_msg.update({k: getattr(Callbacks.goal, "_"+k)})
-
-        self.mode.echo = json.dumps(echo_msg)
-
-        if self.node_cmd.mode == "run":
-            self.mode.mode = "running"
-        else:
-            self.mode.mode = "init"
-
-        self.sp_mode_publisher.publish(self.mode)
 
 
 class Window(QWidget, Callbacks):

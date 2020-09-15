@@ -10,19 +10,15 @@ import json
 
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
+from .spnode import SPNode
 
 from robot_msgs.msg import GuiToRobot, RobotGoal, RobotState
 
-from sp_messages.msg import NodeCmd
-from sp_messages.msg import NodeMode
 
-
-class RobotSimulator(Node):
+class RobotSimulator(SPNode):
 
     def __init__(self):
-        super().__init__(
-            node_name="robot_simulator"
-        )
+        super().__init__("robot_simulator")
 
         self.saved_poses_file = self.declare_parameter("saved_poses_file").value
         self.joint_names = self.declare_parameter("joint_names").value
@@ -44,6 +40,9 @@ class RobotSimulator(Node):
         if self.initial_pose_name != "unknown":
             self.ref_pos = self.poses[self.initial_pose_name][:]
             self.act_pos = self.poses[self.initial_pose_name][:]
+
+        # initial goal
+        self.goal_to_json(RobotGoal, RobotGoal(ref_pos = self.initial_pose_name))
 
         # gui to robot:
         self.gui_to_robot = GuiToRobot()
@@ -96,44 +95,6 @@ class RobotSimulator(Node):
 
 
 
-        # node management
-        self.mode = NodeMode()
-        self.mode.mode = "init"
-        self.node_cmd = NodeCmd()
-
-        self.sp_node_cmd_subscriber = self.create_subscription(
-            NodeCmd,
-            "node_cmd",
-            self.sp_node_cmd_callback,
-            10)
-
-        self.sp_mode_publisher = self.create_publisher(
-            NodeMode,
-            "mode",
-            10)
-
-    def sp_node_cmd_callback(self, data):
-        '''
-        Handles the handshaking with sp
-        '''
-        self.node_cmd = data
-        self.robot_goal_msg.ref_pos = self.pose_from_position(self.poses, self.ref_pos)
-
-        # move to general function in sp
-        echo_msg = {}
-        for k in RobotGoal.get_fields_and_field_types().keys():
-            echo_msg.update({k: getattr(self.robot_goal_msg, "_"+k)})
-
-        self.mode.echo = json.dumps(echo_msg)
-
-        if self.node_cmd.mode == "run":
-            self.mode.mode = "running"
-        else:
-            self.mode.mode = "init"
-
-        self.sp_mode_publisher.publish(self.mode)
-
-
     def load_poses(self, file):
         result = {}
         with open(file, 'r') as joint_csv:
@@ -155,8 +116,7 @@ class RobotSimulator(Node):
         return result
 
     def robot_goal_callback(self, data):
-        if self.mode.mode != "running":
-            return
+        self.goal_to_json(RobotGoal, data)
 
         self.robot_goal_msg = data
         if not self.gui_to_robot.gui_control_enabled and self.robot_goal_msg.ref_pos in self.poses:

@@ -9,3 +9,7 @@ cd ../../
 cd ./src/dorna_example/control_box/control_box_simulator/
 cargo clean
 cd ../../../../
+
+cd ./src/dorna_example/gripper/gripper_simulator/
+cargo clean
+cd ../../../
