@@ -4,7 +4,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use r2r::control_box_msgs::msg::{Goal, Measured};
-use r2r::sp_messages::msg::{RegisterResource, Resources};
 
 mod resource_handler;
 
