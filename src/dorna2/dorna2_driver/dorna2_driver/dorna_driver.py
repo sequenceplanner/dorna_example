@@ -9,26 +9,23 @@ import numpy
 import ast
 from dorna2_driver import dorna
 import json
+from .spnode import SPNode
 
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 
-from dorna2.msg import DornaGuiToEsd
-from dorna2.msg import DornaEsdToGui
-from dorna2.msg import Goal
-from dorna2.msg import State
-
-# from sp_messages.msg import NodeCmd
-# from sp_messages.msg import NodeMode
+from robot_msgs.msg import GuiToRobot
+from robot_msgs.msg import RobotToGui
+from robot_msgs.msg import RobotGoal
+from robot_msgs.msg import RobotState
 
 from ament_index_python.packages import get_package_share_directory
 from launch.substitutions import LaunchConfiguration
 
-class Ros2DornaDriver(Node):
+class Ros2DornaDriver(SPNode):
 
     def __init__(self, homing):
         super().__init__("ros2_dorna_driver")
-
 
         config = os.path.join(get_package_share_directory('dorna2_driver'), 'config.yaml')
         self.robot = dorna.Dorna(config)
@@ -49,6 +46,9 @@ class Ros2DornaDriver(Node):
             ret = self.robot.home(["j0", "j1", "j2", "j3", "j4"])
             self.get_logger().info(ret)
             self.get_logger().info('Homing done.')
+
+        # initial goal
+        self.goal_to_json(RobotGoal, RobotGoal(ref_pos = "unknown"))
 
 
         # check that we are in fact homed
@@ -75,34 +75,34 @@ class Ros2DornaDriver(Node):
             'poses', 'joint_poses.csv')
 
         # gui to esd:
-        self.gui_to_esd_msg = DornaGuiToEsd()
+        self.gui_to_esd_msg = GuiToRobot()
         self.gui_to_esd_msg.gui_control_enabled = False
         self.gui_to_esd_msg.gui_speed_control = 0
         self.gui_to_esd_msg.gui_joint_control = [0.0, 0.0, 0.0, 0.0, 0.0]
 
         self.gui_to_esd_subscriber = self.create_subscription(
-            DornaGuiToEsd,
+            GuiToRobot,
             "/dorna_gui_to_esd",
             self.gui_to_esd_callback,
             10)
 
         # sp to esd:
-        self.sp_to_esd_msg = Goal()
+        self.sp_to_esd_msg = RobotGoal()
         self.sp_to_esd_msg.ref_pos = self.get_pose_name_from_pose()
 
 
         self.sp_to_esd_subscriber = self.create_subscription(
-            Goal,
+            RobotGoal,
             "/dorna/goal",
             self.sp_to_esd_callback,
             10)
 
         # esd to gui:
-        self.esd_to_gui_msg = DornaEsdToGui()
+        self.esd_to_gui_msg = RobotToGui()
         self.esd_to_gui_msg.actual_pose = self.get_pose_name_from_pose()
 
         self.esd_to_gui_publisher_ = self.create_publisher(
-            DornaEsdToGui,
+            RobotToGui,
             "/dorna_esd_to_gui",
             10)
 
@@ -126,50 +126,14 @@ class Ros2DornaDriver(Node):
             self.joint_state_publisher_callback)
 
         # esd to sp:
-        self.esd_to_sp_msg = State()
+        self.esd_to_sp_msg = RobotState()
         self.esd_to_sp_msg.act_pos = ""
 
         self.esd_to_sp_publisher_ = self.create_publisher(
-            State,
-            "/dorna/state",
+            RobotState,
+            "/dorna/measured",
             10)
 
-        # node management
-        self.mode = NodeMode()
-        self.mode.mode = "init"
-
-        self.sp_node_cmd_subscriber = self.create_subscription(
-            NodeCmd,
-            "/dorna/node_cmd",
-            self.sp_node_cmd_callback,
-            10)
-
-        self.sp_mode_publisher = self.create_publisher(
-            NodeMode,
-            "/dorna/mode",
-            10)
-
-    def sp_node_cmd_callback(self, data):
-        self.node_cmd = data
-
-        # refresh poses in case gui was used to move the robot
-        self.update_act_pos()
-        self.sp_to_esd_msg.ref_pos = self.get_pose_name_from_pose()
-        self.esd_to_gui_msg.actual_pose = self.get_pose_name_from_pose()
-
-        # move to general function in sp
-        echo_msg = {}
-        for k in Goal.get_fields_and_field_types().keys():
-            echo_msg.update({k: getattr(self.sp_to_esd_msg, "_"+k)})
-
-        self.mode.echo = json.dumps(echo_msg)
-
-        if self.node_cmd.mode == "run":
-            self.mode.mode = "running"
-        else:
-            self.mode.mode = "init"
-
-        self.sp_mode_publisher.publish(self.mode)
 
 
     def get_pose_from_pose_name(self, name):
@@ -237,6 +201,7 @@ class Ros2DornaDriver(Node):
         if self.gui_to_esd_msg.gui_control_enabled:
             return
 
+        self.goal_to_json(RobotGoal, data)
         self.sp_to_esd_msg.ref_pos = data.ref_pos
         pose_list = self.read_and_generate_pose_list()
         if self.sp_to_esd_msg.ref_pos in pose_list:

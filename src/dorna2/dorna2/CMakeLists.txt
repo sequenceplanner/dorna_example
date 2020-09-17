@@ -26,7 +26,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 set(msg_files
   "msg/Goal.msg"
-  "msg/State.msg"
+  "msg/Measured.msg"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}

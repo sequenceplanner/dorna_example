@@ -14,7 +14,7 @@ pub fn create_instance(name: &str, poses: &[&str]) -> Resource {
             ref_pos : domain,
         },
         measured!{
-            topic: "state",
+            topic: "measured",
             msg_type: "robot_msgs/msg/RobotState",
 
             act_pos : domain,

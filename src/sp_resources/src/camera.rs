@@ -11,8 +11,8 @@ pub fn create_instance(name: &str) -> Resource {
             do_scan : bool,
         },
         measured!{
-            topic: "state",
-            msg_type: "camera_msgs/msg/State",
+            topic: "measured",
+            msg_type: "camera_msgs/msg/Measured",
 
             scanning : bool,
             done : bool,

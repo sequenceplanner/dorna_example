@@ -34,6 +34,7 @@ def generate_launch_description():
                 executable='control_box_simulator',
                 namespace='/control_box',
                 output='screen',
+                arguments = ['--ros-args', '--log-level', 'INFO'],
                 )
 
     gripper = launch_ros.actions.Node(
@@ -49,12 +50,12 @@ def generate_launch_description():
                 namespace='/',
                 output='screen',
                 )
-    sp_operator = launch_ros.actions.Node(
-                package='sp_operator',
-                executable='sp_operator',
-                namespace='/sp_operator/op1',
-                output='screen',
-                )
+    # sp_operator = launch_ros.actions.Node(
+    #             package='sp_operator',
+    #             executable='sp_operator',
+    #             namespace='/sp_operator/op1',
+    #             output='screen',
+    #             )
 
     sp = launch_ros.actions.Node(
                 package='cylinders',
@@ -71,8 +72,14 @@ def generate_launch_description():
                                    output='screen', condition = rviz_cond)
 
     rviz_nodes = [launch_rviz, rviz]
-    nodes = [scene_manipulation_service, camera_node, control_box,
-             gripper, sp_ui, sp_operator, sp]
+    nodes = [scene_manipulation_service, 
+            camera_node, 
+            control_box,
+            gripper, 
+            sp, 
+            sp_ui,
+            #  sp_operator,
+             ]
     return launch.LaunchDescription(r1 + r2 + nodes + rviz_nodes)
 
 
@@ -145,4 +152,4 @@ def make_dorna_simulation(name, poses_file):
                 parameters=[gui_parameters]
                 )
 
-    return [rsp_node, sim_node, gui_node]
+    return [rsp_node, sim_node]#, gui_node]
