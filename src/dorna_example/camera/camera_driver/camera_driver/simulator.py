@@ -1,24 +1,16 @@
-import sys
-import rclpy
-import time
-import csv
-import os
-import math
-import numpy
-import ast
-import json
-import yaml
+
 import random
+import rclpy
+
+from .spnode import SPNode
 from rclpy.node import Node
 
 from camera_msgs.msg import Goal
-from camera_msgs.msg import State
+from camera_msgs.msg import Measured
 
-from sp_messages.msg import NodeCmd
-from sp_messages.msg import NodeMode
 from ament_index_python.packages import get_package_share_directory
 
-class CameraSimulator(Node):
+class CameraSimulator(SPNode):
 
     def __init__(self):
         super().__init__("camera_simulator")
@@ -28,14 +20,8 @@ class CameraSimulator(Node):
         self.done = False
         self.result = 0
 
-        # remember last goal
-        self.last_seen_goal = Goal()
-        self.last_seen_goal.do_scan = False
-
-        # sp node mode
-        self.sp_node_cmd = NodeCmd()
-        self.mode = NodeMode()
-        self.mode.mode = "init"
+        # initial goal
+        self.goal_to_json(Goal, Goal(do_scan = False))
 
         self.subscriber = self.create_subscription(
             Goal,
@@ -43,27 +29,20 @@ class CameraSimulator(Node):
             self.sp_goal_callback,
             10)
 
-        self.sp_node_cmd_subscriber = self.create_subscription(
-            NodeCmd,
-            "node_cmd",
-            self.sp_node_cmd_callback,
-            10)
 
         self.state_publisher = self.create_publisher(
-            State,
-            "state",
-            10)
-
-        self.sp_mode_publisher = self.create_publisher(
-            NodeMode,
-            "mode",
+            Measured,
+            "measured",
             10)
 
         self.timer = self.create_timer(2, self.tick)
         self.get_logger().info('Camera up and running!')
 
+        g = Goal()
+        self.sp_goal_callback(g)
+
     def publish_state(self):
-        msg = State()
+        msg = Measured()
         msg.scanning = self.scanning
         msg.done = self.done
         msg.result = self.result
@@ -77,6 +56,7 @@ class CameraSimulator(Node):
             self.done = True
 
         self.publish_state()
+        
 
 
     def sp_goal_callback(self, data):
@@ -91,24 +71,13 @@ class CameraSimulator(Node):
             self.done = False
             self.result = 0
 
+        self.goal_to_json(Goal, data)
         self.publish_state()
 
-    def sp_node_cmd_callback(self, data):
-        self.sp_node_cmd = data
+    
 
-        # move to general function in sp
-        echo_msg = {}
-        for k in Goal.get_fields_and_field_types().keys():
-            echo_msg.update({k: getattr(self.last_seen_goal, "_"+k)})
 
-        self.mode.echo = json.dumps(echo_msg)
 
-        if self.sp_node_cmd.mode == "run":
-            self.mode.mode = "running"
-        else:
-            self.mode.mode = "init"
-
-        self.sp_mode_publisher.publish(self.mode)
 
 
 def main(args=None):

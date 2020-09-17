@@ -11,8 +11,8 @@ pub fn create_instance(name: &str) -> Resource {
             blue_light : bool,
         },
         measured!{
-            topic: "state",
-            msg_type: "control_box_msgs/msg/State",
+            topic: "measured",
+            msg_type: "control_box_msgs/msg/Measured",
 
             blue_light_on : bool,
         },
