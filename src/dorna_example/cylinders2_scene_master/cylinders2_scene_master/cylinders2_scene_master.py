@@ -30,13 +30,13 @@ class SceneMaster(Node):
         self.marker_timer_period = 0.03
 
         self.sp_path_to_product_name = {
-            'cylinders2/product_state/dorna_holding': 'dorna',
-            'cylinders2/product_state/dorna3_holding': 'dorna3',
-            'cylinders2/product_state/shelf1': 'shelf1',
-            'cylinders2/product_state/shelf2': 'shelf2',
-            'cylinders2/product_state/shelf3': 'shelf3',
-            'cylinders2/product_state/conveyor': 'conveyor',
-            'cylinders2/product_state/conveyor2': 'conveyor2',
+            '/cylinders2/product_state/dorna_holding': 'dorna',
+            '/cylinders2/product_state/dorna3_holding': 'dorna3',
+            '/cylinders2/product_state/shelf1': 'shelf1',
+            '/cylinders2/product_state/shelf2': 'shelf2',
+            '/cylinders2/product_state/shelf3': 'shelf3',
+            '/cylinders2/product_state/conveyor': 'conveyor',
+            '/cylinders2/product_state/conveyor2': 'conveyor2',
         }
 
         self.products = {
@@ -108,6 +108,9 @@ class SceneMaster(Node):
             self.marker_timer_period,
             self.publish_markers)
 
+        # remove the cubes initially
+        self.remove_empty()
+
     def cube_marker(self, frame, color):
         marker = Marker()
         marker.header.frame_id = frame
@@ -145,11 +148,11 @@ class SceneMaster(Node):
                 v = json.loads(s.value_as_json)
                 self.products[pn] = v
 
-            if s.path == "cylinders2/product_state/product_1_kind":
+            if s.path == "/cylinders2/product_state/product_1_kind":
                 self.product_types[1] = json.loads(s.value_as_json)
-            elif s.path == "cylinders2/product_state/product_2_kind":
+            elif s.path == "/cylinders2/product_state/product_2_kind":
                 self.product_types[2] = json.loads(s.value_as_json)
-            elif s.path == "cylinders2/product_state/product_3_kind":
+            elif s.path == "/cylinders2/product_state/product_3_kind":
                 self.product_types[3] = json.loads(s.value_as_json)
 
         # update what has changed
