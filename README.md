@@ -17,6 +17,11 @@ Building:
 colcon build
 ```
 
+To rebuild the generated Rust messages, you can run:
+```
+colcon build --cmake-args -DCARGO_CLEAN=ON
+```
+
 Running:
 -----------------
 
