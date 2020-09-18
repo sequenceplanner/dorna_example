@@ -287,17 +287,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cylinders"
-version = "0.1.0"
-dependencies = [
- "failure",
- "serial_test",
- "sp-domain",
- "sp-resources",
- "sp-runner",
-]
-
-[[package]]
 name = "either"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1217,6 +1206,17 @@ dependencies = [
  "serde",
  "serde_json",
  "sp-domain",
+]
+
+[[package]]
+name = "sp_model"
+version = "0.1.0"
+dependencies = [
+ "failure",
+ "serial_test",
+ "sp-domain",
+ "sp-resources",
+ "sp-runner",
 ]
 
 [[package]]

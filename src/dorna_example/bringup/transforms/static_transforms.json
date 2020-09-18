@@ -35,46 +35,12 @@
             }
         },
         {
-            "frame_id": "cubes/buffer1",
+            "frame_id": "dorna/r3/dorna_base_link",
             "parent_id": "world",
             "transform": {
                 "Vector3": {
-                    "x": 0.0,
-                    "y": 0.4,
-                    "z": 0.0
-                },
-                "Quaternion": {
-                    "x": 0.516,
-                    "y": -0.485,
-                    "z": -0.514,
-                    "w": -0.4832
-                }
-            }
-        },
-        {
-            "frame_id": "cubes/buffer2",
-            "parent_id": "world",
-            "transform": {
-                "Vector3": {
-                    "x": 0.0,
-                    "y": -0.4,
-                    "z": 0.0
-                },
-                "Quaternion": {
-                    "x": 0.52,
-                    "y": 0.47,
-                    "z": -0.524,
-                    "w": 0.4832
-                }
-            }
-        },
-        {
-            "frame_id": "cubes/table1",
-            "parent_id": "world",
-            "transform": {
-                "Vector3": {
-                    "x": 0.1,
-                    "y": 0.0,
+                    "x": 0.3,
+                    "y": 0.3,
                     "z": 0.0
                 },
                 "Quaternion": {
@@ -86,12 +52,114 @@
             }
         },
         {
-            "frame_id": "cubes/table2",
+            "frame_id": "dorna/r4/dorna_base_link",
             "parent_id": "world",
             "transform": {
                 "Vector3": {
-                    "x": -0.1,
+                    "x": -0.3,
+                    "y": -0.3,
+                    "z": 0.0
+                },
+                "Quaternion": {
+                    "x": 0.0,
                     "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "frame_id": "/cylinders2/shelf1",
+            "parent_id": "world",
+            "transform": {
+                "Vector3": {
+                    "x": 0.16,
+                    "y": 0.013,
+                    "z": 0.33
+                },
+                "Quaternion": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "frame_id": "/cylinders2/shelf2",
+            "parent_id": "world",
+            "transform": {
+                "Vector3": {
+                    "x": 0.12,
+                    "y": -0.013,
+                    "z": 0.33
+                },
+                "Quaternion": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "frame_id": "/cylinders2/shelf3",
+            "parent_id": "world",
+            "transform": {
+                "Vector3": {
+                    "x": 0.06,
+                    "y": -0.037,
+                    "z": 0.33
+                },
+                "Quaternion": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "frame_id": "/cylinders2/conveyor",
+            "parent_id": "world",
+            "transform": {
+                "Vector3": {
+                    "x": 0.43,
+                    "y": -0.04,
+                    "z": 0.25
+                },
+                "Quaternion": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "frame_id": "/cylinders2/conveyor2",
+            "parent_id": "world",
+            "transform": {
+                "Vector3": {
+                    "x": 0.36,
+                    "y": 0.18,
+                    "z": 0.37
+                },
+                "Quaternion": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "frame_id": "/cylinders2/product_store",
+            "parent_id": "world",
+            "transform": {
+                "Vector3": {
+                    "x": 5.0,
+                    "y": 5.0,
                     "z": 0.0
                 },
                 "Quaternion": {

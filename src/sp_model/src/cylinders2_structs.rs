@@ -14,7 +14,7 @@ fn main() -> Result<(), Error> {
 
 
 pub fn cylinders() -> (Model, SPState) {
-    let mut m = GModel::new("cylinders2");
+    let mut m = GModel::new("cylinders2_structs");
 
     let pt = "pre_take";
     let scan = "scan";

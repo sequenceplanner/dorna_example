@@ -25,12 +25,12 @@ colcon build --cmake-args -DCARGO_CLEAN=ON
 Running:
 -----------------
 
-Small example:
+Small example (`sp_model` defaults to `cylinders`):
 ```
 ros2 launch dorna_example simulation.launch.py rviz:=True
 ```
 
 Slightly larger example:
 ```
-ros2 launch dorna_example simulation2.launch.py rviz:=True
+ros2 launch dorna_example simulation.launch.py rviz:=True sp_model:=cylinders2
 ```

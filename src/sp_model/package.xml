@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
-  <name>cylinders2</name>
+  <name>sp_model</name>
   <version>0.0.1</version>
   <description>cylinders sp model</description>
   <maintainer email="martin.dahl@gmail.com">Martin Dahl</maintainer>
@@ -15,6 +15,7 @@
   <build_depend>sp_operator_msgs</build_depend>
   <build_depend>sp_messages</build_depend>
   <build_depend>control_box_msgs</build_depend>
+  <build_depend>camera_msgs</build_depend>
   <build_depend>robot_msgs</build_depend>
   <build_depend>gripper_msgs</build_depend>
 

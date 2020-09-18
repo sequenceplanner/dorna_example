@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(cylinders)
+project(sp_model)
 
 # create our own AMENT_PREFIX_PATH just for this package. this allows
 # us to build our stuff without colcon by pulling in all ros deps
@@ -41,7 +41,9 @@ endif(CARGO_CLEAN)
 unset(CARGO_CLEAN CACHE)
 
 install(PROGRAMS
-  ${CMAKE_SOURCE_DIR}/target/release/${PROJECT_NAME}
+  ${CMAKE_SOURCE_DIR}/target/release/cylinders
+  ${CMAKE_SOURCE_DIR}/target/release/cylinders2
+  ${CMAKE_SOURCE_DIR}/target/release/cylinders2_structs
   DESTINATION lib/${PROJECT_NAME}
 )
 
