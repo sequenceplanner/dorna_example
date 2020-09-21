@@ -239,18 +239,21 @@ pub fn cylinders2() -> (Model, SPState) {
     let rp3 = &dorna3["ref_pos"];
 
     for (pos_name, pos) in pos.iter() {
-        // let buffer_predicate = if pos_name == &pt {
-        //     // when taking the product, because we have an auto transition that consumes it,
-        //     // we need to be sure that the product will still be there
-        //     p!([p: pos == 100] && [p: dorna3_holding == 0])
-        // } else {
-        //     p!([p: pos != 0] && [p: dorna3_holding == 0])
-        // };
-        // ^ commented out to see of model checker catches it. it does.
+        let buffer_predicate = if pos_name == &pt {
+            // when taking the product, because we have an auto transition that consumes it,
+            // we need to be sure that the product will still be there
+            p!([p: dorna3_holding == 0] && [
+                [[p: pos == 1] && [p: product_1_kind == 100]] ||
+                    [[p: pos == 2] && [p: product_2_kind == 100]] ||
+                    [[p: pos == 3] && [p: product_3_kind == 100]]
+            ])
+        } else {
+            p!([p: pos != 0] && [p: dorna3_holding == 0])
+        };
 
         m.add_op(&format!("r3_take_{}", pos.leaf()),
                  // operation model guard.
-                 &p!([p: pos != 0] && [p: dorna3_holding == 0]), // &buffer_predicate,
+                 &buffer_predicate,
                  // operation model effects.
                  &[a!(p:dorna3_holding <- p:pos), a!(p: pos = 0)],
                  // low level goal
@@ -481,6 +484,15 @@ pub fn cylinders2() -> (Model, SPState) {
         None,
     );
 
+
+    // ensure uniqueness of products
+    let vars = vec![&shelf1, &shelf2, &shelf3, &conveyor,
+                    &dorna_holding, &dorna3_holding, &conveyor2];
+    for v in &vars {
+        let v = v.clone();
+        let ne = Predicate::AND(vars.iter().filter(|&&o|o!=v).map(|&o| p!(p:v <!> p:o)).collect());
+        m.add_product_invar(&format!("unique_{}", v.leaf()), &p!([p: v != 0] => [pp: ne]))
+    }
 
     let pp2 = &dorna2["prev_pos"];
     let pp3 = &dorna3["prev_pos"];
