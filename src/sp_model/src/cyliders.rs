@@ -52,8 +52,6 @@ pub fn cylinders() -> (Model, SPState) {
     let pp = &dorna["prev_pos"];
     let blue = &cb["blue_light_on"];
 
-    m.make_product_var(ap);
-
     let cf = camera.find_item("finished", &[]);
     let camera_start = camera.find_item("start", &[]);
 
@@ -141,7 +139,6 @@ pub fn cylinders() -> (Model, SPState) {
         &p!([p:ap == leave] => [p:ap2 == scan]),
     );
 
-
     // scan and leave can only be reached from pre_take
     m.add_invar(
         "to_scan",
@@ -186,7 +183,7 @@ pub fn cylinders() -> (Model, SPState) {
                  // operation model guard.
                  &buffer_predicate,
                  // operation model effects.
-                 &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0), a!(p:ap = pos_name)],
+                 &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
                  // low level goal
                  &p!([p: ap == pos_name] && [p: gripper_part]),
                  // low level actions (should not be needed)
@@ -198,7 +195,7 @@ pub fn cylinders() -> (Model, SPState) {
                  // operation model guard.
                  &p!([p: dorna_holding != 0] && [p: pos == 0]),
                  // operation model effects.
-                 &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0), a!(p:ap = pos_name)],
+                 &[a!(p:pos <- p:dorna_holding), a!(p: dorna_holding = 0)],
                  // low level goal
                  &p!([p: ap == pos_name] && [! p: gripper_part]),
                  // low level actions (should not be needed)
@@ -212,20 +209,6 @@ pub fn cylinders() -> (Model, SPState) {
     // m.add_spec("take_scan_result1", camera.reset,
     //            &p!([p: dorna_holding == 100] && [p: cr == 1]),
     //            &[a!(p: dorna_holding = 1)]);
-
-    // scan to figure out the which product we are holding
-    // for i in 1..=3 {
-    //     m.add_op(&format!("scan_{}", i),
-    //              // operation model guard.
-    //              &p!([p: dorna_holding == 100]),
-    //              // operation model (alternative) effects.
-    //              &[a!(p: dorna_holding = i), a!(p:ap = scan)],
-    //              // low level goal
-    //              &p!([p: cf] && [p: cr == i] && [p: ap == scan]),
-    //              // low level actions (should not be needed)
-    //              &[a!(!p: cd)], // reset camera
-    //              true, true, None);
-    // }
 
     m.add_op_alt("scan",
                  &p!([p: dorna_holding == 100]),
@@ -249,53 +232,6 @@ pub fn cylinders() -> (Model, SPState) {
              &[],
              // resets
              true, true, None);
-
-
-    // testing our new "resource product"
-    m.add_op("move_dorna_to_pre_take",
-             // operation model guard.
-             // &p!(p:ap == scan), we cant have a guard here...
-             &Predicate::TRUE,
-             // operation model effects.
-             &[a!(p:ap = pt)],
-             // low level goal
-             &p!(p: ap == pt),
-             // low level actions (should not be needed)
-             &[],
-             // resets
-             true, true, None);
-
-    m.add_op("move_dorna_to_scan",
-             // operation model guard.
-             // &p!(p:ap == pt), we cant have a guard here...
-             &Predicate::TRUE,
-             // operation model effects.
-             &[a!(p:ap = scan)],
-             // low level goal
-             &p!(p: ap == scan),
-             // low level actions (should not be needed)
-             &[],
-             // resets
-             true, true, None);
-
-
-    m.add_intention(
-        "testing1",
-        true,
-        &p!(p: ap == pt),
-        &p!(p: ap == scan),
-        &[],
-        None,
-    );
-
-    m.add_intention(
-        "testing2",
-        true,
-        &p!(p: ap == scan),
-        &p!(p: ap == pt),
-        &[],
-        None,
-    );
 
     // INTENTIONS
     let np = |p: i32| {
@@ -328,7 +264,6 @@ pub fn cylinders() -> (Model, SPState) {
         a!(p: shelf3 = 100),
     ]);
 
-
     let pp2 = &dorna2["prev_pos"];
 
     // setup initial state of our estimated variables.
@@ -358,7 +293,7 @@ mod test {
 
     #[test]
     #[serial]
-    fn test_cylinders() {
+    fn cylinders_test() {
         let (m, s) = cylinders();
 
         make_new_runner(&m, s, true);

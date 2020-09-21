@@ -5,7 +5,7 @@ use sp_resources::*;
 
 
 fn main() -> Result<(), Error> {
-    let (model, initial_state) = cylinders();
+    let (model, initial_state) = cylinders2();
 
     launch_model(model, initial_state)?;
 
@@ -13,7 +13,7 @@ fn main() -> Result<(), Error> {
 }
 
 
-pub fn cylinders() -> (Model, SPState) {
+pub fn cylinders2() -> (Model, SPState) {
     let mut m = GModel::new("cylinders2");
 
     let pt = "pre_take";
@@ -71,7 +71,8 @@ pub fn cylinders() -> (Model, SPState) {
     let blue = &cb["blue_light_on"];
 
     let cf = camera.find_item("finished", &[]);
-    let cs = camera.find_item("started", &[]);
+    let camera_start = camera.find_item("start", &[]);
+
     let cr = &camera["result"];
     let cd = &camera["do_scan"];
 
@@ -181,10 +182,8 @@ pub fn cylinders() -> (Model, SPState) {
     );
 
     // we can only scan the product in front of the camera
-    m.add_invar("product_at_camera", &p!([p:cs] => [p:ap == scan]));
-    // we need to keep the product still while scanning
-    m.add_invar("product_still_at_camera", &p!([p:cd] => [p: ap
-                                                          <-> p: rp ]));
+    m.synchronize(&camera_start, "scan_with_dorna_in_place",
+                  p!([p:ap == scan] && [!p:dorna_moving]), &[]);
 
     // dorna take/leave products
     let pos = vec![
@@ -520,8 +519,8 @@ mod test {
 
     #[test]
     #[serial]
-    fn test_cylinders() {
-        let (m, s) = cylinders();
+    fn cylinders2_test() {
+        let (m, s) = cylinders2();
 
         make_new_runner(&m, s, true);
 

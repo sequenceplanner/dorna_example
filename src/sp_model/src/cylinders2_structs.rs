@@ -5,7 +5,7 @@ use sp_resources::*;
 
 
 fn main() -> Result<(), Error> {
-    let (model, initial_state) = cylinders();
+    let (model, initial_state) = cylinders2_structs();
 
     launch_model(model, initial_state)?;
 
@@ -13,7 +13,7 @@ fn main() -> Result<(), Error> {
 }
 
 
-pub fn cylinders() -> (Model, SPState) {
+pub fn cylinders2_structs() -> (Model, SPState) {
     let mut m = GModel::new("cylinders2_structs");
 
     let pt = "pre_take";
@@ -513,8 +513,8 @@ mod test {
 
     #[test]
     #[serial]
-    fn test_cylinders() {
-        let (m, s) = cylinders();
+    fn cylinders2_structs_test() {
+        let (m, s) = cylinders2_structs();
 
         make_new_runner(&m, s, true);
 
