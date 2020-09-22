@@ -16,11 +16,15 @@ path = "src/cylinders2.rs"
 name = "cylinders2_structs"
 path = "src/cylinders2_structs.rs"
 
+[features]
+default = ["ros"]
+ros = ["sp-runner/ros"]
+
 [dependencies]
 # sp-domain = { path = "/home/martin/sp/sp-domain" }
 # sp-runner = { path = "/home/martin/sp/sp-runner" }
-sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "1dd65b7" }
-sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "1dd65b7" }
+sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "4f1579c" }
+sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "4f1579c" }
 
 sp-resources = {path = "../sp_resources/"}
 
