@@ -23,8 +23,8 @@ ros = ["sp-runner/ros"]
 [dependencies]
 # sp-domain = { path = "/home/martin/sp/sp-domain" }
 # sp-runner = { path = "/home/martin/sp/sp-runner" }
-sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "4f1579c" }
-sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "4f1579c" }
+sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "b8499bf" }
+sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "b8499bf" }
 
 sp-resources = {path = "../sp_resources/"}
 
