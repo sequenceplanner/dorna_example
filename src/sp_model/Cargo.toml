@@ -4,9 +4,13 @@ version = "0.1.0"
 authors = ["Martin Dahl <martin.dahl@gmail.com>"]
 edition = "2018"
 
+[lib]
+name = "sp_resources"
+path = "src/lib.rs"
+
 [[bin]]
 name = "cylinders"
-path = "src/cyliders.rs"
+path = "src/cylinders.rs"
 
 [[bin]]
 name = "cylinders2"
@@ -23,10 +27,8 @@ ros = ["sp-runner/ros"]
 [dependencies]
 # sp-domain = { path = "/home/martin/sp/sp-domain" }
 # sp-runner = { path = "/home/martin/sp/sp-runner" }
-sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "9fd2193" }
-sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "9fd2193" }
-
-sp-resources = {path = "../sp_resources/"}
+sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "caa1728" }
+sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "caa1728" }
 
 failure = "0.1.5"
 
