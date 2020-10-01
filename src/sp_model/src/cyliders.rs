@@ -3,7 +3,10 @@ use sp_runner::*;
 
 
 fn main() -> Result<(), Error> {
+    println!("HEJ HEJ");
     let (model, initial_state) = cylinders();
+    println!("MODEL: {:?}", &model);
+    println!("STATE: {:?}", &initial_state);
 
     launch_model(model, initial_state)?;
 

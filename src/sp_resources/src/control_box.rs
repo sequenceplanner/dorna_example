@@ -26,18 +26,18 @@ pub fn create_instance(name: &str) -> Resource {
         },
     };
 
-    let mv = vec!(
-        MessageVariable{name: SPPath::from_string("blue_light_on"), path: SPPath::from_string("measured/0/blue_light_on")},
-    );
-    let mess = NewMessage{
-        topic: SPPath::from_string("/testing/measured"),
-        relative_topic: false,
-        category: MessageCategory::OutGoing,
-        message_type: MessageType::Ros("control_box_msgs/msg/Measured".to_string()),
-        variables: mv
-    };
+    // let mv = vec!(
+    //     MessageVariable{name: SPPath::from_string("blue_light_on"), path: SPPath::from_string("measured/0/blue_light_on")},
+    // );
+    // let mess = NewMessage{
+    //     topic: SPPath::from_string("/testing/measured"),
+    //     relative_topic: false,
+    //     category: MessageCategory::OutGoing,
+    //     message_type: MessageType::Ros("control_box_msgs/msg/Measured".to_string()),
+    //     variables: mv
+    // };
 
-    r.new_messages = vec!(mess);
+    // r.new_messages = vec!(mess);
 
     r
 }

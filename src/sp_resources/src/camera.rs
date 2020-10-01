@@ -44,24 +44,24 @@ pub fn create_instance(name: &str) -> Resource {
         }
     };
 
-    let v1 = Variable::new_boolean("v1", VariableType::Command);
-    let v2 = Variable::new_boolean("/a/v2", VariableType::Command);
-    let v3 = Variable::new_boolean("/a/v3", VariableType::Command);
-    r.variables = vec!(v1, v2, v3);
+    // let v1 = Variable::new_boolean("v1", VariableType::Command);
+    // let v2 = Variable::new_boolean("/a/v2", VariableType::Command);
+    // let v3 = Variable::new_boolean("/a/v3", VariableType::Command);
+    // r.variables = vec!(v1, v2, v3);
 
-    let mv = vec!(
-        MessageVariable{name: SPPath::from_string("do_scan"), path: SPPath::from_string("goal/0/do_scan")},
-        MessageVariable{name: SPPath::from_string("executing"), path: SPPath::from_string("executing")},
-    );
-    let mess = NewMessage{
-        topic: SPPath::from_string("/test/kalle"),
-        relative_topic: true,
-        category: MessageCategory::OutGoing,
-        message_type: MessageType::Json,
-        variables: mv
-    };
+    // let mv = vec!(
+    //     MessageVariable{name: SPPath::from_string("do_scan"), path: SPPath::from_string("goal/0/do_scan")},
+    //     MessageVariable{name: SPPath::from_string("executing"), path: SPPath::from_string("executing")},
+    // );
+    // let mess = NewMessage{
+    //     topic: SPPath::from_string("/test/kalle"),
+    //     relative_topic: true,
+    //     category: MessageCategory::OutGoing,
+    //     message_type: MessageType::Json,
+    //     variables: mv
+    // };
 
-    r.new_messages = vec!(mess);
+    // r.new_messages = vec!(mess);
 
     r
 }

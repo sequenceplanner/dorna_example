@@ -1150,7 +1150,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sp-domain",
- "sp-runner-api",
 ]
 
 [[package]]
@@ -1169,20 +1168,8 @@ dependencies = [
  "snap",
  "sp-domain",
  "sp-ros",
- "sp-runner-api",
  "tokio",
  "uuid",
-]
-
-[[package]]
-name = "sp-runner-api"
-version = "0.1.0"
-dependencies = [
- "failure",
- "failure_derive",
- "serde",
- "serde_json",
- "sp-domain",
 ]
 
 [[package]]
