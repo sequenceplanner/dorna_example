@@ -207,8 +207,8 @@ pub fn cylinders2() -> (Model, SPState) {
                  &p!([p: ap == pos_name] && [p: gripper_part]),
                  // low level actions (should not be needed)
                  &[],
-                 // resets
-                 true, true, Some(p!([p: gripper_fc == 0] || [p: gripper_fc == 1])));
+                 // auto
+                 true, Some(p!([p: gripper_fc == 0] || [p: gripper_fc == 1])));
 
         let goal = if pos_name == &t1 {
             p!([p: ap == pos_name] && [! p: gripper_part] && [!p: poison])
@@ -225,8 +225,8 @@ pub fn cylinders2() -> (Model, SPState) {
                  &goal,
                  // low level actions (should not be needed)
                  &[],
-                 // resets
-                 true, true, Some(p!([p: gripper_fc == 0] || [p: gripper_fc == 1])));
+                 // auto
+                 true, Some(p!([p: gripper_fc == 0] || [p: gripper_fc == 1])));
     }
 
     // dorna3 take/leave products
@@ -260,8 +260,8 @@ pub fn cylinders2() -> (Model, SPState) {
                  &p!([p: ap3 == pos_name] && [!p: dorna3_moving]),
                  // low level actions (should not be needed)
                  &[],
-                 // resets
-                 true, false, None);
+                 // not auto
+                 false, None);
 
         m.add_op(&format!("r3_leave_{}", pos.leaf()),
                  // operation model guard.
@@ -272,8 +272,8 @@ pub fn cylinders2() -> (Model, SPState) {
                  &p!([p: ap3 == pos_name] && [!p: dorna3_moving]),
                  // low level actions (should not be needed)
                  &[],
-                 // resets
-                 true, false, None);
+                 // not auto
+                 false, None);
     }
 
 
@@ -288,8 +288,8 @@ pub fn cylinders2() -> (Model, SPState) {
              &p!(p: ap4 == leave),
              // low level actions (should not be needed)
              &[],
-             // resets
-             true, true, None);
+             // auto
+             true, None);
     m.add_op("r4_x_right",
              // operation model guard.
              &p!(p: x == "left"),
@@ -299,8 +299,8 @@ pub fn cylinders2() -> (Model, SPState) {
              &p!(p: ap4 == scan),
              // low level actions (should not be needed)
              &[],
-             // resets
-             true, true, None);
+             // auto
+             true, None);
 
     // force dorna4 to move sometimes by connecting it to dorna 2
     m.add_invar(
@@ -337,12 +337,11 @@ pub fn cylinders2() -> (Model, SPState) {
         m.add_op_alt(&format!("scan_{}", n),
                      &p!([p: dorna_holding == n] && [p: kind == 100]),
                      &[
-                         (&[a!(p: kind = 1)], &p!([p: cf] && [p: cr == 1] && [p: ap == scan])),
-                         (&[a!(p: kind = 2)], &p!([p: cf] && [p: cr == 2] && [p: ap == scan])),
-                         (&[a!(p: kind = 3)], &p!([p: cf] && [p: cr == 3] && [p: ap == scan])),
+                         (&[a!(p: kind = 1)], &p!([p: cf] && [p: cr == 1] && [p: ap == scan]), &[a!(!p: cd)]),
+                         (&[a!(p: kind = 2)], &p!([p: cf] && [p: cr == 2] && [p: ap == scan]), &[a!(!p: cd)]),
+                         (&[a!(p: kind = 3)], &p!([p: cf] && [p: cr == 3] && [p: ap == scan]), &[a!(!p: cd)]),
                      ],
-                     &[a!(!p: cd)], // reset camera
-                     true, true, None);
+                     true, None);
 
         // product sink is at conveyor2, only accepts identified products.
         m.add_op(&format!("consume_known_product_{}", n),
@@ -354,8 +353,8 @@ pub fn cylinders2() -> (Model, SPState) {
                  &Predicate::TRUE,
                  // low level actions (should not be needed)
                  &[],
-                 // resets
-                 true, true, None);
+                 // auto
+                 true, None);
 
         // product source also at conveyor2, we can add a new, unknown,
         // unique product if there is room.
@@ -369,8 +368,8 @@ pub fn cylinders2() -> (Model, SPState) {
                  //&p!([p:ap3 != pt] && [p: ap3 <-> p: rp3]),
                  // low level actions (should not be needed)
                  &[],
-                 // resets
-                 true, false, None);
+                 // not auto
+                 false, None);
     }
 
 

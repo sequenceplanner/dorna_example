@@ -191,8 +191,8 @@ pub fn cylinders() -> (Model, SPState) {
                  &p!([p: ap == pos_name] && [p: gripper_part]),
                  // low level actions (should not be needed)
                  &[],
-                 // resets
-                 true, true, Some(p!([p: gripper_fc == 0] || [p: gripper_fc == 1])));
+                 // auto
+                 true, Some(p!([p: gripper_fc == 0] || [p: gripper_fc == 1])));
 
         m.add_op(&format!("leave_{}", pos.leaf()),
                  // operation model guard.
@@ -203,8 +203,8 @@ pub fn cylinders() -> (Model, SPState) {
                  &p!([p: ap == pos_name] && [! p: gripper_part]),
                  // low level actions (should not be needed)
                  &[],
-                 // resets
-                 true, true, None);
+                 // auto
+                 true, None);
     }
 
 
@@ -216,12 +216,11 @@ pub fn cylinders() -> (Model, SPState) {
     m.add_op_alt("scan",
                  &p!([p: dorna_holding == 100]),
                  &[
-                     (&[a!(p: dorna_holding = 1)], &p!([p: cf] && [p: cr == 1] && [p: ap == scan])),
-                     (&[a!(p: dorna_holding = 2)], &p!([p: cf] && [p: cr == 2] && [p: ap == scan])),
-                     (&[a!(p: dorna_holding = 3)], &p!([p: cf] && [p: cr == 3] && [p: ap == scan])),
+                     (&[a!(p: dorna_holding = 1)], &p!([p: cf] && [p: cr == 1] && [p: ap == scan]), &[a!(!p: cd)]),
+                     (&[a!(p: dorna_holding = 2)], &p!([p: cf] && [p: cr == 2] && [p: ap == scan]), &[a!(!p: cd)]),
+                     (&[a!(p: dorna_holding = 3)], &p!([p: cf] && [p: cr == 3] && [p: ap == scan]), &[a!(!p: cd)]),
                  ],
-                 &[a!(!p: cd)], // reset camera
-                 true, true, None);
+                 true, None);
 
     // product sink is at conveyor, only accepts identified products.
     m.add_op("consume_known_product",
@@ -233,8 +232,8 @@ pub fn cylinders() -> (Model, SPState) {
              &Predicate::TRUE,
              // low level actions (should not be needed)
              &[],
-             // resets
-             true, true, None);
+             // auto
+             true, None);
 
     // INTENTIONS
     let np = |p: i32| {

@@ -1131,15 +1131,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp-resources"
-version = "0.1.0"
-dependencies = [
- "failure",
- "sp-domain",
- "sp-runner",
-]
-
-[[package]]
 name = "sp-ros"
 version = "0.0.1"
 dependencies = [
@@ -1179,7 +1170,6 @@ dependencies = [
  "failure",
  "serial_test",
  "sp-domain",
- "sp-resources",
  "sp-runner",
 ]
 
