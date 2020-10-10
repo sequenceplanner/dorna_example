@@ -7,10 +7,9 @@ import json
 from builtin_interfaces.msg import Time
 
 from rclpy.node import Node
-from sp_messages.msg import RunnerInfo
-from sp_messages.msg import State
 from visualization_msgs.msg import Marker
 from std_msgs.msg import ColorRGBA
+from std_msgs.msg import String
 from ros2_scene_manipulation_msgs.srv import ManipulateScene
 
 class SceneMaster(Node):
@@ -99,8 +98,8 @@ class SceneMaster(Node):
         }
 
         self.sm_sp_runner_subscriber = self.create_subscription(
-            RunnerInfo,
-            "sp/runner/info",
+            String,
+            "sp/state_flat",
             self.sp_runner_callback,
             20)
 
@@ -110,6 +109,7 @@ class SceneMaster(Node):
 
         # remove the cubes initially
         self.remove_empty()
+        self.get_logger().info(str(self.get_name) + ' is up and running')
 
     def cube_marker(self, frame, color):
         marker = Marker()
@@ -140,20 +140,21 @@ class SceneMaster(Node):
             marker = self.cube_marker(frame, color)
             self.product_marker_publishers[key].publish(marker)
 
-    def sp_runner_callback(self, data):
+    def sp_runner_callback(self, msg):
         old = set(self.products.items())
-        for s in data.state:
-            pn = self.sp_path_to_product_name.get(s.path)
+        state = {}
+        state = json.loads(msg.data)
+        for p, v in state.items():
+            pn = self.sp_path_to_product_name.get(p)
             if pn != None:
-                v = json.loads(s.value_as_json)
                 self.products[pn] = v
 
-            if s.path == "/cylinders2/product_state/product_1_kind":
-                self.product_types[1] = json.loads(s.value_as_json)
-            elif s.path == "/cylinders2/product_state/product_2_kind":
-                self.product_types[2] = json.loads(s.value_as_json)
-            elif s.path == "/cylinders2/product_state/product_3_kind":
-                self.product_types[3] = json.loads(s.value_as_json)
+            if p == "/cylinders2/product_state/product_1_kind":
+                self.product_types[1] = v
+            elif p == "/cylinders2/product_state/product_2_kind":
+                self.product_types[2] = v
+            elif p == "/cylinders2/product_state/product_3_kind":
+                self.product_types[3] = v
 
         # update what has changed
         new = set(self.products.items())

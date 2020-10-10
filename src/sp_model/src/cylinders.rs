@@ -4,9 +4,7 @@ use sp_runner::*;
 
 fn main() -> Result<(), Error> {
     let (model, initial_state) = cylinders();
-
     launch_model(model, initial_state)?;
-
     Ok(())
 }
 
