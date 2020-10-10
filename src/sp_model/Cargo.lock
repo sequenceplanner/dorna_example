@@ -288,6 +288,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "espresso-rs"
+version = "0.1.0"
+source = "git+https://github.com/m-dahl/espresso-rs#5c9155b6665926e360c34ef47a9d61fef0249652"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "failure"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -452,9 +460,10 @@ checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 [[package]]
 name = "guard_extraction"
 version = "0.1.0"
-source = "git+https://github.com/m-dahl/guard_extraction.git?rev=84c7832#84c7832384cd74966d6b37c526f268d4b790b45b"
+source = "git+https://github.com/m-dahl/guard_extraction.git?rev=499a819#499a8193a8a62b00718a7de82609995801af48f8"
 dependencies = [
  "buddy-rs",
+ "espresso-rs",
  "itertools",
 ]
 
@@ -1123,6 +1132,7 @@ dependencies = [
 [[package]]
 name = "sp-domain"
 version = "0.1.0"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=547eb57#547eb575827128f09528af455d2b9c17e09f8319"
 dependencies = [
  "peg",
  "serde",
@@ -1133,6 +1143,7 @@ dependencies = [
 [[package]]
 name = "sp-ros"
 version = "0.0.1"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=547eb57#547eb575827128f09528af455d2b9c17e09f8319"
 dependencies = [
  "crossbeam",
  "failure",
@@ -1146,6 +1157,7 @@ dependencies = [
 [[package]]
 name = "sp-runner"
 version = "0.0.1"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=547eb57#547eb575827128f09528af455d2b9c17e09f8319"
 dependencies = [
  "chrono",
  "crossbeam",
