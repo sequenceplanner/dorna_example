@@ -6,7 +6,7 @@
   <description>cylinders2_scene_master</description>
 
   <maintainer email="endree@chalmers.se">endre_eros</maintainer>
-  <license>no_license</license>
+  <license>MIT</license>
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>std_msgs</exec_depend>

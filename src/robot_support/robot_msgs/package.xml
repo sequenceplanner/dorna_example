@@ -5,7 +5,7 @@
   <version>0.0.1</version>
   <description>Custom messages for robots for sp</description>
   <maintainer email="endre@chalmers.se">endre_eros</maintainer>
-  <license>no_license</license>
+  <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

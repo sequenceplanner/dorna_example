@@ -6,7 +6,7 @@
   <description>Gui control package for the ROS2 Dorna robot suite</description>
 
   <maintainer email="endree@chalmers.se">endre_eros</maintainer>
-  <license>no_license</license>
+  <license>MIT</license>
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
