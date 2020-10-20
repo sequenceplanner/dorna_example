@@ -12,6 +12,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
 	(os.path.join('share', package_name), glob('launch/*.launch.py')),
+        (os.path.join('share', package_name), glob('meshes/*')),
         ('share/' + package_name, ['package.xml']),
     ],
     install_requires=['setuptools'],

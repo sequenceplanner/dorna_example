@@ -12,6 +12,9 @@ Panels:
         - /Marker1
         - /Marker2
         - /Marker3
+        - /Marker4
+        - /Marker4/Topic1
+        - /Marker5
       Splitter Ratio: 0.5
     Tree Height: 359
   - Class: rviz_common/Selection
@@ -309,11 +312,35 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /cylinders2/sm/cube3_marker
       Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        "": true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /cylinders2/sm/camera_marker
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        "": true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /cylinders2/sm/blue_light_marker
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Fixed Frame: world
-    Frame Rate: 30
+    Frame Rate: 60
   Name: root
   Tools:
     - Class: rviz_default_plugins/MoveCamera
@@ -350,7 +377,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 2.3403639793395996
+      Distance: 1.911171317100525
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -365,10 +392,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.8497968912124634
+      Pitch: 0.6797977089881897
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.1054144948720932
+      Yaw: 0.0103995893150568
     Saved: ~
 Window Geometry:
   Displays:

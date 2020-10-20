@@ -6,6 +6,7 @@ import json
 
 from builtin_interfaces.msg import Time
 
+from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
 from visualization_msgs.msg import Marker
 from std_msgs.msg import ColorRGBA
@@ -97,6 +98,11 @@ class SceneMaster(Node):
             3: self.create_publisher(Marker, "cylinders2/sm/cube3_marker", 20),
         }
 
+        self.camera_marker_publisher = self.create_publisher(Marker, "cylinders2/sm/camera_marker", 20)
+
+        self.blue_light_marker_publisher = self.create_publisher(Marker, "cylinders2/sm/blue_light_marker", 20)
+        self.blue_light_on = False
+
         self.sm_sp_runner_subscriber = self.create_subscription(
             String,
             "sp/state_flat",
@@ -107,9 +113,46 @@ class SceneMaster(Node):
             self.marker_timer_period,
             self.publish_markers)
 
+        self.photoneo_mesh = os.path.join(get_package_share_directory('cylinders2_scene_master'), 'photoneo.dae')
+
         # remove the cubes initially
         self.remove_empty()
-        self.get_logger().info(str(self.get_name) + ' is up and running')
+        self.get_logger().info(str(self.get_name()) + ' is up and running')
+
+    def camera_marker(self):
+        marker = Marker()
+        marker.header.frame_id = "world"
+        marker.header.stamp = Time()
+        marker.ns = ""
+        marker.id = 0
+        marker.type = 10
+        marker.action = 0
+
+        marker.pose.position.x = 0.095
+        marker.pose.position.y = 0.051
+        marker.pose.position.z = 0.525
+        # marker.pose.orientation.x = 0.67
+        # marker.pose.orientation.y = -0.63
+        # marker.pose.orientation.z = 0.2845
+        # marker.pose.orientation.w = 0.266
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = 0.0005
+        marker.scale.y = 0.0005
+        marker.scale.z = 0.0005
+
+        c = ColorRGBA()
+        c.a = 1.0
+        c.r = 0.5
+        c.g = 0.5
+        c.b = 0.5
+
+        marker.color = c
+        marker.mesh_resource = "file://" + self.photoneo_mesh
+
+        return marker
 
     def cube_marker(self, frame, color):
         marker = Marker()
@@ -133,12 +176,49 @@ class SceneMaster(Node):
 
         return marker
 
+    def blue_light_marker(self):
+        marker = Marker()
+        marker.header.frame_id = "world"
+        marker.header.stamp = Time()
+        marker.ns = ""
+        marker.id = 0
+        marker.type = 3
+        marker.action = 0
+        marker.pose.position.x = 0.0
+        marker.pose.position.y = 0.0
+        marker.pose.position.z = 0.0
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = 0.05
+        marker.scale.y = 0.05
+        marker.scale.z = 0.01
+
+        c = ColorRGBA()
+        c.a = 1.0
+        c.r = 0.2
+        c.g = 0.2
+        c.b = 0.5
+        if self.blue_light_on:
+            c.b = 1.0
+
+        marker.color = c
+
+        return marker
+
+
     def publish_markers(self):
         for key, frame in self.product_to_frame.items():
             product_type = self.product_types[key]
             color = self.product_colors[product_type]
             marker = self.cube_marker(frame, color)
             self.product_marker_publishers[key].publish(marker)
+
+        camera_marker = self.camera_marker()
+        self.camera_marker_publisher.publish(camera_marker)
+        blue_light_marker = self.blue_light_marker()
+        self.blue_light_marker_publisher.publish(blue_light_marker)
 
     def sp_runner_callback(self, msg):
         old = set(self.products.items())
@@ -155,6 +235,8 @@ class SceneMaster(Node):
                 self.product_types[2] = v
             elif p == "/cylinders2/product_state/product_3_kind":
                 self.product_types[3] = v
+            elif p == "/cylinders2/control_box/measured/blue_light_on":
+                self.blue_light_on = v
 
         # update what has changed
         new = set(self.products.items())
