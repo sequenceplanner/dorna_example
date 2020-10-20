@@ -3,6 +3,7 @@ import os
 import rclpy
 import time
 import json
+import math
 
 from builtin_interfaces.msg import Time
 
@@ -12,6 +13,14 @@ from visualization_msgs.msg import Marker
 from std_msgs.msg import ColorRGBA
 from std_msgs.msg import String
 from ros2_scene_manipulation_msgs.srv import ManipulateScene
+
+def euler_to_quaternion(yaw, pitch, roll):
+        qx = math.sin(roll/2) * math.cos(pitch/2) * math.cos(yaw/2) - math.cos(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
+        qy = math.cos(roll/2) * math.sin(pitch/2) * math.cos(yaw/2) + math.sin(roll/2) * math.cos(pitch/2) * math.sin(yaw/2)
+        qz = math.cos(roll/2) * math.cos(pitch/2) * math.sin(yaw/2) - math.sin(roll/2) * math.sin(pitch/2) * math.cos(yaw/2)
+        qw = math.cos(roll/2) * math.cos(pitch/2) * math.cos(yaw/2) + math.sin(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
+
+        return [qx, qy, qz, qw]
 
 class SceneMaster(Node):
 
@@ -128,20 +137,20 @@ class SceneMaster(Node):
         marker.type = 10
         marker.action = 0
 
-        marker.pose.position.x = 0.095
-        marker.pose.position.y = 0.051
-        marker.pose.position.z = 0.525
-        # marker.pose.orientation.x = 0.67
-        # marker.pose.orientation.y = -0.63
-        # marker.pose.orientation.z = 0.2845
-        # marker.pose.orientation.w = 0.266
-        marker.pose.orientation.x = 0.0
-        marker.pose.orientation.y = 0.0
-        marker.pose.orientation.z = 0.0
-        marker.pose.orientation.w = 1.0
-        marker.scale.x = 0.0005
-        marker.scale.y = 0.0005
-        marker.scale.z = 0.0005
+        marker.pose.position.x = 0.0
+        marker.pose.position.y = 0.0
+        marker.pose.position.z = 0.65
+
+        quat = euler_to_quaternion(0.0, 0, 3.9)
+        marker.pose.orientation.x = quat[0]
+        marker.pose.orientation.y = quat[1]
+        marker.pose.orientation.z = quat[2]
+        marker.pose.orientation.w = quat[3]
+
+
+        marker.scale.x = 0.00025
+        marker.scale.y = 0.00075
+        marker.scale.z = 0.00075
 
         c = ColorRGBA()
         c.a = 1.0
@@ -185,14 +194,22 @@ class SceneMaster(Node):
         marker.type = 3
         marker.action = 0
         marker.pose.position.x = 0.0
-        marker.pose.position.y = 0.0
-        marker.pose.position.z = 0.0
-        marker.pose.orientation.x = 0.0
-        marker.pose.orientation.y = 0.0
-        marker.pose.orientation.z = 0.0
-        marker.pose.orientation.w = 1.0
-        marker.scale.x = 0.05
-        marker.scale.y = 0.05
+        marker.pose.position.y = 0.2
+        marker.pose.position.z = 0.5
+        # marker.pose.orientation.x = 0.0
+        # marker.pose.orientation.y = 0.0
+        # marker.pose.orientation.z = 0.0
+        # marker.pose.orientation.w = 1.0
+
+        quat = euler_to_quaternion(0, 1.5707, 0)
+        marker.pose.orientation.x = quat[0]
+        marker.pose.orientation.y = quat[1]
+        marker.pose.orientation.z = quat[2]
+        marker.pose.orientation.w = quat[3]
+
+
+        marker.scale.x = 0.075
+        marker.scale.y = 0.075
         marker.scale.z = 0.01
 
         c = ColorRGBA()
