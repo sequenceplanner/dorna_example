@@ -6,10 +6,11 @@ Example of Sequence Planner controlling some simulated resources.
 Requirements:
 -----------------
 1. [ROS2 Foxy](https://index.ros.org/doc/ros2/Releases/Release-Foxy-Fitzroy/)
-2. [Rust](https://rustup.rs/)
-3. [NuXmv](https://nuxmv.fbk.eu)
-4. llvm and clang(https://rust-lang.github.io/rust-bindgen/requirements.html#clang)
-5. [SP ROS messages](https://github.com/sequenceplanner/sp-ros) Download, colcon build and source before building this repo.
+2. [Colcon](https://colcon.readthedocs.io/en/released/user/installation.html)
+3. [Rust](https://rustup.rs/)
+4. [NuXmv](https://nuxmv.fbk.eu)
+5. llvm and clang(https://rust-lang.github.io/rust-bindgen/requirements.html#clang)
+6. [SP ROS messages](https://github.com/sequenceplanner/sp-ros) Download, colcon build and source before building this repo.
 
 Building:
 -----------------
