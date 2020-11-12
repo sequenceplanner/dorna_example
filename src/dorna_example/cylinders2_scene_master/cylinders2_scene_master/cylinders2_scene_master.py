@@ -4,6 +4,7 @@ import rclpy
 import time
 import json
 import math
+import random
 
 from builtin_interfaces.msg import Time
 
@@ -22,10 +23,25 @@ def euler_to_quaternion(yaw, pitch, roll):
 
         return [qx, qy, qz, qw]
 
+# class Command():
+#     make_cube = False
+#     remove_cube = False
+#     scanned = False
+#     gripper_close = False
+#     gripper_open = False
+
+# class CubeState():
+#     cube_id: 0
+#     true_color: ColorRGBA()
+#     revealed_color: ColorRGBA()
+#     position: "Unknown"
+
 class SceneMaster(Node):
 
     def __init__(self):
         super().__init__("cylinders2_scene_master")
+        # Command.__init__(self)
+        # CubeState.__init__(self)
 
         self.manipulate_scene_client = self.create_client(ManipulateScene, 'scene_manipulation_service')
 
@@ -37,6 +53,7 @@ class SceneMaster(Node):
         self.timeout = 5
 
         self.marker_timer_period = 0.03
+        self.sp_publisher_timer_period = 0.1
 
         self.sp_path_to_product_name = {
             '/cylinders2/product_state/dorna_holding': 'dorna',
@@ -85,11 +102,13 @@ class SceneMaster(Node):
         white.g = 1.0
         white.b = 1.0
         self.product_colors = {
+            0: white,
             1: red,
             2: green,
-            3: blue,
-            100: white,
+            3: blue
         }
+
+        self.colors = [1, 2, 3]
 
         self.slot_to_frame = {
             'dorna' : 'dorna/r1/dorna_5_link',
@@ -101,71 +120,104 @@ class SceneMaster(Node):
             'conveyor2': '/cylinders2/conveyor2',
         }
 
-        self.product_marker_publishers = {
-            1: self.create_publisher(Marker, "cylinders2/sm/cube1_marker", 20),
-            2: self.create_publisher(Marker, "cylinders2/sm/cube2_marker", 20),
-            3: self.create_publisher(Marker, "cylinders2/sm/cube3_marker", 20),
-        }
-
-        self.camera_marker_publisher = self.create_publisher(Marker, "cylinders2/sm/camera_marker", 20)
-
-        self.blue_light_marker_publisher = self.create_publisher(Marker, "cylinders2/sm/blue_light_marker", 20)
-        self.blue_light_on = False
-
-        self.sm_sp_runner_subscriber = self.create_subscription(
-            String,
-            "sp/state_flat",
-            self.sp_runner_callback,
-            20)
+        self.product_marker_publishers = {}
 
         self.marker_timer = self.create_timer(
             self.marker_timer_period,
-            self.publish_markers)
+            self.marker_publisher_callback)
 
-        self.photoneo_mesh = os.path.join(get_package_share_directory('cylinders2_scene_master'), 'photoneo.dae')
+        self.sp_subscriber = self.create_subscription(
+            String,
+            "/simulator_command",
+            self.sp_runner_callback,
+            20)
 
-        # remove the cubes initially
-        self.remove_empty()
+        self.sp_publisher = self.create_publisher(String, "/simulator_state", 20)
+
+        self.sp_publisher_timer = self.create_timer(
+            self.sp_publisher_timer_period,
+            self.sp_publisher_callback)
+
         self.get_logger().info(str(self.get_name()) + ' is up and running')
 
-    def camera_marker(self):
+        self.living_cubes = []
+
+    def sp_runner_callback(self, msg):
+        Command = {
+            "make_cube" : False,
+            "remove_cube" : False,
+            "scanned" : False 
+        }
+
+        try:
+            Command = json.loads(msg.data)
+        except json.JSONDecodeError as error:
+            self.get_logger().error('error in sp_runner_callback: "%s"' % error)
+        
+        self.get_logger().info('got Command: "%s"' % Command)
+        if Command["make_cube"]:
+            self.living_cubes.append(self.make_cube())
+        
+        if Command["remove_cube"]:
+            self.remove_cube()
+
+        if Command["scanned"]:
+            self.update_color()
+
+    def make_cube(self):
+
+        self.living_cubes_ids = []
+        for lc in self.living_cubes:
+            self.living_cubes_ids.append(lc["cube_id"])
+        dif = self.difference(range(1, 4), self.living_cubes_ids)
+
+        cube = {
+            "cube_id" : 0,
+            "true_color" : 0,
+            "revealed_color" : 0,
+            "position" : "Unknkown"
+        }
+
+        # cube = Cube
+        cube["cube_id"] = random.choice(self.colors) # for now, fix later, need choice from diff
+        self.living_cubes_ids.append(cube["cube_id"])
+        cube["true_color"] = random.choice(self.colors)
+        cube["revealed_color"] = 0
+        cube["position"] = '/cylinders2/conveyor2'
+
+        self.product_marker_publishers[cube["cube_id"]] = self.create_publisher(Marker, "cylinders2/sm/cube" + str(cube["cube_id"]) + "_marker", 20)
+
+        return cube
+
+    def remove_cube(self):
+        for cube in self.living_cubes:
+            if cube["position"] == '/cylinders2/conveyor2':
+                self.living_cubes.remove(cube)
+                sefl.remove_key(self.product_marker_publishers, cube["cube_id"])
+    
+    def remove_key(self, d, key):
+        r = dict(d)
+        del r[key]
+        return r
+
+    def difference(self, list1, list2):
+        return (list(list(set(list1)-set(list2)) + list(set(list2)-set(list1))))
+
+    # def change parrent:
+    #     listen to gripper topic
+
+
+    # def update_color(self):
+        
+
+    def sp_publisher_callback(self):
+        x = String()
+        x.data = json.dumps(self.living_cubes)
+        self.sp_publisher.publish(x)
+        
+    def make_marker(self, cube):
         marker = Marker()
-        marker.header.frame_id = "world"
-        marker.header.stamp = Time()
-        marker.ns = ""
-        marker.id = 0
-        marker.type = 10
-        marker.action = 0
-
-        marker.pose.position.x = 0.0
-        marker.pose.position.y = 0.0
-        marker.pose.position.z = 0.65
-
-        quat = euler_to_quaternion(0.0, 0, 3.9)
-        marker.pose.orientation.x = quat[0]
-        marker.pose.orientation.y = quat[1]
-        marker.pose.orientation.z = quat[2]
-        marker.pose.orientation.w = quat[3]
-
-
-        marker.scale.x = 0.00025
-        marker.scale.y = 0.00075
-        marker.scale.z = 0.00075
-
-        c = ColorRGBA()
-        c.a = 1.0
-        c.r = 0.5
-        c.g = 0.5
-        c.b = 0.5
-
-        marker.color = c
-        marker.mesh_resource = "file://" + self.photoneo_mesh
-
-        return marker
-
-    def cube_marker(self, frame, color):
-        marker = Marker()
-        marker.header.frame_id = frame
+        marker.header.frame_id = cube["position"]
         marker.header.stamp = Time()
         marker.ns = ""
         marker.id = 0
@@ -181,128 +233,59 @@ class SceneMaster(Node):
         marker.scale.x = 0.05
         marker.scale.y = 0.05
         marker.scale.z = 0.05
-        marker.color = color
+        marker.color = self.product_colors[cube["revealed_color"]]
+        # if cube["revealed_color"] == 0:
+        #     marker.color = self.product_colors[0]
+        # elif cube["revealed_color"] == 1:
+        #     marker.color = self.product_colors[1]
+        # elif cube["revealed_color"] == 2:
+        #     marker.color = self.product_colors[2]
+        # elif cube["revealed_color"] == 3:
+        #     marker.color = self.product_colors[3]
 
         return marker
 
-    def blue_light_marker(self):
-        marker = Marker()
-        marker.header.frame_id = "world"
-        marker.header.stamp = Time()
-        marker.ns = ""
-        marker.id = 0
-        marker.type = 3
-        marker.action = 0
-        marker.pose.position.x = 0.0
-        marker.pose.position.y = 0.2
-        marker.pose.position.z = 0.5
-        # marker.pose.orientation.x = 0.0
-        # marker.pose.orientation.y = 0.0
-        # marker.pose.orientation.z = 0.0
-        # marker.pose.orientation.w = 1.0
+    def marker_publisher_callback(self):
+        for cube in self.living_cubes:
+            marker = self.make_marker(cube)
+            self.product_marker_publishers[cube["cube_id"]].publish(marker)   
 
-        quat = euler_to_quaternion(0, 1.5707, 0)
-        marker.pose.orientation.x = quat[0]
-        marker.pose.orientation.y = quat[1]
-        marker.pose.orientation.z = quat[2]
-        marker.pose.orientation.w = quat[3]
+    # def handle_change(self, slot, prod):
+    #     for key, value in self.products.items():
+    #         if value == prod:
+    #             self.products[key] = 0  # "move" the item (it can only be in one slot)
+    #     self.products[slot] = prod
+    #     # we never "detach" an item, just attach it to its new owner. (with teleport)
+    #     if prod != 0:
+    #         child = self.product_to_frame[prod]
+    #         parent = self.slot_to_frame[slot]
+    #         self.send_request(child, parent, False)
 
+    # def remove_empty(self):
+    #     for p, pv in self.product_to_frame.items():
+    #         used = False
+    #         for slot, value in self.products.items():
+    #             if p == value:
+    #                 used = True
 
-        marker.scale.x = 0.075
-        marker.scale.y = 0.075
-        marker.scale.z = 0.01
-
-        c = ColorRGBA()
-        c.a = 1.0
-        c.r = 0.2
-        c.g = 0.2
-        c.b = 0.5
-        if self.blue_light_on:
-            c.b = 1.0
-
-        marker.color = c
-
-        return marker
-
-
-    def publish_markers(self):
-        for key, frame in self.product_to_frame.items():
-            product_type = self.product_types[key]
-            color = self.product_colors[product_type]
-            marker = self.cube_marker(frame, color)
-            self.product_marker_publishers[key].publish(marker)
-
-        camera_marker = self.camera_marker()
-        self.camera_marker_publisher.publish(camera_marker)
-        blue_light_marker = self.blue_light_marker()
-        self.blue_light_marker_publisher.publish(blue_light_marker)
-
-    def sp_runner_callback(self, msg):
-        old = set(self.products.items())
-        state = {}
-        state = json.loads(msg.data)
-        for p, v in state.items():
-            pn = self.sp_path_to_product_name.get(p)
-            if pn != None:
-                self.products[pn] = v
-
-            if p == "/cylinders2/product_state/product_1_kind":
-                self.product_types[1] = v
-            elif p == "/cylinders2/product_state/product_2_kind":
-                self.product_types[2] = v
-            elif p == "/cylinders2/product_state/product_3_kind":
-                self.product_types[3] = v
-            elif p == "/cylinders2/control_box/measured/blue_light_on":
-                self.blue_light_on = v
-
-        # update what has changed
-        new = set(self.products.items())
-        changes = new - old
-        if changes != set():
-            print("moving")
-            print(changes)
-            for slot, prod in changes:
-                self.handle_change(slot, prod)
-
-        self.remove_empty()
-
-
-    def handle_change(self, slot, prod):
-        for key, value in self.products.items():
-            if value == prod:
-                self.products[key] = 0  # "move" the item (it can only be in one slot)
-        self.products[slot] = prod
-        # we never "detach" an item, just attach it to its new owner. (with teleport)
-        if prod != 0:
-            child = self.product_to_frame[prod]
-            parent = self.slot_to_frame[slot]
-            self.send_request(child, parent, False)
-
-    def remove_empty(self):
-        for p, pv in self.product_to_frame.items():
-            used = False
-            for slot, value in self.products.items():
-                if p == value:
-                    used = True
-
-            if not used:
-                # product not in use, move away (to store)
-                self.send_request(pv, "/cylinders2/product_store", False)
+    #         if not used:
+    #             # product not in use, move away (to store)
+    #             self.send_request(pv, "/cylinders2/product_store", False)
 
 
 
-    def send_request(self, frame, parent, pos):
-        self.req.frame_id = frame
-        self.req.parent_id = parent
-        self.req.transform.translation.x = 0.0
-        self.req.transform.translation.y = 0.0
-        self.req.transform.translation.z = 0.0
-        self.req.transform.rotation.x = 0.0
-        self.req.transform.rotation.y = 0.0
-        self.req.transform.rotation.z = 0.0
-        self.req.transform.rotation.w = 1.0
-        self.req.same_position_in_world = pos
-        self.future = self.manipulate_scene_client.call_async(self.req)
+    # def send_request(self, frame, parent, pos):
+    #     self.req.frame_id = frame
+    #     self.req.parent_id = parent
+    #     self.req.transform.translation.x = 0.0
+    #     self.req.transform.translation.y = 0.0
+    #     self.req.transform.translation.z = 0.0
+    #     self.req.transform.rotation.x = 0.0
+    #     self.req.transform.rotation.y = 0.0
+    #     self.req.transform.rotation.z = 0.0
+    #     self.req.transform.rotation.w = 1.0
+    #     self.req.same_position_in_world = pos
+    #     self.future = self.manipulate_scene_client.call_async(self.req)
 
 def main(args=None):
     rclpy.init(args=args)

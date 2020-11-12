@@ -33,6 +33,7 @@ setup(
     entry_points={
         'console_scripts': [
         	'cylinders2_scene_master = cylinders2_scene_master.cylinders2_scene_master:main',
+            'tester = cylinders2_scene_master.tester:main',
         ],
     },
 )
