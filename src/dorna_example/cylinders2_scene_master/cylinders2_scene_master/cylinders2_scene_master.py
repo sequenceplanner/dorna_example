@@ -156,7 +156,10 @@ class SceneMaster(Node):
         
         self.get_logger().info('got Command: "%s"' % Command)
         if Command["make_cube"]:
-            self.living_cubes.append(self.make_cube())
+            if not any((cube["position"] == '/cylinders2/conveyor2') for cube in self.living_cubes):
+                self.living_cubes.append(self.make_cube())
+            else:
+                self.get_logger().info('OCCUPIED CUBE ADDING SPACE')
         
         if Command["remove_cube"]:
             self.remove_cube()
@@ -165,11 +168,12 @@ class SceneMaster(Node):
             self.update_color()
 
     def make_cube(self):
-
+        
         self.living_cubes_ids = []
         for lc in self.living_cubes:
             self.living_cubes_ids.append(lc["cube_id"])
         dif = self.difference(range(1, 4), self.living_cubes_ids)
+        self.get_logger().info('difference: ' + str(dif))
 
         cube = {
             "cube_id" : 0,
@@ -179,21 +183,25 @@ class SceneMaster(Node):
         }
 
         # cube = Cube
-        cube["cube_id"] = random.choice(self.colors) # for now, fix later, need choice from diff
-        self.living_cubes_ids.append(cube["cube_id"])
+        cube["cube_id"] = random.choice(dif) # for now, fix later, need choice from diff
+        self.living_cubes.append(cube)
         cube["true_color"] = random.choice(self.colors)
         cube["revealed_color"] = 0
         cube["position"] = '/cylinders2/conveyor2'
 
         self.product_marker_publishers[cube["cube_id"]] = self.create_publisher(Marker, "cylinders2/sm/cube" + str(cube["cube_id"]) + "_marker", 20)
+        self.get_logger().info('ADDING CUBE: ' + str(cube["cube_id"]))
 
         return cube
-
+        
     def remove_cube(self):
         for cube in self.living_cubes:
             if cube["position"] == '/cylinders2/conveyor2':
                 self.living_cubes.remove(cube)
-                sefl.remove_key(self.product_marker_publishers, cube["cube_id"])
+                # marker = self.make_or_remove_marker(cube, 2)
+                # self.product_marker_publishers[cube["cube_id"]].publish(marker) 
+                self.remove_key(self.product_marker_publishers, cube["cube_id"])
+                self.get_logger().info('REMOVING CUBE: ' + str(cube["cube_id"]))
     
     def remove_key(self, d, key):
         r = dict(d)
@@ -214,7 +222,7 @@ class SceneMaster(Node):
         x = String()
         x.data = json.dumps(self.living_cubes)
         self.sp_publisher.publish(x)
-        
+    
     def make_marker(self, cube):
         marker = Marker()
         marker.header.frame_id = cube["position"]
@@ -234,14 +242,6 @@ class SceneMaster(Node):
         marker.scale.y = 0.05
         marker.scale.z = 0.05
         marker.color = self.product_colors[cube["revealed_color"]]
-        # if cube["revealed_color"] == 0:
-        #     marker.color = self.product_colors[0]
-        # elif cube["revealed_color"] == 1:
-        #     marker.color = self.product_colors[1]
-        # elif cube["revealed_color"] == 2:
-        #     marker.color = self.product_colors[2]
-        # elif cube["revealed_color"] == 3:
-        #     marker.color = self.product_colors[3]
 
         return marker
 
@@ -250,42 +250,23 @@ class SceneMaster(Node):
             marker = self.make_marker(cube)
             self.product_marker_publishers[cube["cube_id"]].publish(marker)   
 
-    # def handle_change(self, slot, prod):
-    #     for key, value in self.products.items():
-    #         if value == prod:
-    #             self.products[key] = 0  # "move" the item (it can only be in one slot)
-    #     self.products[slot] = prod
-    #     # we never "detach" an item, just attach it to its new owner. (with teleport)
-    #     if prod != 0:
-    #         child = self.product_to_frame[prod]
-    #         parent = self.slot_to_frame[slot]
-    #         self.send_request(child, parent, False)
+    def remove_marker(self):
+        for cube in self.living_cubes:
+            if cube["position"] == '/cylinders2/conveyor2':
+                self.send_request("cylinders2/sm/cube" + str(cube["cube_id"], "/cylinders2/product_store", False))
 
-    # def remove_empty(self):
-    #     for p, pv in self.product_to_frame.items():
-    #         used = False
-    #         for slot, value in self.products.items():
-    #             if p == value:
-    #                 used = True
-
-    #         if not used:
-    #             # product not in use, move away (to store)
-    #             self.send_request(pv, "/cylinders2/product_store", False)
-
-
-
-    # def send_request(self, frame, parent, pos):
-    #     self.req.frame_id = frame
-    #     self.req.parent_id = parent
-    #     self.req.transform.translation.x = 0.0
-    #     self.req.transform.translation.y = 0.0
-    #     self.req.transform.translation.z = 0.0
-    #     self.req.transform.rotation.x = 0.0
-    #     self.req.transform.rotation.y = 0.0
-    #     self.req.transform.rotation.z = 0.0
-    #     self.req.transform.rotation.w = 1.0
-    #     self.req.same_position_in_world = pos
-    #     self.future = self.manipulate_scene_client.call_async(self.req)
+    def send_request(self, frame, parent, pos):
+        self.req.frame_id = frame
+        self.req.parent_id = parent
+        self.req.transform.translation.x = 0.0
+        self.req.transform.translation.y = 0.0
+        self.req.transform.translation.z = 0.0
+        self.req.transform.rotation.x = 0.0
+        self.req.transform.rotation.y = 0.0
+        self.req.transform.rotation.z = 0.0
+        self.req.transform.rotation.w = 1.0
+        self.req.same_position_in_world = pos
+        self.future = self.manipulate_scene_client.call_async(self.req)
 
 def main(args=None):
     rclpy.init(args=args)

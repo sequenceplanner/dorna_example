@@ -35,6 +35,8 @@ class Tester(Node):
         x.data = json.dumps(Command)
         self.sp_publisher.publish(x)
 
+        time.sleep(10)
+
 def main(args=None):
     rclpy.init(args=args)
 
