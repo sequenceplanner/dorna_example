@@ -149,6 +149,7 @@ class SceneMaster(Node):
             "scanned" : False 
         }
 
+
         try:
             Command = json.loads(msg.data)
         except json.JSONDecodeError as error:
