@@ -149,7 +149,6 @@ class SceneMaster(Node):
             "scanned" : False 
         }
 
-
         try:
             Command = json.loads(msg.data)
         except json.JSONDecodeError as error:
@@ -202,6 +201,7 @@ class SceneMaster(Node):
                 # marker = self.make_or_remove_marker(cube, 2)
                 # self.product_marker_publishers[cube["cube_id"]].publish(marker) 
                 self.remove_key(self.product_marker_publishers, cube["cube_id"])
+                self.remove_marker()
                 self.get_logger().info('REMOVING CUBE: ' + str(cube["cube_id"]))
     
     def remove_key(self, d, key):
@@ -211,13 +211,6 @@ class SceneMaster(Node):
 
     def difference(self, list1, list2):
         return (list(list(set(list1)-set(list2)) + list(set(list2)-set(list1))))
-
-    # def change parrent:
-    #     listen to gripper topic
-
-
-    # def update_color(self):
-        
 
     def sp_publisher_callback(self):
         x = String()
@@ -254,7 +247,7 @@ class SceneMaster(Node):
     def remove_marker(self):
         for cube in self.living_cubes:
             if cube["position"] == '/cylinders2/conveyor2':
-                self.send_request("cylinders2/sm/cube" + str(cube["cube_id"], "/cylinders2/product_store", False))
+                self.send_request("cylinders2/sm/cube" + str(cube["cube_id"]) + "_marker", "/cylinders2/product_store", False)
 
     def send_request(self, frame, parent, pos):
         self.req.frame_id = frame
