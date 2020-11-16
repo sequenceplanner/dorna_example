@@ -12,7 +12,7 @@ from ros2_scene_manipulation_msgs.srv import ManipulateScene
 class Tester(Node):
 
     def __init__(self):
-        super().__init__("test_node")
+        super().__init__("add_remove_cube_tester")
 
         self.callback_timeout = time.time()
         self.sp_publisher_timer_period = 5

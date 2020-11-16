@@ -15,6 +15,10 @@ from std_msgs.msg import ColorRGBA
 from std_msgs.msg import String
 from ros2_scene_manipulation_msgs.srv import ManipulateScene
 
+from gripper_msgs.msg import Goal as GripperGoal, State as GripperState
+from camera_msgs.msg import Goal as CameraGoal, Measured as CameraState
+from robot_msgs.msg import RobotState
+
 def euler_to_quaternion(yaw, pitch, roll):
         qx = math.sin(roll/2) * math.cos(pitch/2) * math.cos(yaw/2) - math.cos(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
         qy = math.cos(roll/2) * math.sin(pitch/2) * math.cos(yaw/2) + math.sin(roll/2) * math.cos(pitch/2) * math.sin(yaw/2)
@@ -22,19 +26,6 @@ def euler_to_quaternion(yaw, pitch, roll):
         qw = math.cos(roll/2) * math.cos(pitch/2) * math.cos(yaw/2) + math.sin(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
 
         return [qx, qy, qz, qw]
-
-# class Command():
-#     make_cube = False
-#     remove_cube = False
-#     scanned = False
-#     gripper_close = False
-#     gripper_open = False
-
-# class CubeState():
-#     cube_id: 0
-#     true_color: ColorRGBA()
-#     revealed_color: ColorRGBA()
-#     position: "Unknown"
 
 class SceneMaster(Node):
 
@@ -55,36 +46,14 @@ class SceneMaster(Node):
         self.marker_timer_period = 0.03
         self.sp_publisher_timer_period = 0.1
 
-        self.sp_path_to_product_name = {
-            '/cylinders2/product_state/dorna_holding': 'dorna',
-            '/cylinders2/product_state/dorna3_holding': 'dorna3',
-            '/cylinders2/product_state/shelf1': 'shelf1',
-            '/cylinders2/product_state/shelf2': 'shelf2',
-            '/cylinders2/product_state/shelf3': 'shelf3',
-            '/cylinders2/product_state/conveyor': 'conveyor',
-            '/cylinders2/product_state/conveyor2': 'conveyor2',
-        }
-
-        self.products = {
-            'dorna' : 0,
-            'dorna3' : 0,
-            'shelf1' : 0,
-            'shelf2' : 0,
-            'shelf3': 0,
-            'conveyor' : 0,
-            'conveyor2': 0,
-        }
-
-        self.product_to_frame = {
-            1: 'cylinders2/c1/cube',
-            2: 'cylinders2/c2/cube',
-            3: 'cylinders2/c3/cube',
-        }
-
-        self.product_types = {
-            1: 100,
-            2: 100,
-            3: 100,
+        self.slot_to_frame = {
+            'dorna' : 'dorna/r1/dorna_5_link',
+            'dorna3' : 'dorna/r3/dorna_5_link',
+            'shelf1' : '/cylinders2/shelf1',
+            'shelf2' : '/cylinders2/shelf2',
+            'shelf3' : '/cylinders2/shelf3',
+            'conveyor' : '/cylinders2/conveyor',
+            'conveyor2': '/cylinders2/conveyor2',
         }
 
         red = ColorRGBA()
@@ -110,21 +79,40 @@ class SceneMaster(Node):
 
         self.colors = [1, 2, 3]
 
-        self.slot_to_frame = {
-            'dorna' : 'dorna/r1/dorna_5_link',
-            'dorna3' : 'dorna/r3/dorna_5_link',
-            'shelf1' : '/cylinders2/shelf1',
-            'shelf2' : '/cylinders2/shelf2',
-            'shelf3' : '/cylinders2/shelf3',
-            'conveyor' : '/cylinders2/conveyor',
-            'conveyor2': '/cylinders2/conveyor2',
-        }
-
+        # idea is to add and remove them on the fly
         self.product_marker_publishers = {}
 
         self.marker_timer = self.create_timer(
             self.marker_timer_period,
             self.marker_publisher_callback)
+
+        self.r1_robot_position = "unknown"
+        self.r1_robot_subscriber = self.create_subscription(
+            RobotState,
+            "/dorna/r1/measured",
+            self.r1_robot_callback,
+            20)
+
+        self.r3_robot_position = "unknown"
+        self.r3_robot_subscriber = self.create_subscription(
+            RobotState,
+            "/dorna/r3/measured",
+            self.r3_robot_callback,
+            20)
+        
+        self.gripper_goal = False
+        self.gripper_subscriber = self.create_subscription(
+            GripperGoal,
+            "/gripper/goal",
+            self.gripper_callback,
+            20)
+
+        self.camera_goal = False
+        self.camera_subscriber = self.create_subscription(
+            CameraGoal,
+            "/camera/goal",
+            self.camera_callback,
+            20)
 
         self.sp_subscriber = self.create_subscription(
             String,
@@ -141,6 +129,41 @@ class SceneMaster(Node):
         self.get_logger().info(str(self.get_name()) + ' is up and running')
 
         self.living_cubes = []
+
+    def r1_robot_callback(self, msg):
+        self.r1_robot_position = msg.act_pos
+
+    def r3_robot_callback(self, msg):
+        self.r3_robot_position = msg.act_pos
+
+    def gripper_callback(self, msg):
+        self.gripper_goal = msg.close
+        # introduce possibility to fail grasping (1/5)
+        fail_list = [True, True, True, True, False]
+        for cube in self.living_cubes:
+            # would be nice to have matching pose names, then: if cube['position'] == self.slot_to_frame[self.r1_robot_position]
+            if cube['position'] == "/cylinders2/conveyor" and self.r1_robot_position == "leave" or \
+                cube['position'] == "/cylinders2/shelf1" and self.r1_robot_position == "take1" or \
+                cube['position'] == "/cylinders2/shelf2" and self.r1_robot_position == "take2" or \
+                cube['position'] == "/cylinders2/shelf3" and self.r1_robot_position == "take3":
+                if random.choice(fail_list):
+                    self.cube_to_parent(cube['cube_id'], "/dorna/r1/dorna_5_link")
+                    self.get_logger().info('GRASPING SUCCESS')
+                else:
+                    self.get_logger().info('GRASPING FAILED')
+    
+    def camera_callback(self, msg):
+        self.camera_goal = msg.do_scan
+        # introduce possibility to fail scanning (1/5)
+        fail_list = [True, True, True, True, False]
+        for cube in self.living_cubes:
+            if any((cube["position"] == '/dorna/r1/dorna_5_link') for cube in self.living_cubes):
+                if self.r1_robot_position == "scan":
+                    if random.choice(fail_list):
+                        cube['revealed_color'] = cube['actual_color']
+                        self.get_logger().info('SCANNING SUCCESS')
+                    else:
+                        self.get_logger().info('SCANNING FAILED')
 
     def sp_runner_callback(self, msg):
         Command = {
@@ -161,6 +184,7 @@ class SceneMaster(Node):
             else:
                 self.get_logger().info('OCCUPIED CUBE ADDING SPACE')
 
+            # remove duplicates because it is generated for some reason
             self.living_cubes = [dict(t) for t in {tuple(d.items()) for d in self.living_cubes}]
         
         if Command["remove_cube"]:
@@ -184,7 +208,6 @@ class SceneMaster(Node):
             "position" : "Unknkown"
         }
 
-        # cube = Cube
         cube["cube_id"] = random.choice(dif) # for now, fix later, need choice from diff
         self.living_cubes.append(cube)
         cube["true_color"] = random.choice(self.colors)
@@ -214,6 +237,7 @@ class SceneMaster(Node):
     def cube_to_parent(self, cube_id, parent):
         for cube in living_cubes:
             if cube_id == cube["cube_id"]:
+                cube["position"] = parent
                 self.send_request("cylinders2/c" + str(cube["cube_id"]) +" /cube", parent, False)
 
     def difference(self, list1, list2):

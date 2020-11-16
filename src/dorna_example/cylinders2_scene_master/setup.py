@@ -33,7 +33,8 @@ setup(
     entry_points={
         'console_scripts': [
         	'cylinders2_scene_master = cylinders2_scene_master.cylinders2_scene_master:main',
-            'tester = cylinders2_scene_master.tester:main',
+            'add_remove_cube_tester = cylinders2_scene_master.add_remove_cube_tester:main',
+            'move_robots_tester = cylinders2_scene_master.move_robots_tester:main',
         ],
     },
 )
