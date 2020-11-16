@@ -15,7 +15,7 @@ class Tester(Node):
         super().__init__("test_node")
 
         self.callback_timeout = time.time()
-        self.sp_publisher_timer_period = 6
+        self.sp_publisher_timer_period = 5
         self.timeout = 5
 
         self.sp_publisher = self.create_publisher(String, "/simulator_command", 20)
@@ -25,8 +25,6 @@ class Tester(Node):
             self.sp_publisher_callback)
 
     def sp_publisher_callback(self):
-
-        time.sleep(1)
 
         Command = {
             "make_cube" : True,
@@ -38,7 +36,7 @@ class Tester(Node):
         x.data = json.dumps(Command)
         self.sp_publisher.publish(x)
 
-        time.sleep(3)
+        time.sleep(2)
 
         Command = {
             "make_cube" : False,
@@ -49,6 +47,8 @@ class Tester(Node):
         x = String()
         x.data = json.dumps(Command)
         self.sp_publisher.publish(x)
+
+        time.sleep(2)
 
 def main(args=None):
     rclpy.init(args=args)

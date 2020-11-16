@@ -160,6 +160,8 @@ class SceneMaster(Node):
                 self.living_cubes.append(self.make_cube())
             else:
                 self.get_logger().info('OCCUPIED CUBE ADDING SPACE')
+
+            self.living_cubes = [dict(t) for t in {tuple(d.items()) for d in self.living_cubes}]
         
         if Command["remove_cube"]:
             self.remove_cube()
@@ -190,6 +192,7 @@ class SceneMaster(Node):
         cube["position"] = '/cylinders2/conveyor2'
 
         self.product_marker_publishers[cube["cube_id"]] = self.create_publisher(Marker, "cylinders2/sm/cube" + str(cube["cube_id"]) + "_marker", 20)
+        self.send_request("cylinders2/c" + str(cube["cube_id"]) +" /cube", "/cylinders2/conveyor2", False)
         self.get_logger().info('ADDING CUBE: ' + str(cube["cube_id"]))
 
         return cube
@@ -198,16 +201,20 @@ class SceneMaster(Node):
         for cube in self.living_cubes:
             if cube["position"] == '/cylinders2/conveyor2':
                 self.living_cubes.remove(cube)
-                # marker = self.make_or_remove_marker(cube, 2)
-                # self.product_marker_publishers[cube["cube_id"]].publish(marker) 
+                self.product_marker_publishers[cube["cube_id"]].publish(self.make_marker(cube))
                 self.remove_key(self.product_marker_publishers, cube["cube_id"])
-                self.remove_marker()
+                self.send_request("cylinders2/c" + str(cube["cube_id"]) +" /cube", "/cylinders2/product_store", False)
                 self.get_logger().info('REMOVING CUBE: ' + str(cube["cube_id"]))
     
     def remove_key(self, d, key):
         r = dict(d)
         del r[key]
         return r
+
+    def cube_to_parent(self, cube_id, parent):
+        for cube in living_cubes:
+            if cube_id == cube["cube_id"]:
+                self.send_request("cylinders2/c" + str(cube["cube_id"]) +" /cube", parent, False)
 
     def difference(self, list1, list2):
         return (list(list(set(list1)-set(list2)) + list(set(list2)-set(list1))))
@@ -219,7 +226,7 @@ class SceneMaster(Node):
     
     def make_marker(self, cube):
         marker = Marker()
-        marker.header.frame_id = cube["position"]
+        marker.header.frame_id = "cylinders2/c" + str(cube["cube_id"]) +" /cube"
         marker.header.stamp = Time()
         marker.ns = ""
         marker.id = 0
@@ -243,11 +250,6 @@ class SceneMaster(Node):
         for cube in self.living_cubes:
             marker = self.make_marker(cube)
             self.product_marker_publishers[cube["cube_id"]].publish(marker)   
-
-    def remove_marker(self):
-        for cube in self.living_cubes:
-            if cube["position"] == '/cylinders2/conveyor2':
-                self.send_request("cylinders2/sm/cube" + str(cube["cube_id"]) + "_marker", "/cylinders2/product_store", False)
 
     def send_request(self, frame, parent, pos):
         self.req.frame_id = frame
