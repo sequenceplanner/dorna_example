@@ -35,6 +35,7 @@ setup(
         	'cylinders2_scene_master = cylinders2_scene_master.cylinders2_scene_master:main',
             'add_remove_cube_tester = cylinders2_scene_master.add_remove_cube_tester:main',
             'move_robots_tester = cylinders2_scene_master.move_robots_tester:main',
+            'gripping_tester = cylinders2_scene_master.gripping_tester:main',
         ],
     },
 )

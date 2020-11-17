@@ -75,12 +75,12 @@ def generate_launch_description():
                 output='screen',
                 )
 
-    sp_ui = launch_ros.actions.Node(
-                package='sp_ui',
-                executable='sp_ui',
-                namespace='/',
-                output='screen',
-                )
+    # sp_ui = launch_ros.actions.Node(
+    #             package='sp_ui',
+    #             executable='sp_ui',
+    #             namespace='/',
+    #             output='screen',
+    #             )
     # sp_operator = launch_ros.actions.Node(
     #             package='sp_operator',
     #             executable='sp_operator',
@@ -100,8 +100,8 @@ def generate_launch_description():
             control_box,
             gripper,
             sp_model_arg,
-            sp,
-            sp_ui,
+            # sp,
+            # sp_ui,
             scene_master,
             #  sp_operator,
             launch.actions.OpaqueFunction(function = launch_rviz)

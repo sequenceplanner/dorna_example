@@ -107,10 +107,11 @@ class SceneMaster(Node):
             self.gripper_callback,
             20)
 
-        self.camera_goal = False
+        self.camera_scanning_true = False
+        self.camera_done = False
         self.camera_subscriber = self.create_subscription(
-            CameraGoal,
-            "/camera/goal",
+            CameraState,
+            "/camera/state",
             self.camera_callback,
             20)
 
@@ -135,9 +136,15 @@ class SceneMaster(Node):
 
     def r3_robot_callback(self, msg):
         self.r3_robot_position = msg.act_pos
+        for cube in self.living_cubes:
+            if cube['position'] == "/cylinders2/conveyor2" and self.r3_robot_position == "pre_take":
+                self.cube_to_parent(cube['cube_id'], "/dorna/r3/dorna_5_link")
+            if cube['position'] == "/dorna/r3/dorna_5_link" and self.r3_robot_position == "leave":
+                self.cube_to_parent(cube['cube_id'], "/cylinders2/conveyor")
 
     def gripper_callback(self, msg):
         self.gripper_goal = msg.close
+        # self.gripper_goal = msg.close
         # introduce possibility to fail grasping (1/5)
         fail_list = [True, True, True, True, False]
         for cube in self.living_cubes:
@@ -153,23 +160,24 @@ class SceneMaster(Node):
                     self.get_logger().info('GRASPING FAILED')
     
     def camera_callback(self, msg):
-        self.camera_goal = msg.do_scan
+        self.camera_scanning_true = msg.scanning
+        self.camera_done = msg.done
         # introduce possibility to fail scanning (1/5)
         fail_list = [True, True, True, True, False]
         for cube in self.living_cubes:
             if any((cube["position"] == '/dorna/r1/dorna_5_link') for cube in self.living_cubes):
                 if self.r1_robot_position == "scan":
-                    if random.choice(fail_list):
-                        cube['revealed_color'] = cube['actual_color']
-                        self.get_logger().info('SCANNING SUCCESS')
-                    else:
-                        self.get_logger().info('SCANNING FAILED')
+                    if self.camera_scanning_true and not self.camera_done:
+                        if random.choice(fail_list):
+                            cube['revealed_color'] = cube['actual_color']
+                            self.get_logger().info('SCANNING SUCCESS')
+                        else:
+                            self.get_logger().info('SCANNING FAILED')
 
     def sp_runner_callback(self, msg):
         Command = {
             "make_cube" : False,
-            "remove_cube" : False,
-            "scanned" : False 
+            "remove_cube" : False
         }
 
         try:
@@ -235,7 +243,7 @@ class SceneMaster(Node):
         return r
 
     def cube_to_parent(self, cube_id, parent):
-        for cube in living_cubes:
+        for cube in self.living_cubes:
             if cube_id == cube["cube_id"]:
                 cube["position"] = parent
                 self.send_request("cylinders2/c" + str(cube["cube_id"]) +" /cube", parent, False)
