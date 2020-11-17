@@ -7,8 +7,7 @@ from launch_ros.substitutions import FindPackageShare
 
 def launch_rviz(context, *args, **kwargs):
     examples_dir = FindPackageShare('dorna_example').find('dorna_example')
-    sp_model = launch.substitutions.LaunchConfiguration('sp_model').perform(context)
-    filename = "cylinders.rviz" if sp_model == "cylinders" else "cylinders2.rviz"
+    filename = "cylinders2.rviz"
     rviz_config_file = os.path.join(examples_dir, 'config', filename)
     launch_rviz = launch.actions.DeclareLaunchArgument(name="rviz", default_value="False", description="Launch RViz?")
     rviz_cond = launch.conditions.IfCondition(launch.substitutions.LaunchConfiguration("rviz"))
@@ -22,24 +21,10 @@ def launch_rviz(context, *args, **kwargs):
 def generate_launch_description():
     examples_dir = FindPackageShare('dorna_example').find('dorna_example')
 
-    sp_model_arg = launch.actions.DeclareLaunchArgument(name="sp_model", default_value="cylinders", description="Which sp model to run")
-
-    sp = launch_ros.actions.Node(
-                package='sp_model',
-                executable=launch.substitutions.LaunchConfiguration('sp_model'),
-                output={'both': 'log'}, # output='screen',
-                arguments = ['--ros-args', '--log-level', 'INFO'],
-                )
-
-    robots_cond = launch.conditions.IfCondition('true')
-    r1 = make_dorna_simulation("r1",  os.path.join(examples_dir, 'poses', 'r1_joint_poses.csv'), robots_cond)
-    r2 = make_dorna_simulation("r2",  os.path.join(examples_dir, 'poses', 'r2_joint_poses.csv'), robots_cond)
-
-    is_cylinders = launch.substitutions.PythonExpression(["'", launch.substitutions.LaunchConfiguration('sp_model'), f"' == 'cylinders'"])
-    is_not_cylinders = launch.conditions.UnlessCondition(is_cylinders)
-
-    r3 = make_dorna_simulation("r3",  os.path.join(examples_dir, 'poses', 'r3_joint_poses.csv'), is_not_cylinders)
-    r4 = make_dorna_simulation("r4",  os.path.join(examples_dir, 'poses', 'r4_joint_poses.csv'), is_not_cylinders)
+    r1 = make_dorna_simulation("r1",  os.path.join(examples_dir, 'poses', 'r1_joint_poses.csv'))
+    r2 = make_dorna_simulation("r2",  os.path.join(examples_dir, 'poses', 'r2_joint_poses.csv'))
+    r3 = make_dorna_simulation("r3",  os.path.join(examples_dir, 'poses', 'r3_joint_poses.csv'))
+    r4 = make_dorna_simulation("r4",  os.path.join(examples_dir, 'poses', 'r4_joint_poses.csv'))
 
     sm_parameters = {
         "active_transforms": os.path.join(examples_dir, 'transforms', 'active_transforms.json'),
@@ -75,42 +60,24 @@ def generate_launch_description():
                 output='screen',
                 )
 
-    sp_ui = launch_ros.actions.Node(
-                package='sp_ui',
-                executable='sp_ui',
-                namespace='/',
-                output='screen',
-                )
-    # sp_operator = launch_ros.actions.Node(
-    #             package='sp_operator',
-    #             executable='sp_operator',
-    #             namespace='/sp_operator/op1',
-    #             output='screen',
-    #             )
-
     scene_master = launch_ros.actions.Node(
                 package='cylinders2_scene_master',
                 executable='cylinders2_scene_master',
                 output='screen',
-                condition=is_not_cylinders
                 )
 
     nodes = [scene_manipulation_service,
             camera_node,
             control_box,
             gripper,
-            sp_model_arg,
-            sp,
-            sp_ui,
             scene_master,
-            #  sp_operator,
             launch.actions.OpaqueFunction(function = launch_rviz)
              ]
     return launch.LaunchDescription(r1 + r2 + r3 + r4 + nodes)
 
 
 
-def make_dorna_simulation(name, poses_file, cond):
+def make_dorna_simulation(name, poses_file):
     dorna2_share = FindPackageShare('dorna2').find('dorna2')
     urdf = os.path.join(dorna2_share, 'urdf', 'dorna.urdf')
     with open(urdf, 'r') as infp:
@@ -124,7 +91,6 @@ def make_dorna_simulation(name, poses_file, cond):
                                 namespace='dorna/' + name,
                                 output='screen',
                                 parameters=[robot_state_publisher_params],
-                                condition = cond
                                 )
 
     simulation_parameters = {
@@ -145,7 +111,6 @@ def make_dorna_simulation(name, poses_file, cond):
                  namespace='dorna/'+name,
                  output='screen',
                  parameters=[simulation_parameters],
-                 condition = cond
                  )
 
     gui_parameters = {
@@ -178,7 +143,6 @@ def make_dorna_simulation(name, poses_file, cond):
                 namespace='dorna/'+name,
                 output='screen',
                 parameters=[gui_parameters],
-                condition = cond
                 )
 
-    return [rsp_node, sim_node, gui_node]
+    return [rsp_node, sim_node ] #, gui_node]

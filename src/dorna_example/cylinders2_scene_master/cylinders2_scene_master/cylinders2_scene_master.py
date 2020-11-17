@@ -107,7 +107,7 @@ class SceneMaster(Node):
             "/dorna/r3/measured",
             self.r3_robot_callback,
             20)
-        
+
         self.gripper_goal = False
         self.gripper_subscriber = self.create_subscription(
             GripperGoal,
@@ -119,7 +119,7 @@ class SceneMaster(Node):
         self.camera_done = False
         self.camera_subscriber = self.create_subscription(
             CameraState,
-            "/camera/state",
+            "/camera/measured",
             self.camera_callback,
             20)
 
@@ -194,7 +194,7 @@ class SceneMaster(Node):
                     self.get_logger().info('GRASPING SUCCESS')
                 else:
                     self.get_logger().info('GRASPING FAILED')
-    
+
     def camera_callback(self, msg):
         self.camera_scanning_true = msg.scanning
         self.camera_done = msg.done
@@ -205,7 +205,7 @@ class SceneMaster(Node):
                 if self.r1_robot_position == "scan":
                     if self.camera_scanning_true and not self.camera_done:
                         if random.choice(fail_list):
-                            cube['revealed_color'] = cube['actual_color']
+                            cube['revealed_color'] = cube['true_color']
                             self.get_logger().info('SCANNING SUCCESS')
                         else:
                             self.get_logger().info('SCANNING FAILED')
@@ -220,7 +220,7 @@ class SceneMaster(Node):
             Command = json.loads(msg.data)
         except json.JSONDecodeError as error:
             self.get_logger().error('error in sp_runner_callback: "%s"' % error)
-        
+
         self.get_logger().info('got Command: "%s"' % Command)
         if Command["make_cube"]:
             if not any((cube["position"] == '/cylinders2/conveyor2') for cube in self.living_cubes):
@@ -230,7 +230,7 @@ class SceneMaster(Node):
 
             # remove duplicates because it is generated for some reason
             self.living_cubes = [dict(t) for t in {tuple(d.items()) for d in self.living_cubes}]
-        
+
         if Command["remove_cube"]:
             self.remove_cube()
 
@@ -238,7 +238,7 @@ class SceneMaster(Node):
             self.update_color()
 
     def make_cube(self):
-        
+
         self.living_cubes_ids = []
         for lc in self.living_cubes:
             self.living_cubes_ids.append(lc["cube_id"])
@@ -263,7 +263,7 @@ class SceneMaster(Node):
         self.get_logger().info('ADDING CUBE: ' + str(cube["cube_id"]))
 
         return cube
-        
+
     def remove_cube(self):
         for cube in self.living_cubes:
             if cube["position"] == '/cylinders2/conveyor2':
@@ -272,7 +272,7 @@ class SceneMaster(Node):
                 self.remove_key(self.product_marker_publishers, cube["cube_id"])
                 self.send_request("cylinders2/c" + str(cube["cube_id"]) +" /cube", "/cylinders2/product_store", False)
                 self.get_logger().info('REMOVING CUBE: ' + str(cube["cube_id"]))
-    
+
     def remove_key(self, d, key):
         r = dict(d)
         del r[key]
@@ -291,7 +291,7 @@ class SceneMaster(Node):
         x = String()
         x.data = json.dumps(self.living_cubes)
         self.sp_publisher.publish(x)
-    
+
     def make_marker(self, cube):
         marker = Marker()
         marker.header.frame_id = "cylinders2/c" + str(cube["cube_id"]) +" /cube"
@@ -317,7 +317,7 @@ class SceneMaster(Node):
     def marker_publisher_callback(self):
         for cube in self.living_cubes:
             marker = self.make_marker(cube)
-            self.product_marker_publishers[cube["cube_id"]].publish(marker)   
+            self.product_marker_publishers[cube["cube_id"]].publish(marker)
 
     def send_request(self, frame, parent, pos):
         self.req.frame_id = frame
