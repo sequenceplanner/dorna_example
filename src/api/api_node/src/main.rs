@@ -85,9 +85,9 @@ fn main() -> Result<(), Error> {
     let mut node = r2r::Node::create(ctx, "api_node", "")?;
     let state = Arc::new(Mutex::new(API_State::new()));
 
-    let state_channel = send_the_state(&mut node, state.to_owned());
-    let cmd_channel = send_the_cmd(&mut node, state.to_owned());
-    listner(&mut node, state.to_owned(),state_channel, cmd_channel);
+    send_the_state(&mut node, state.to_owned());
+    send_the_cmd(&mut node, state.to_owned());
+    listner(&mut node, state.to_owned());
 
     // Maybe add a ticker for the cmd?
 
@@ -99,9 +99,9 @@ fn main() -> Result<(), Error> {
 
 
 /// Send the state
-fn send_the_state(node: &mut r2r::Node, state: Arc<Mutex<API_State>>) -> channel::Sender<Tick> {
+fn send_the_state(node: &mut r2r::Node, state: Arc<Mutex<API_State>>) {
     let state_publisher = node.create_publisher::<r2r::std_msgs::msg::String>("state").expect("State publisher creation failed");
-    let (tx_out, rx_out) = channel::unbounded();
+    let rx_out = channel::tick(Duration::from_millis(300));
     thread::spawn(move || loop {
         match rx_out.recv() {
             Ok(_) => {
@@ -114,12 +114,10 @@ fn send_the_state(node: &mut r2r::Node, state: Arc<Mutex<API_State>>) -> channel
             }
         }
     });
-
-    tx_out
 }
 
 /// Send the commands
-fn send_the_cmd(node: &mut r2r::Node, state: Arc<Mutex<API_State>>) -> channel::Sender<Tick> {
+fn send_the_cmd(node: &mut r2r::Node, state: Arc<Mutex<API_State>>){
     let gripper_publisher = node.create_publisher_untyped("/gripper/goal", "gripper_msgs/msg/Goal").expect("Hmm, can not create node");
     let control_box_publisher = node.create_publisher_untyped("/control_box/goal", "control_box_msgs/msg/Goal").expect("Hmm, can not create node");
     let camera_publisher = node.create_publisher_untyped("/camera/goal", "camera_msgs/msg/Goal").expect("Hmm, can not create node");
@@ -128,7 +126,7 @@ fn send_the_cmd(node: &mut r2r::Node, state: Arc<Mutex<API_State>>) -> channel::
     let simulator_cmd_publisher = node.create_publisher::<r2r::std_msgs::msg::String>("/simulator_command").expect("Hmm, can not create node");
     let resource_publisher = node.create_publisher::<r2r::sp_messages::msg::Resources>("/sp/resources").expect("Hmm, can not create node");
 
-    let (tx_out, rx_out) = channel::unbounded();
+    let rx_out = channel::tick(Duration::from_millis(300));
     thread::spawn(move || loop {
         match rx_out.recv() {
             Ok(_) => {
@@ -162,75 +160,57 @@ fn send_the_cmd(node: &mut r2r::Node, state: Arc<Mutex<API_State>>) -> channel::
         }
     });
 
-    tx_out
-
 }
 
 
-fn listner(node: &mut r2r::Node, state: Arc<Mutex<API_State>>, send_state: channel::Sender<Tick>, send_cmd: channel::Sender<Tick>) {
+fn listner(node: &mut r2r::Node, state: Arc<Mutex<API_State>>) {
 
         // callbacks
         let state_cb = state.to_owned();
-        let tick = send_state.clone();
         let gripper_cb = move |msg: r2r::Result<serde_json::Value>| {
             state_cb.lock().unwrap().clone().upd_state("/gripper", msg.unwrap());
-            tick.send(Tick).unwrap();
         };
 
         let state_cb = state.to_owned();
-        let tick = send_state.clone();
         let control_box_cb = move |msg: r2r::Result<serde_json::Value>| {
             state_cb.lock().unwrap().clone().upd_state("/control_box", msg.unwrap());
-            tick.send(Tick).unwrap();
         };
 
         let state_cb = state.to_owned();
-        let tick = send_state.clone();
         let camera_cb = move |msg: r2r::Result<serde_json::Value>| {
             state_cb.lock().unwrap().clone().upd_state("/camera", msg.unwrap());
-            tick.send(Tick).unwrap();
         };
 
         let state_cb = state.to_owned();
-        let tick = send_state.clone();
         let r1_cb = move |msg: r2r::Result<serde_json::Value>| {
             state_cb.lock().unwrap().clone().upd_state("/r1", msg.unwrap());
-            tick.send(Tick).unwrap();
         };
 
         let state_cb = state.to_owned();
-        let tick = send_state.clone();
         let r2_cb = move |msg: r2r::Result<serde_json::Value>| {
             state_cb.lock().unwrap().clone().upd_state("/r2", msg.unwrap());
-            tick.send(Tick).unwrap();
         };
 
         let state_cb = state.to_owned();
-        let tick = send_state.clone();
         let cubes_cb = move |msg: r2r::std_msgs::msg::String| {
             let json: serde_json::Value = serde_json::from_str(&msg.data).unwrap();
             state_cb.lock().unwrap().clone().upd_state("/cubes", json);
-            tick.send(Tick).unwrap();
         };
 
         let state_cb = state.to_owned();
-        let tick = send_state.clone();
         let resource_cb = move |msg: r2r::sp_messages::msg::RegisterResource| {
             let mut x = state_cb.lock().unwrap().clone();
             let resource: String = msg.path;
             if !x.nodes.contains(&resource) {
                 x.nodes.push(resource);
             }
-            tick.send(Tick).unwrap();
         };
 
         let state_cb = state.to_owned();
-        let tick = send_cmd.clone();
         let cmd_cb = move |msg: r2r::std_msgs::msg::String| {
             let mut x = state_cb.lock().unwrap().clone();
             let json: serde_json::Value = serde_json::from_str(&msg.data).unwrap();
             x.cmd = json;
-            tick.send(Tick).unwrap();
         };
 
         let _gripper = node.subscribe_untyped("/gripper/state", "gripper_msgs/msg/State", Box::new(gripper_cb));
