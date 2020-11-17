@@ -18,6 +18,7 @@ from ros2_scene_manipulation_msgs.srv import ManipulateScene
 from gripper_msgs.msg import Goal as GripperGoal, State as GripperState
 from camera_msgs.msg import Goal as CameraGoal, Measured as CameraState
 from robot_msgs.msg import RobotState
+from control_box_msgs.msg import Measured as ControlBoxState
 
 def euler_to_quaternion(yaw, pitch, roll):
         qx = math.sin(roll/2) * math.cos(pitch/2) * math.cos(yaw/2) - math.cos(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
@@ -86,6 +87,13 @@ class SceneMaster(Node):
             self.marker_timer_period,
             self.marker_publisher_callback)
 
+        self.blue_light_on = False
+        self.cb_subscriber = self.create_subscription(
+            ControlBoxState,
+            "/control_box/measured",
+            self.cb_subscriber_callback,
+            20)
+
         self.r1_robot_position = "unknown"
         self.r1_robot_subscriber = self.create_subscription(
             RobotState,
@@ -127,9 +135,37 @@ class SceneMaster(Node):
             self.sp_publisher_timer_period,
             self.sp_publisher_callback)
 
+        self.camera_marker_publisher = self.create_publisher(Marker, "cylinders2/sm/camera_marker", 20)
+        self.blue_light_marker_publisher = self.create_publisher(Marker, "cylinders2/sm/blue_light_marker", 20)
+        self.blue_light_on = False
+
+        self._ticker = self.create_timer(
+            self.sp_publisher_timer_period,
+            self.ticker_callback)
+
+        self.photoneo_mesh = os.path.join(get_package_share_directory('cylinders2_scene_master'), 'photoneo.dae')
+
         self.get_logger().info(str(self.get_name()) + ' is up and running')
 
         self.living_cubes = []
+
+    def ticker_callback(self):
+        self.publish_markers()
+
+    def publish_markers(self):
+        # for key, frame in self.product_to_frame.items():
+        #     product_type = self.product_types[key]
+        #     color = self.product_colors[product_type]
+        #     marker = self.cube_marker(frame, color)
+        #     self.product_marker_publishers[key].publish(marker)
+
+        camera_marker = self.camera_marker()
+        self.camera_marker_publisher.publish(camera_marker)
+        blue_light_marker = self.blue_light_marker()
+        self.blue_light_marker_publisher.publish(blue_light_marker)
+
+    def cb_subscriber_callback(self, msg):
+        self.blue_light_on = msg.blue_light_on
 
     def r1_robot_callback(self, msg):
         self.r1_robot_position = msg.act_pos
