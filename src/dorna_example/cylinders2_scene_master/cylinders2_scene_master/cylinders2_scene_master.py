@@ -296,6 +296,80 @@ class SceneMaster(Node):
         self.req.same_position_in_world = pos
         self.future = self.manipulate_scene_client.call_async(self.req)
 
+    def camera_marker(self):
+        marker = Marker()
+        marker.header.frame_id = "world"
+        marker.header.stamp = Time()
+        marker.ns = ""
+        marker.id = 0
+        marker.type = 10
+        marker.action = 0
+
+        marker.pose.position.x = 0.0
+        marker.pose.position.y = 0.0
+        marker.pose.position.z = 0.65
+
+        quat = euler_to_quaternion(0.0, 0, 3.9)
+        marker.pose.orientation.x = quat[0]
+        marker.pose.orientation.y = quat[1]
+        marker.pose.orientation.z = quat[2]
+        marker.pose.orientation.w = quat[3]
+
+
+        marker.scale.x = 0.00025
+        marker.scale.y = 0.00075
+        marker.scale.z = 0.00075
+
+        c = ColorRGBA()
+        c.a = 1.0
+        c.r = 0.5
+        c.g = 0.5
+        c.b = 0.5
+
+        marker.color = c
+        marker.mesh_resource = "file://" + self.photoneo_mesh
+
+        return marker
+
+    def blue_light_marker(self):
+        marker = Marker()
+        marker.header.frame_id = "world"
+        marker.header.stamp = Time()
+        marker.ns = ""
+        marker.id = 0
+        marker.type = 3
+        marker.action = 0
+        marker.pose.position.x = 0.0
+        marker.pose.position.y = 0.2
+        marker.pose.position.z = 0.5
+        # marker.pose.orientation.x = 0.0
+        # marker.pose.orientation.y = 0.0
+        # marker.pose.orientation.z = 0.0
+        # marker.pose.orientation.w = 1.0
+
+        quat = euler_to_quaternion(0, 1.5707, 0)
+        marker.pose.orientation.x = quat[0]
+        marker.pose.orientation.y = quat[1]
+        marker.pose.orientation.z = quat[2]
+        marker.pose.orientation.w = quat[3]
+
+
+        marker.scale.x = 0.075
+        marker.scale.y = 0.075
+        marker.scale.z = 0.01
+
+        c = ColorRGBA()
+        c.a = 1.0
+        c.r = 0.2
+        c.g = 0.2
+        c.b = 0.5
+        if self.blue_light_on:
+            c.b = 1.0
+
+        marker.color = c
+
+        return marker
+
 def main(args=None):
     rclpy.init(args=args)
 
