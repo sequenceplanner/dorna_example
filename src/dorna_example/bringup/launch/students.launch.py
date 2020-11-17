@@ -66,11 +66,18 @@ def generate_launch_description():
                 output='screen',
                 )
 
+    api = launch_ros.actions.Node(
+                package='api_node',
+                executable='api_node',
+                output='screen',
+                )
+
     nodes = [scene_manipulation_service,
             camera_node,
             control_box,
             gripper,
             scene_master,
+            api,
             launch.actions.OpaqueFunction(function = launch_rviz)
              ]
     return launch.LaunchDescription(r1 + r2 + r3 + r4 + nodes)

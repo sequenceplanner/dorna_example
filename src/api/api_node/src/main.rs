@@ -36,8 +36,8 @@ impl API_State {
                 "close": false
             },
             "cubes": {
-                "new": false,
-                "remove": false
+                "make_cubes": false,
+                "remove_cubes": false
             },
         });
 

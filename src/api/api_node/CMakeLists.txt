@@ -16,6 +16,9 @@ endfunction()
 # put ros package dependencies here.
 ros_deps(sp_messages
          gripper_msgs
+         control_box_msgs
+         camera_msgs
+         robot_msgs
          rcl
         )
 

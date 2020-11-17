@@ -15,8 +15,11 @@
   <build_depend>gripper_msgs</build_depend>
 
   <exec_depend>rcl</exec_depend>
-  <build_depend>sp_messages</build_depend>
   <exec_depend>gripper_msgs</exec_depend>
+  <exec_depend>control_box_msgs</exec_depend>
+  <exec_depend>camera_msgs</exec_depend>
+  <exec_depend>robot_msgs</exec_depend>
+
 
   <export>
     <build_type>ament_cmake</build_type>
