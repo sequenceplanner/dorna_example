@@ -1,0 +1,7 @@
+ros2 topic pub /cmd std_msgs/msg/String "data: '
+{\"r1\":{\"ref_pos\": \"pre_take\"},
+\"r3\":{\"ref_pos\": \"pre_take\"},
+\"control_box\":{\"blue_light\": false},
+\"camera\":{\"do_scan\": false},
+\"gripper\":{\"close\": false},
+\"cubes\":{\"make_cube\": true,\"remove_cube\": false}}'" 
