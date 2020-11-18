@@ -234,8 +234,6 @@ class SceneMaster(Node):
         if Command["remove_cube"]:
             self.remove_cube()
 
-        if Command["scanned"]:
-            self.update_color()
 
     def make_cube(self):
 
