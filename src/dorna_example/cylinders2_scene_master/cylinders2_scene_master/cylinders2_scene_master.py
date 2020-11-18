@@ -108,11 +108,18 @@ class SceneMaster(Node):
             self.r3_robot_callback,
             20)
 
-        self.gripper_goal = False
+        # self.gripper_goal = False
+        # self.gripper_subscriber = self.create_subscription(
+        #     GripperGoal,
+        #     "/gripper/goal",
+        #     self.gripper_callback,
+        #     20)
+
+        self.gripper_closed = False
         self.gripper_subscriber = self.create_subscription(
-            GripperGoal,
-            "/gripper/goal",
-            self.gripper_callback,
+            GripperState,
+            "/gripper/state",
+            self.gripper_state_callback,
             20)
 
         self.camera_scanning_true = False
@@ -130,10 +137,15 @@ class SceneMaster(Node):
             20)
 
         self.sp_publisher = self.create_publisher(String, "/simulator_state", 20)
+        self.sensor_publisher = self.create_publisher(String, "/simulator_sensor", 20)
 
         self.sp_publisher_timer = self.create_timer(
             self.sp_publisher_timer_period,
             self.sp_publisher_callback)
+
+        self.sp_publisher_timer = self.create_timer(
+            self.sp_publisher_timer_period,
+            self.sensor_publisher_callback)
 
         self.camera_marker_publisher = self.create_publisher(Marker, "cylinders2/sm/camera_marker", 20)
         self.blue_light_marker_publisher = self.create_publisher(Marker, "cylinders2/sm/blue_light_marker", 20)
@@ -147,7 +159,14 @@ class SceneMaster(Node):
 
         self.get_logger().info(str(self.get_name()) + ' is up and running')
 
+        self.prev_gripper_closed = False;
         self.living_cubes = []
+
+    def sensor_publisher_callback(self):
+        sensor = any((cube["position"] == '/cylinders2/conveyor2') for cube in self.living_cubes)
+        x = String()
+        x.data = json.dumps({"sensor": sensor})
+        self.sensor_publisher.publish(x)
 
     def ticker_callback(self):
         self.publish_markers()
@@ -172,28 +191,68 @@ class SceneMaster(Node):
 
     def r3_robot_callback(self, msg):
         self.r3_robot_position = msg.act_pos
-        for cube in self.living_cubes:
-            if cube['position'] == "/cylinders2/conveyor2" and self.r3_robot_position == "pre_take":
-                self.cube_to_parent(cube['cube_id'], "/dorna/r3/dorna_5_link")
-            if cube['position'] == "/dorna/r3/dorna_5_link" and self.r3_robot_position == "leave":
-                self.cube_to_parent(cube['cube_id'], "/cylinders2/conveyor")
 
-    def gripper_callback(self, msg):
-        self.gripper_goal = msg.close
-        # self.gripper_goal = msg.close
-        # introduce possibility to fail grasping (1/5)
-        fail_list = [True, True, True, True, False]
+        robot3_occupied = any((cube["position"] == '/dorna/r3/dorna_5_link') for cube in self.living_cubes)
+        conv2_occupied = any((cube["position"] == '/cylinders2/conveyor2') for cube in self.living_cubes)
+        conv1_occupied = any((cube["position"] == '/cylinders2/conveyor') for cube in self.living_cubes)
+
         for cube in self.living_cubes:
-            # would be nice to have matching pose names, then: if cube['position'] == self.slot_to_frame[self.r1_robot_position]
-            if cube['position'] == "/cylinders2/conveyor" and self.r1_robot_position == "leave" or \
-                cube['position'] == "/cylinders2/shelf1" and self.r1_robot_position == "take1" or \
-                cube['position'] == "/cylinders2/shelf2" and self.r1_robot_position == "take2" or \
-                cube['position'] == "/cylinders2/shelf3" and self.r1_robot_position == "take3":
-                if random.choice(fail_list):
-                    self.cube_to_parent(cube['cube_id'], "/dorna/r1/dorna_5_link")
-                    self.get_logger().info('GRASPING SUCCESS')
-                else:
-                    self.get_logger().info('GRASPING FAILED')
+            if cube['position'] == "/cylinders2/conveyor2" and self.r3_robot_position == "pre_take" and not robot3_occupied:
+                self.cube_to_parent(cube['cube_id'], "/dorna/r3/dorna_5_link")
+            if cube['position'] == "/dorna/r3/dorna_5_link" and self.r3_robot_position == "leave" and not conv1_occupied:
+                self.cube_to_parent(cube['cube_id'], "/cylinders2/conveyor")
+            if cube['position'] == "/dorna/r3/dorna_5_link" and self.r3_robot_position == "take1" and not conv2_occupied:
+                self.cube_to_parent(cube['cube_id'], "/cylinders2/conveyor2")
+            if cube['position'] == "/cylinders2/conveyor" and self.r3_robot_position == "take2" and not robot3_occupied:
+                self.cube_to_parent(cube['cube_id'], "/dorna/r3/dorna_5_link")
+
+    # def gripper_callback(self, msg):
+    #     self.gripper_goal = msg.close
+    #     # self.gripper_goal = msg.close
+    #     # introduce possibility to fail grasping (1/5)
+    #     fail_list = [True, True, True, True, False]
+    #     for cube in self.living_cubes:
+    #         # would be nice to have matching pose names, then: if cube['position'] == self.slot_to_frame[self.r1_robot_position]
+    #         if cube['position'] == "/cylinders2/conveyor" and self.r1_robot_position == "leave" or \
+    #             cube['position'] == "/cylinders2/shelf1" and self.r1_robot_position == "take1" or \
+    #             cube['position'] == "/cylinders2/shelf2" and self.r1_robot_position == "take2" or \
+    #             cube['position'] == "/cylinders2/shelf3" and self.r1_robot_position == "take3":
+    #             if random.choice(fail_list):
+    #                 self.cube_to_parent(cube['cube_id'], "/dorna/r1/dorna_5_link")
+    #                 self.get_logger().info('GRASPING SUCCESS')
+    #             else:
+    #                 self.get_logger().info('GRASPING FAILED')
+
+    def gripper_state_callback(self, msg):
+        self.gripper_closed = msg.closed
+        if not self.prev_gripper_closed and self.gripper_closed:
+            fail_list = [True, True, True, True, False]
+            for cube in self.living_cubes:
+                # would be nice to have matching pose names, then: if cube['position'] == self.slot_to_frame[self.r1_robot_position]
+                if cube['position'] == "/cylinders2/conveyor" and self.r1_robot_position == "leave" or \
+                    cube['position'] == "/cylinders2/shelf1" and self.r1_robot_position == "take1" or \
+                    cube['position'] == "/cylinders2/shelf2" and self.r1_robot_position == "take2" or \
+                    cube['position'] == "/cylinders2/shelf3" and self.r1_robot_position == "take3":
+                    if random.choice(fail_list):
+                        self.cube_to_parent(cube['cube_id'], "/dorna/r1/dorna_5_link")
+                        self.get_logger().info('GRASPING SUCCESS')
+                    else:
+                        self.get_logger().info('GRASPING FAILED')
+
+        if self.prev_gripper_closed and not self.gripper_closed:
+            for cube in self.living_cubes:
+                # would be nice to have matching pose names, then: if cube['position'] == self.slot_to_frame[self.r1_robot_position]
+                if cube['position'] == "/dorna/r1/dorna_5_link" and self.r1_robot_position == "leave":
+                    self.cube_to_parent(cube['cube_id'], "/cylinders2/conveyor")
+                if cube['position'] == "/dorna/r1/dorna_5_link" and self.r1_robot_position == "take1":
+                    self.cube_to_parent(cube['cube_id'], "/cylinders2/shelf1")
+                if cube['position'] == "/dorna/r1/dorna_5_link" and self.r1_robot_position == "take2":
+                    self.cube_to_parent(cube['cube_id'], "/cylinders2/shelf2")
+                if cube['position'] == "/dorna/r1/dorna_5_link" and self.r1_robot_position == "take3":
+                    self.cube_to_parent(cube['cube_id'], "/cylinders2/shelf3")
+                self.get_logger().info('CUBE' + str(cube['cube_id']) + 'LEFT')
+
+        self.prev_gripper_closed = self.gripper_closed
 
     def camera_callback(self, msg):
         self.camera_scanning_true = msg.scanning

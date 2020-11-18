@@ -61,7 +61,7 @@ impl API_State {
                 "part_sensor": false,
             },
             "cubes": {
-                "at_input_output_pos": false,
+                "sensor": false,
             },
         });
 
@@ -222,7 +222,7 @@ fn listner(node: &mut r2r::Node, state: Arc<Mutex<API_State>>) {
         let _camera = node.subscribe_untyped("/camera/measured", "camera_msgs/msg/Measured", Box::new(camera_cb));
         let _r1 = node.subscribe_untyped("/r1/measured", "robot_msgs/msg/RobotState", Box::new(r1_cb));
         let _r2 = node.subscribe_untyped("/r3/measured", "robot_msgs/msg/RobotState", Box::new(r2_cb));
-        let _cubes = node.subscribe("/simulator_state",  Box::new(cubes_cb));
+        let _cubes = node.subscribe("/simulator_sensor",  Box::new(cubes_cb));
         let _resource = node.subscribe("/sp/resource",  Box::new(resource_cb));
         let _input = node.subscribe("cmd",  Box::new(cmd_cb));
     
