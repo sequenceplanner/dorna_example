@@ -36,8 +36,8 @@ impl API_State {
                 "close": false
             },
             "cubes": {
-                "make_cubes": false,
-                "remove_cubes": false
+                "make_cube": false,
+                "remove_cube": false
             },
         });
 
@@ -122,7 +122,7 @@ fn send_the_cmd(node: &mut r2r::Node, state: Arc<Mutex<API_State>>){
     let control_box_publisher = node.create_publisher_untyped("/control_box/goal", "control_box_msgs/msg/Goal").expect("Hmm, can not create node");
     let camera_publisher = node.create_publisher_untyped("/camera/goal", "camera_msgs/msg/Goal").expect("Hmm, can not create node");
     let r1_publisher = node.create_publisher_untyped("/dorna/r1/goal", "robot_msgs/msg/RobotGoal").expect("Hmm, can not create node");
-    let r2_publisher = node.create_publisher_untyped("/dorna/r2/goal", "robot_msgs/msg/RobotGoal").expect("Hmm, can not create node");
+    let r2_publisher = node.create_publisher_untyped("/dorna/r3/goal", "robot_msgs/msg/RobotGoal").expect("Hmm, can not create node");
     let simulator_cmd_publisher = node.create_publisher::<r2r::std_msgs::msg::String>("/simulator_command").expect("Hmm, can not create node");
     let resource_publisher = node.create_publisher::<r2r::sp_messages::msg::Resources>("/sp/resources").expect("Hmm, can not create node");
 
@@ -144,8 +144,8 @@ fn send_the_cmd(node: &mut r2r::Node, state: Arc<Mutex<API_State>>){
                 let msg = x.get_value_from_cmd("/r1").expect("hmm, no r1 in cmd").clone();
                 r1_publisher.publish(msg).expect("Could not send to r1");
 
-                let msg = x.get_value_from_cmd("/r2").expect("hmm, no r2 in cmd").clone();
-                r2_publisher.publish(msg).expect("Could not send to r2");
+                let msg = x.get_value_from_cmd("/r3").expect("hmm, no r3 in cmd").clone();
+                r2_publisher.publish(msg).expect("Could not send to r3");
 
                 let msg = x.get_value_from_cmd("/cubes").expect("hmm, no cubes in cmd").clone();
                 let msg = r2r::std_msgs::msg::String { data: msg.to_string() };
@@ -188,7 +188,7 @@ fn listner(node: &mut r2r::Node, state: Arc<Mutex<API_State>>) {
 
         let state_cb = state.to_owned();
         let r2_cb = move |msg: r2r::Result<serde_json::Value>| {
-            state_cb.lock().unwrap().upd_state("/r2", msg.unwrap());
+            state_cb.lock().unwrap().upd_state("/r3", msg.unwrap());
         };
 
         let state_cb = state.to_owned();
@@ -209,15 +209,19 @@ fn listner(node: &mut r2r::Node, state: Arc<Mutex<API_State>>) {
         let state_cb = state.to_owned();
         let cmd_cb = move |msg: r2r::std_msgs::msg::String| {
             let mut x = state_cb.lock().unwrap();
-            let json: serde_json::Value = serde_json::from_str(&msg.data).unwrap();
-            x.cmd = json;
+            match serde_json::from_str(&msg.data) {
+                Ok(json) => x.cmd = json,
+                Err(e) => println!("ERROR PARSING INPUT"),
+            }
+
+            
         };
 
         let _gripper = node.subscribe_untyped("/gripper/state", "gripper_msgs/msg/State", Box::new(gripper_cb));
         let _control_box = node.subscribe_untyped("/control_box/measured", "control_box_msgs/msg/Measured", Box::new(control_box_cb));
         let _camera = node.subscribe_untyped("/camera/measured", "camera_msgs/msg/Measured", Box::new(camera_cb));
         let _r1 = node.subscribe_untyped("/r1/measured", "robot_msgs/msg/RobotState", Box::new(r1_cb));
-        let _r2 = node.subscribe_untyped("/r2/measured", "robot_msgs/msg/RobotState", Box::new(r2_cb));
+        let _r2 = node.subscribe_untyped("/r3/measured", "robot_msgs/msg/RobotState", Box::new(r2_cb));
         let _cubes = node.subscribe("/simulator_state",  Box::new(cubes_cb));
         let _resource = node.subscribe("/sp/resource",  Box::new(resource_cb));
         let _input = node.subscribe("cmd",  Box::new(cmd_cb));
