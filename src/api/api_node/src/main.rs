@@ -45,7 +45,7 @@ impl API_State {
             "r1": {
                 "act_pos": ""
             },
-            "r2": {
+            "r3": {
                 "act_pos": ""
             },
             "control_box": {
@@ -220,8 +220,8 @@ fn listner(node: &mut r2r::Node, state: Arc<Mutex<API_State>>) {
         let _gripper = node.subscribe_untyped("/gripper/state", "gripper_msgs/msg/State", Box::new(gripper_cb));
         let _control_box = node.subscribe_untyped("/control_box/measured", "control_box_msgs/msg/Measured", Box::new(control_box_cb));
         let _camera = node.subscribe_untyped("/camera/measured", "camera_msgs/msg/Measured", Box::new(camera_cb));
-        let _r1 = node.subscribe_untyped("/r1/measured", "robot_msgs/msg/RobotState", Box::new(r1_cb));
-        let _r2 = node.subscribe_untyped("/r3/measured", "robot_msgs/msg/RobotState", Box::new(r2_cb));
+        let _r1 = node.subscribe_untyped("/dorna/r1/measured", "robot_msgs/msg/RobotState", Box::new(r1_cb));
+        let _r2 = node.subscribe_untyped("/dorna/r3/measured", "robot_msgs/msg/RobotState", Box::new(r2_cb));
         let _cubes = node.subscribe("/simulator_sensor",  Box::new(cubes_cb));
         let _resource = node.subscribe("/sp/resource",  Box::new(resource_cb));
         let _input = node.subscribe("cmd",  Box::new(cmd_cb));
