@@ -260,7 +260,7 @@ class SceneMaster(Node):
         # introduce possibility to fail scanning (1/5)
         # fail_list = [True, True, True, True, False]
         for cube in self.living_cubes:
-            if any((cube["position"] == '/dorna/r1/dorna_5_link') for cube in self.living_cubes):
+            if cube["position"] == '/dorna/r1/dorna_5_link':
                 if self.r1_robot_position == "scan":
                     if self.camera_scanning_true and not self.camera_done:
                         # if random.choice(fail_list):
