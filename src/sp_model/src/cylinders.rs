@@ -29,7 +29,7 @@ pub fn cylinders() -> (Model, SPState) {
 
     let cb = m.use_resource(control_box::create_instance("control_box"));
     let camera = m.use_resource(camera::create_instance("camera"));
-    let gripper = m.use_resource(gripper::create_instance("gripper"));
+    let gripper = m.use_resource(gripper_fail::create_instance("gripper"));
 
     let product_domain = &[
         100.to_spvalue(), // SPValue::Unknown,   macros need better support for Unknown

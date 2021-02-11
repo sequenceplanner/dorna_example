@@ -32,7 +32,7 @@ pub fn cylinders2() -> (Model, SPState) {
 
     let cb = m.use_resource(control_box::create_instance("control_box"));
     let camera = m.use_resource(camera::create_instance("camera"));
-    let gripper = m.use_resource(gripper::create_instance("gripper"));
+    let gripper = m.use_resource(gripper_fail::create_instance("gripper"));
 
     let buffer_domain = &[
         0.to_spvalue(), // buffer empty

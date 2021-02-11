@@ -18,7 +18,7 @@ pub fn create_instance(name: &str) -> Resource {
             part_sensor : bool,
         },
         estimated!{
-
+            fail_count : vec![0,1,2],
         },
 
         predicates!{
@@ -28,9 +28,11 @@ pub fn create_instance(name: &str) -> Resource {
 
         transitions!{
             // close
-            c_close_start : p!([!closed]), vec![ a!(close) ],
+            c_close_start0 : p!([!closed] && [fail_count == 0]), vec![ a!(close), a!(fail_count = 1) ],
+            c_close_start1 : p!([!closed] && [fail_count == 1]), vec![ a!(close), a!(fail_count = 2) ],
             e_close_finish_part : p!(closing), vec![a!(closed), a!(part_sensor)],
             e_close_finish_no_part : p!(closing), vec![a!(closed), a!(!part_sensor)],
+            a_close_finished_reset_fc : p!([closed] && [part_sensor] && [fail_count != 0]), vec![a!(fail_count = 0)],
 
             // open
             c_open_start : p!(closed), vec![ a!(!close) ],
