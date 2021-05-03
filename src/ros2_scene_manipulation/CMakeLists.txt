@@ -12,7 +12,6 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(ros2_scene_manipulation_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(rclcpp REQUIRED)
 

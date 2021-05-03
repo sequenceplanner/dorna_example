@@ -10,6 +10,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/static_transform_broadcaster.h>
+#include <tf2_ros/buffer.h>
 
 #include "ros2_scene_manipulation_msgs/srv/manipulate_scene.hpp"
 #include "related_transform.h"
