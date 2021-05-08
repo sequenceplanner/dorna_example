@@ -25,10 +25,10 @@ default = ["ros"]
 ros = ["sp-runner/ros"]
 
 [dependencies]
-# sp-domain = { path = "/Users/kristofer/sw/sp-rust/sp-domain" }
-# sp-runner = { path = "/Users/kristofer/sw/sp-rust/sp-runner" }
-sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "547eb57" }
-sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "547eb57" }
+# sp-domain = { path = "/Users/martin/sp/sp-rust/sp-domain" }
+# sp-runner = { path = "/Users/martin/sp/sp-rust/sp-runner" }
+sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "6712fbd" }
+sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "6712fbd" }
 
 
 failure = "0.1.5"
