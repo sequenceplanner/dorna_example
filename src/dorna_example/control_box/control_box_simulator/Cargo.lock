@@ -144,7 +144,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.0.3"
-source = "git+https://github.com/sequenceplanner/r2r?rev=c84bb67#c84bb67914789e13ca72fa57cd61c9c4e8c51b0f"
+source = "git+https://github.com/sequenceplanner/r2r#5427f318f476dd39950e83dd16146064835a4f00"
 
 [[package]]
 name = "control_box_simulator"
@@ -303,7 +303,7 @@ dependencies = [
 [[package]]
 name = "msg_gen"
 version = "0.0.3"
-source = "git+https://github.com/sequenceplanner/r2r?rev=c84bb67#c84bb67914789e13ca72fa57cd61c9c4e8c51b0f"
+source = "git+https://github.com/sequenceplanner/r2r#5427f318f476dd39950e83dd16146064835a4f00"
 dependencies = [
  "bindgen",
  "common",
@@ -361,7 +361,7 @@ dependencies = [
 [[package]]
 name = "r2r"
 version = "0.0.6"
-source = "git+https://github.com/sequenceplanner/r2r?rev=c84bb67#c84bb67914789e13ca72fa57cd61c9c4e8c51b0f"
+source = "git+https://github.com/sequenceplanner/r2r#5427f318f476dd39950e83dd16146064835a4f00"
 dependencies = [
  "common",
  "failure",
@@ -376,7 +376,7 @@ dependencies = [
 [[package]]
 name = "rcl"
 version = "0.0.3"
-source = "git+https://github.com/sequenceplanner/r2r?rev=c84bb67#c84bb67914789e13ca72fa57cd61c9c4e8c51b0f"
+source = "git+https://github.com/sequenceplanner/r2r#5427f318f476dd39950e83dd16146064835a4f00"
 dependencies = [
  "bindgen",
  "common",

@@ -170,7 +170,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.0.3"
-source = "git+https://github.com/sequenceplanner/r2r?rev=c84bb67#c84bb67914789e13ca72fa57cd61c9c4e8c51b0f"
+source = "git+https://github.com/sequenceplanner/r2r#5427f318f476dd39950e83dd16146064835a4f00"
 
 [[package]]
 name = "crossbeam"
@@ -627,7 +627,7 @@ dependencies = [
 [[package]]
 name = "msg_gen"
 version = "0.0.3"
-source = "git+https://github.com/sequenceplanner/r2r?rev=c84bb67#c84bb67914789e13ca72fa57cd61c9c4e8c51b0f"
+source = "git+https://github.com/sequenceplanner/r2r#5427f318f476dd39950e83dd16146064835a4f00"
 dependencies = [
  "bindgen",
  "common",
@@ -805,7 +805,7 @@ dependencies = [
 [[package]]
 name = "r2r"
 version = "0.0.6"
-source = "git+https://github.com/sequenceplanner/r2r?rev=c84bb67#c84bb67914789e13ca72fa57cd61c9c4e8c51b0f"
+source = "git+https://github.com/sequenceplanner/r2r#5427f318f476dd39950e83dd16146064835a4f00"
 dependencies = [
  "common",
  "failure",
@@ -845,7 +845,7 @@ dependencies = [
 [[package]]
 name = "rcl"
 version = "0.0.3"
-source = "git+https://github.com/sequenceplanner/r2r?rev=c84bb67#c84bb67914789e13ca72fa57cd61c9c4e8c51b0f"
+source = "git+https://github.com/sequenceplanner/r2r#5427f318f476dd39950e83dd16146064835a4f00"
 dependencies = [
  "bindgen",
  "common",
@@ -993,7 +993,7 @@ checksum = "45456094d1983e2ee2a18fdfebce3189fa451699d0502cb8e3b49dba5ba41451"
 [[package]]
 name = "sp-domain"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=6712fbd#6712fbdfe4263e4991617e47371a95758e72a1f5"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=26d0006#26d0006b35e2fa15ebf90689f7f0ab2272f22422"
 dependencies = [
  "peg",
  "serde",
@@ -1004,7 +1004,7 @@ dependencies = [
 [[package]]
 name = "sp-ros"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=6712fbd#6712fbdfe4263e4991617e47371a95758e72a1f5"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=26d0006#26d0006b35e2fa15ebf90689f7f0ab2272f22422"
 dependencies = [
  "crossbeam",
  "failure",
@@ -1018,7 +1018,7 @@ dependencies = [
 [[package]]
 name = "sp-runner"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=6712fbd#6712fbdfe4263e4991617e47371a95758e72a1f5"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=26d0006#26d0006b35e2fa15ebf90689f7f0ab2272f22422"
 dependencies = [
  "chrono",
  "crossbeam",
