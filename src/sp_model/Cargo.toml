@@ -27,8 +27,8 @@ ros = ["sp-runner/ros"]
 [dependencies]
 # sp-domain = { path = "/Users/martin/sp/sp-rust/sp-domain" }
 # sp-runner = { path = "/Users/martin/sp/sp-rust/sp-runner" }
-sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "6712fbd" }
-sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "6712fbd" }
+sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", rev = "26d0006" }
+sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", rev = "26d0006" }
 
 
 failure = "0.1.5"
