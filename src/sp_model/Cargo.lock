@@ -85,7 +85,7 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex",
- "which",
+ "which 3.1.1",
 ]
 
 [[package]]
@@ -993,7 +993,7 @@ checksum = "45456094d1983e2ee2a18fdfebce3189fa451699d0502cb8e3b49dba5ba41451"
 [[package]]
 name = "sp-domain"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=26d0006#26d0006b35e2fa15ebf90689f7f0ab2272f22422"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=74e7de7#74e7de7ae3b7868279f51cb7ab6d40d23250d6f1"
 dependencies = [
  "peg",
  "serde",
@@ -1004,7 +1004,7 @@ dependencies = [
 [[package]]
 name = "sp-ros"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=26d0006#26d0006b35e2fa15ebf90689f7f0ab2272f22422"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=74e7de7#74e7de7ae3b7868279f51cb7ab6d40d23250d6f1"
 dependencies = [
  "crossbeam",
  "failure",
@@ -1018,7 +1018,7 @@ dependencies = [
 [[package]]
 name = "sp-runner"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?rev=26d0006#26d0006b35e2fa15ebf90689f7f0ab2272f22422"
+source = "git+https://github.com/sequenceplanner/sp-rust?rev=74e7de7#74e7de7ae3b7868279f51cb7ab6d40d23250d6f1"
 dependencies = [
  "chrono",
  "crossbeam",
@@ -1034,6 +1034,7 @@ dependencies = [
  "sp-ros",
  "tokio",
  "uuid",
+ "which 4.1.0",
 ]
 
 [[package]]
@@ -1192,6 +1193,16 @@ version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d011071ae14a2f6671d0b74080ae0cd8ebf3a6f8c9589a2cd45f23126fe29724"
 dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "which"
+version = "4.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b55551e42cbdf2ce2bedd2203d0cc08dba002c27510f86dab6d0ce304cba3dfe"
+dependencies = [
+ "either",
  "libc",
 ]
 
