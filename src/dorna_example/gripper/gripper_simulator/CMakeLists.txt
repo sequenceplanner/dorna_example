@@ -3,6 +3,10 @@ project(gripper_simulator)
 
 find_package(ament_cmake REQUIRED)
 
+if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
+     set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1 CACHE INTERNAL "No dev warnings")
+endif()
+
 include(r2r_cargo.cmake)
 
 # put ros package dependencies here.
