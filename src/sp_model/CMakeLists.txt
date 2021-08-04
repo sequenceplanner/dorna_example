@@ -21,9 +21,7 @@ r2r_cargo(std_msgs
 
 # install your binaries
 install(PROGRAMS
-  ${CMAKE_SOURCE_DIR}/target/release/cylinders
-  ${CMAKE_SOURCE_DIR}/target/release/cylinders2
-  ${CMAKE_SOURCE_DIR}/target/release/cylinders2_structs
+  ${CMAKE_SOURCE_DIR}/target/release/${PROJECT_NAME}
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -4,22 +4,6 @@ version = "0.1.0"
 authors = ["Martin Dahl <martin.dahl@gmail.com>"]
 edition = "2018"
 
-[lib]
-name = "sp_resources"
-path = "src/lib.rs"
-
-[[bin]]
-name = "cylinders"
-path = "src/cylinders.rs"
-
-[[bin]]
-name = "cylinders2"
-path = "src/cylinders2.rs"
-
-[[bin]]
-name = "cylinders2_structs"
-path = "src/cylinders2_structs.rs"
-
 [features]
 default = ["ros"]
 ros = ["sp-runner/ros"]

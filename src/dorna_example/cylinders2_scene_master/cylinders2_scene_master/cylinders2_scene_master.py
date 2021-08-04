@@ -40,7 +40,7 @@ class SceneMaster(Node):
 
         self.sp_path_to_product_name = {
             '/cylinders2/product_state/dorna_holding': 'dorna',
-            '/cylinders2/product_state/dorna3_holding': 'dorna3',
+            '/cylinders2/product_state/dorna2_holding': 'dorna2',
             '/cylinders2/product_state/shelf1': 'shelf1',
             '/cylinders2/product_state/shelf2': 'shelf2',
             '/cylinders2/product_state/shelf3': 'shelf3',
@@ -50,7 +50,7 @@ class SceneMaster(Node):
 
         self.products = {
             'dorna' : 0,
-            'dorna3' : 0,
+            'dorna2' : 0,
             'shelf1' : 0,
             'shelf2' : 0,
             'shelf3': 0,
@@ -93,7 +93,7 @@ class SceneMaster(Node):
 
         self.slot_to_frame = {
             'dorna' : 'r1_dorna_5_link',
-            'dorna3' : 'r3_dorna_5_link',
+            'dorna2' : 'r2_dorna_5_link',
             'shelf1' : '/cylinders2/shelf1',
             'shelf2' : '/cylinders2/shelf2',
             'shelf3' : '/cylinders2/shelf3',

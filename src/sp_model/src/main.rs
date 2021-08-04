@@ -1,6 +1,11 @@
+mod camera;
+mod control_box;
+mod dorna;
+mod gripper;
+mod gripper_fail;
+
 use sp_runner::*;
 use sp_domain::*;
-use sp_resources::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -21,10 +26,8 @@ pub fn cylinders2() -> (Model, SPState) {
 
     let dorna = m.use_named_resource("dorna", dorna::create_instance("r1", &[pt, scan, t1, t2, t3, leave]));
     let dorna_moving = dorna.find_item("moving", &[]);
-    let dorna2 = m.use_named_resource("dorna", dorna::create_instance("r2", &[pt, scan, t1, t2, t3, leave]));
-    let dorna3 = m.use_named_resource("dorna", dorna::create_instance("r3", &[pt, scan, leave]));
-    let dorna3_moving = dorna3.find_item("moving", &[]);
-    let dorna4 = m.use_named_resource("dorna", dorna::create_instance("r4", &[pt, scan, leave]));
+    let dorna2 = m.use_named_resource("dorna", dorna::create_instance("r2", &[pt, scan, leave]));
+    let dorna2_moving = dorna2.find_item("moving", &[]);
 
     let cb = m.use_resource(control_box::create_instance("control_box"));
     let camera = m.use_resource(camera::create_instance("camera"));
@@ -56,10 +59,8 @@ pub fn cylinders2() -> (Model, SPState) {
     let shelf3 = m.add_estimated_domain("shelf3", buffer_domain, true);
     let conveyor = m.add_estimated_domain("conveyor", buffer_domain, true);
     let dorna_holding = m.add_estimated_domain("dorna_holding", buffer_domain, true);
-    let dorna3_holding = m.add_estimated_domain("dorna3_holding", buffer_domain, true);
+    let dorna2_holding = m.add_estimated_domain("dorna2_holding", buffer_domain, true);
     let conveyor2 = m.add_estimated_domain("conveyor2", buffer_domain, true);
-
-    let x = m.add_estimated_domain("x", &["left".to_spvalue(), "right".to_spvalue()], true);
 
     let ap = &dorna["act_pos"];
     let rp = &dorna["ref_pos"];
@@ -145,20 +146,6 @@ pub fn cylinders2() -> (Model, SPState) {
         &p!([[p:rp == leave] && [p: dorna_moving]] => [[p:conveyor == 0] || [! p:gripper_closed]]),
     );
 
-
-    // force dorna2 to move sometimes
-    let ap2 = &dorna2["act_pos"];
-    // m.add_invar(
-    //     "dorna2_1",
-    //     &p!([p:ap == scan] => [p:ap2 == leave]),
-    // );
-
-    // m.add_invar(
-    //     "dorna2_2",
-    //     &p!([p:ap == leave] => [p:ap2 == scan]),
-    // );
-
-
     // scan and leave can only be reached from pre_take
     m.add_invar(
         "to_scan",
@@ -225,35 +212,35 @@ pub fn cylinders2() -> (Model, SPState) {
                  true, Some(p!([p: gripper_fc == 0] || [p: gripper_fc == 1])));
     }
 
-    // dorna3 take/leave products
+    // dorna2 take/leave products
     let pos = vec![
         (leave, conveyor.clone()),
         (pt, conveyor2.clone()),
     ];
 
-    let ap3 = &dorna3["act_pos"];
-    let rp3 = &dorna3["ref_pos"];
+    let ap3 = &dorna2["act_pos"];
+    let rp3 = &dorna2["ref_pos"];
 
     for (pos_name, pos) in pos.iter() {
         let buffer_predicate = if pos_name == &pt {
             // when taking the product, because we have an auto transition that consumes it,
             // we need to be sure that the product will still be there
-            p!([p: dorna3_holding == 0] && [
+            p!([p: dorna2_holding == 0] && [
                 [[p: pos == 1] && [p: product_1_kind == 100]] ||
                     [[p: pos == 2] && [p: product_2_kind == 100]] ||
                     [[p: pos == 3] && [p: product_3_kind == 100]]
             ])
         } else {
-            p!([p: pos != 0] && [p: dorna3_holding == 0])
+            p!([p: pos != 0] && [p: dorna2_holding == 0])
         };
 
         m.add_op(&format!("r3_take_{}", pos.leaf()),
                  // operation model guard.
                  &buffer_predicate,
                  // operation model effects.
-                 &[a!(p:dorna3_holding <- p:pos), a!(p: pos = 0)],
+                 &[a!(p:dorna2_holding <- p:pos), a!(p: pos = 0)],
                  // low level goal
-                 &p!([p: ap3 == pos_name] && [!p: dorna3_moving]),
+                 &p!([p: ap3 == pos_name] && [!p: dorna2_moving]),
                  // low level actions (should not be needed)
                  &[],
                  // not auto
@@ -261,60 +248,23 @@ pub fn cylinders2() -> (Model, SPState) {
 
         m.add_op(&format!("r3_leave_{}", pos.leaf()),
                  // operation model guard.
-                 &p!([p: dorna3_holding != 0] && [p: pos == 0]),
+                 &p!([p: dorna2_holding != 0] && [p: pos == 0]),
                  // operation model effects.
-                 &[a!(p:pos <- p:dorna3_holding), a!(p: dorna3_holding = 0)],
+                 &[a!(p:pos <- p:dorna2_holding), a!(p: dorna2_holding = 0)],
                  // low level goal
-                 &p!([p: ap3 == pos_name] && [!p: dorna3_moving]),
+                 &p!([p: ap3 == pos_name] && [!p: dorna2_moving]),
                  // low level actions (should not be needed)
                  &[],
                  // not auto
                  false, None);
     }
 
-
-    let ap4 = &dorna4["act_pos"];
-    let rp4 = &dorna4["ref_pos"];
-    m.add_op("r4_x_left",
-             // operation model guard.
-             &p!(p: x == "right"),
-             // operation model effects.
-             &[a!(p:x = "left")],
-             // low level goal
-             &p!(p: ap4 == leave),
-             // low level actions (should not be needed)
-             &[],
-             // auto
-             true, None);
-    m.add_op("r4_x_right",
-             // operation model guard.
-             &p!(p: x == "left"),
-             // operation model effects.
-             &[a!(p:x = "right")],
-             // low level goal
-             &p!(p: ap4 == scan),
-             // low level actions (should not be needed)
-             &[],
-             // auto
-             true, None);
-
-    // force dorna4 to move sometimes by connecting it to dorna 2
-    m.add_invar(
-        "dorna4_1",
-        &p!([p:ap2 == scan] => [p:rp4 == scan]),
-    );
-
-    m.add_invar(
-        "dorna4_2",
-        &p!([p:ap2 == leave] => [p:rp4 == leave]),
-    );
-
     let np = |p: i32| {
         p!([p: shelf1 != p]
            && [p: shelf2 != p]
            && [p: shelf3 != p]
            && [p: dorna_holding != p]
-           && [p: dorna3_holding != p]
+           && [p: dorna2_holding != p]
            && [p: conveyor != p]
            && [p: conveyor2 != p]
         )
@@ -356,11 +306,11 @@ pub fn cylinders2() -> (Model, SPState) {
         // unique product if there is room.
         m.add_op(&format!("add_conveyor2_{}", n),
                  // operation model guard.n
-                 &Predicate::AND(vec![p!([p: conveyor2 == 0] && [p: dorna3_holding == 0]), np(p.0)]),
+                 &Predicate::AND(vec![p!([p: conveyor2 == 0] && [p: dorna2_holding == 0]), np(p.0)]),
                  // operation model effects.
                  &[a!(p:conveyor2 = p.0), a!(p: kind = 100)],
                  // low level goal: away from buffer and not moving. OR the robot is not holding anything.
-                 &p!([[[p:ap3 != pt] && [p: ap3 <-> p: rp3]] || [p: dorna3_holding == 0]]),
+                 &p!([[[p:ap3 != pt] && [p: ap3 <-> p: rp3]] || [p: dorna2_holding == 0]]),
                  //&p!([p:ap3 != pt] && [p: ap3 <-> p: rp3]),
                  // low level actions (should not be needed)
                  &[],
@@ -375,7 +325,7 @@ pub fn cylinders2() -> (Model, SPState) {
            && [p: shelf2 == 0]
            && [p: shelf3 == 0]
            && [p: dorna_holding == 0]
-           && [p: dorna3_holding == 0]
+           && [p: dorna2_holding == 0]
            && [p: conveyor == 0]
            && [p: conveyor2 == 0]
         );
@@ -461,47 +411,24 @@ pub fn cylinders2() -> (Model, SPState) {
         None,
     );
 
-    m.add_intention(
-        "to_left",
-        true,
-        &p!([p: x == "right"]),
-        &p!(p: x == "left"),
-        &[],
-        None,
-    );
-
-    m.add_intention(
-        "to_right",
-        true,
-        &p!([p: x == "left"]),
-        &p!(p: x == "right"),
-        &[],
-        None,
-    );
-
-
     // ensure uniqueness of products
     let vars = vec![&shelf1, &shelf2, &shelf3, &conveyor,
-                    &dorna_holding, &dorna3_holding, &conveyor2];
+                    &dorna_holding, &dorna2_holding, &conveyor2];
     for v in &vars {
         let v = v.clone();
         let ne = Predicate::AND(vars.iter().filter(|&&o|o!=v).map(|&o| p!(p:v <!> p:o)).collect());
         m.add_product_invar(&format!("unique_{}", v.leaf()), &p!([p: v != 0] => [pp: ne]))
     }
 
-    let pp2 = &dorna2["prev_pos"];
-    let pp3 = &dorna3["prev_pos"];
-    let pp4 = &dorna4["prev_pos"];
+    let pp3 = &dorna2["prev_pos"];
 
     // setup initial state of our estimated variables.
     // todo: do this interactively in some UI
     m.initial_state(&[
         (pp, pt.to_spvalue()), // TODO: move to measured in robot driver?
-        (pp2, pt.to_spvalue()),
         (pp3, pt.to_spvalue()),
-        (pp4, leave.to_spvalue()),
         (&dorna_holding, 0.to_spvalue()),
-        (&dorna3_holding, 0.to_spvalue()),
+        (&dorna2_holding, 0.to_spvalue()),
         (&shelf1, 0.to_spvalue()), //SPValue::Unknown),
         (&shelf2, 0.to_spvalue()),
         (&shelf3, 0.to_spvalue()),
@@ -510,7 +437,6 @@ pub fn cylinders2() -> (Model, SPState) {
         (&product_3_kind, 100.to_spvalue()),
         (&conveyor, 0.to_spvalue()),
         (&conveyor2, 0.to_spvalue()),
-        (&x, "left".to_spvalue()),
         (&poison, false.to_spvalue()),
         (gripper_fc, 0.to_spvalue()),
     ]);
