@@ -107,6 +107,7 @@ def generate_launch_description():
             launch.actions.OpaqueFunction(function = launch_rviz)
              ]
     return launch.LaunchDescription(r1 + r2 + r3 + r4 + nodes)
+    # return launch.LaunchDescription(r1 + nodes)
 
 
 
@@ -116,25 +117,29 @@ def make_dorna_simulation(name, poses_file, cond):
     with open(urdf, 'r') as infp:
        robot_desc = infp.read()
 
+    robot_desc = robot_desc.replace("PREFIX", name)
+
     robot_state_publisher_params = {
         "robot_description": robot_desc,
+        "ignore_timestamp": True
     }
     rsp_node = launch_ros.actions.Node(package='robot_state_publisher',
                                 executable='robot_state_publisher',
                                 namespace='dorna/' + name,
                                 output='screen',
                                 parameters=[robot_state_publisher_params],
-                                condition = cond
+                                condition = cond,
+                                arguments = ['--ros-args', '--log-level', 'INFO']
                                 )
 
     simulation_parameters = {
         "saved_poses_file": poses_file,
         "joint_names": [
-            "dorna_axis_1_joint",
-            "dorna_axis_2_joint",
-            "dorna_axis_3_joint",
-            "dorna_axis_4_joint",
-            "dorna_axis_5_joint",
+            name + "_dorna_axis_1_joint",
+            name + "_dorna_axis_2_joint",
+            name + "_dorna_axis_3_joint",
+            name + "_dorna_axis_4_joint",
+            name + "_dorna_axis_5_joint",
         ],
         "max_joint_speed": [45, 45, 45, 45, 45],  # deg/sec
         "joint_state_timer_period": 0.05,
@@ -181,4 +186,4 @@ def make_dorna_simulation(name, poses_file, cond):
                 condition = cond
                 )
 
-    return [rsp_node, sim_node, gui_node]
+    return [rsp_node, sim_node] #, gui_node]

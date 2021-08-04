@@ -1,7 +1,7 @@
 {
     "related_transforms": [
         {
-            "frame_id": "dorna/r1/dorna_base_link",
+            "frame_id": "r1_dorna_base_link",
             "parent_id": "world",
             "transform": {
                 "Vector3": {
@@ -18,7 +18,7 @@
             }
         },
         {
-            "frame_id": "dorna/r2/dorna_base_link",
+            "frame_id": "r2_dorna_base_link",
             "parent_id": "world",
             "transform": {
                 "Vector3": {
@@ -35,7 +35,7 @@
             }
         },
         {
-            "frame_id": "dorna/r3/dorna_base_link",
+            "frame_id": "r3_dorna_base_link",
             "parent_id": "world",
             "transform": {
                 "Vector3": {
@@ -52,7 +52,7 @@
             }
         },
         {
-            "frame_id": "dorna/r4/dorna_base_link",
+            "frame_id": "r4_dorna_base_link",
             "parent_id": "world",
             "transform": {
                 "Vector3": {

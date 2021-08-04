@@ -1,8 +1,7 @@
-use failure::Error;
 use sp_runner::*;
 
-
-fn main() -> Result<(), Error> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (model, initial_state) = cylinders();
     launch_model(model, initial_state)?;
     Ok(())

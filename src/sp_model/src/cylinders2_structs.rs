@@ -1,17 +1,13 @@
-use failure::Error;
 use sp_runner::*;
 use sp_domain::*;
 use sp_resources::*;
 
-
-fn main() -> Result<(), Error> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (model, initial_state) = cylinders2_structs();
-
     launch_model(model, initial_state)?;
-
     Ok(())
 }
-
 
 pub fn cylinders2_structs() -> (Model, SPState) {
     let mut m = GModel::new("cylinders2_structs");

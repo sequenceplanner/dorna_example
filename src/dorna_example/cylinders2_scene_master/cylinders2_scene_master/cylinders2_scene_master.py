@@ -92,8 +92,8 @@ class SceneMaster(Node):
         }
 
         self.slot_to_frame = {
-            'dorna' : 'dorna/r1/dorna_5_link',
-            'dorna3' : 'dorna/r3/dorna_5_link',
+            'dorna' : 'r1_dorna_5_link',
+            'dorna3' : 'r3_dorna_5_link',
             'shelf1' : '/cylinders2/shelf1',
             'shelf2' : '/cylinders2/shelf2',
             'shelf3' : '/cylinders2/shelf3',

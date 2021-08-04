@@ -11,6 +11,7 @@ import json
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from .spnode import SPNode
+from builtin_interfaces.msg import Time
 
 from robot_msgs.msg import GuiToRobot, RobotGoal, RobotState
 
@@ -20,8 +21,8 @@ class RobotSimulator(SPNode):
     def __init__(self):
         super().__init__("robot_simulator")
 
-        self.saved_poses_file = self.declare_parameter("saved_poses_file").value
-        self.joint_names = self.declare_parameter("joint_names").value
+        self.saved_poses_file = self.declare_parameter("saved_poses_file", value="").value
+        self.joint_names = self.declare_parameter("joint_names", value=['']).value
         self.no_of_joints = len(self.joint_names)
 
         self.max_joint_speed = self.declare_parameter("max_joint_speed", value=[45]*self.no_of_joints).value  #deg/sec
@@ -158,6 +159,11 @@ class RobotSimulator(SPNode):
             else:
                 self.act_pos[i] = self.ref_pos[i]
 
+        time = Time()
+        # now = self.get_clock().now().seconds_nanoseconds()
+        # time.sec = now[0]
+        # time.nanosec = now[1]
+        self.joint_state.header.stamp = time
         self.joint_state.name = self.joint_names
         self.joint_state.position = self.act_pos
         self.joint_state_publisher_.publish(self.joint_state)

@@ -30,7 +30,7 @@
     <color rgba="1.0 1.0 1.0 1.0"/>
   </material>
 
-  <link name="dorna_base_link">
+  <link name="PREFIX_dorna_base_link">
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -50,8 +50,8 @@
       <inertia ixx="2.569" ixy="0.001" ixz="0.089" iyy="2.510" iyz="0.002" izz="1.261"/>
     </inertial>
   </link>
-  
-  <link name="dorna_1_link">
+
+  <link name="PREFIX_dorna_1_link">
     <collision>
       <origin rpy="0 0 0" xyz="0.095 0 0.20603"/>
       <geometry>
@@ -72,15 +72,15 @@
     </inertial>
   </link>
 
-  <joint name="dorna_axis_1_joint" type="revolute">
-    <parent link="dorna_base_link"/>
-    <child link="dorna_1_link"/>
+  <joint name="PREFIX_dorna_axis_1_joint" type="revolute">
+    <parent link="PREFIX_dorna_base_link"/>
+    <child link="PREFIX_dorna_1_link"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <axis xyz="0 0 1"/>
     <limit effort="50" lower="-3.49" upper="3.05433" velocity="5.236"/>
   </joint>
 
-  <link name="dorna_2_link">
+  <link name="PREFIX_dorna_2_link">
     <collision>
       <origin rpy="0 0 0" xyz="0.20327 0 0"/>
       <geometry>
@@ -100,16 +100,16 @@
       <inertia ixx="1.049" ixy="0.0" ixz="0.0" iyy="7.829" iyz="0.0" izz="8.685"/>
     </inertial>
   </link>
-  
-  <joint name="dorna_axis_2_joint" type="revolute">
-    <parent link="dorna_1_link"/>
-    <child link="dorna_2_link"/>
+
+  <joint name="PREFIX_dorna_axis_2_joint" type="revolute">
+    <parent link="PREFIX_dorna_1_link"/>
+    <child link="PREFIX_dorna_2_link"/>
     <origin rpy="3.14159265359 0 0" xyz="0.095 0 0.20603"/>
     <axis xyz="0 1 0"/>
     <limit effort="50" lower="-3.05433" upper="2.79253" velocity="2.618"/>
   </joint>
 
-  <link name="dorna_3_link">
+  <link name="PREFIX_dorna_3_link">
     <collision>
       <origin rpy="0 0 0" xyz="0.15245 0 0"/>
       <geometry>
@@ -129,16 +129,16 @@
       <inertia ixx="1.467" ixy="0.0" ixz="0.0" iyy="10.271" iyz="0.0" izz="11.492"/>
     </inertial>
   </link>
-  
-  <joint name="dorna_axis_3_joint" type="revolute">
-    <parent link="dorna_2_link"/>
-    <child link="dorna_3_link"/>
+
+  <joint name="PREFIX_dorna_axis_3_joint" type="revolute">
+    <parent link="PREFIX_dorna_2_link"/>
+    <child link="PREFIX_dorna_3_link"/>
     <origin rpy="0 0 0" xyz="0.20327 0 0"/>
     <axis xyz="0 1 0"/>
     <limit effort="50" lower="-2.26893" upper="2.26893" velocity="2.618"/>
   </joint>
 
-  <link name="dorna_4_link">
+  <link name="PREFIX_dorna_4_link">
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -158,16 +158,16 @@
       <inertia ixx="0.03" ixy="0.0" ixz="0.0" iyy="0.023" iyz="0.0" izz="0.049"/>
     </inertial>
   </link>
-  
-  <joint name="dorna_axis_4_joint" type="continuous">
-    <parent link="dorna_3_link"/>
-    <child link="dorna_4_link"/>
+
+  <joint name="PREFIX_dorna_axis_4_joint" type="continuous">
+    <parent link="PREFIX_dorna_3_link"/>
+    <child link="PREFIX_dorna_4_link"/>
     <origin rpy="0 0 0" xyz="0.15245 0 0"/>
     <axis xyz="0 1 0"/>
     <limit effort="50" lower="0" upper="6.28318530718" velocity="5.236"/>
   </joint>
 
-  <link name="dorna_5_link">
+  <link name="PREFIX_dorna_5_link">
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -187,107 +187,13 @@
       <inertia ixx="0.002" ixy="0.0" ixz="0.0" iyy="0.044" iyz="0.0" izz="0.044"/>
     </inertial>
   </link>
-  
-  <joint name="dorna_axis_5_joint" type="continuous">
-    <parent link="dorna_4_link"/>
-    <child link="dorna_5_link"/>
+
+  <joint name="PREFIX_dorna_axis_5_joint" type="continuous">
+    <parent link="PREFIX_dorna_4_link"/>
+    <child link="PREFIX_dorna_5_link"/>
     <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
     <axis xyz="1 0 0"/>
     <limit effort="50" lower="0" upper="6.28318530718" velocity="5.236"/>
   </joint>
 
-  
-  
-  <!-- <joint name="dorna_arm_4_to_dorna_end_effector" type="fixed">
-    <parent link="dorna_arm_4"/>
-    <child link="dorna_end_effector"/>
-    <origin rpy="0 -1.57079632679 1.57079632679" xyz="0.0315 0.0 0.0"/>
-  </joint>
-  <link name="dorna_end_effector">
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://dorna2/meshes/one_finger_asm.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://dorna2/meshes/one_finger_asm.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-      <material name="blue"/>
-    </visual>
-    <inertial>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <mass value="0.042"/>
-      <inertia ixx="0.002" ixy="0.0" ixz="0.0" iyy="0.044" iyz="0.0" izz="0.044"/>
-    </inertial>
-  </link>
-  <link name="finger_tip">
-    </link>
-  <joint name="dorna_end_effector_to_finger_tip" type="fixed">
-    <parent link="dorna_end_effector"/>
-    <child link="finger_tip"/>
-    <origin rpy="1.57079632679 0 -1.57079632679" xyz="0 -0.102 0"/>
-  </joint>
-  <link name="pump">
-    </link>
-  <joint name="dorna_end_effector_to_pump" type="fixed">
-    <parent link="dorna_end_effector"/>
-    <child link="pump"/>
-    <origin rpy="0 0 0" xyz="0.09 -0.045 0"/>
-  </joint>
-  <transmission name="tran0_pos">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="dorna_base_to_dorna_arm_0">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="motor0_pos">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="tran1_pos">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="dorna_arm_0_to_dorna_arm_1">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="motor1_pos">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="tran2_pos">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="dorna_arm_1_to_dorna_arm_2">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="motor2_pos">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="tran3_pos">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="dorna_arm_2_to_dorna_arm_3">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="motor3_pos">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="tran4_pos">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="dorna_arm_3_to_dorna_arm_4">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="motor4_pos">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <gazebo>
-    <static>false</static>
-  </gazebo> -->
 </robot>
