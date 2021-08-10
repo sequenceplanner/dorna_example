@@ -36,7 +36,7 @@ def generate_launch_description():
     scene_manipulation_service = launch_ros.actions.Node(
                 package='ros2_scene_manipulation',
                 executable='service_main',
-                output='screen',
+                output={'both': 'log'}, # output='screen',
                 parameters=[sm_parameters]
                 )
 
@@ -101,7 +101,7 @@ def make_dorna_simulation(name, poses_file):
     rsp_node = launch_ros.actions.Node(package='robot_state_publisher',
                                 executable='robot_state_publisher',
                                 namespace='dorna/' + name,
-                                output='screen',
+                                output={'both': 'log'}, # output='screen',
                                 parameters=[robot_state_publisher_params],
                                 arguments = ['--ros-args', '--log-level', 'INFO']
                                 )

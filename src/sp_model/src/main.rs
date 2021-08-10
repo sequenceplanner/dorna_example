@@ -344,8 +344,17 @@ pub fn cylinders2() -> (Model, SPState) {
             // a!(p: product_2_kind = 100),
             // a!(p: product_3_kind = 100),
         ],
-        None,
     );
+
+    // m.add_intention(
+    //     "get_new_products",
+    //     false,
+    //     &Predicate::FALSE,
+    //     &p!([p: shelf1 == 1] && [p: shelf2 == 0] && [p: shelf3 == 0] &&
+    //         [p: product_1_kind == 100]),
+    //     &[],
+    //     None,
+    // );
 
     m.add_intention(
         "get_new_products",
@@ -355,7 +364,6 @@ pub fn cylinders2() -> (Model, SPState) {
             [p: product_1_kind == 100] && [p: product_2_kind == 100] &&
             [p: product_3_kind == 100]),
         &[],
-        None,
     );
 
     m.add_intention(
@@ -372,7 +380,6 @@ pub fn cylinders2() -> (Model, SPState) {
         ]
         ),
         &[],
-        None,
     );
 
     m.add_intention(
@@ -386,7 +393,6 @@ pub fn cylinders2() -> (Model, SPState) {
             [[[p: product_1_kind == 3] && [p: product_3_kind == 3]] &&
              [[[p: shelf1 == 1] && [p: shelf2 == 3]] || [[p: shelf2 == 1] && [p: shelf3 == 3]] || [[p: shelf1 == 1] && [p: shelf3 == 3]]]]),
         &[],
-        None,
     );
 
     m.add_intention(
@@ -408,7 +414,6 @@ pub fn cylinders2() -> (Model, SPState) {
         //     [p: product_1_kind == 1] && [p: product_2_kind == 2] && [p: product_3_kind == 3]
         // ),
         &[],
-        None,
     );
 
     // ensure uniqueness of products
