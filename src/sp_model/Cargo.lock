@@ -959,28 +959,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serial_test"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0bccbcf40c8938196944a3da0e133e031a33f4d6b72db3bda3cc556e361905d"
-dependencies = [
- "lazy_static",
- "parking_lot",
- "serial_test_derive",
-]
-
-[[package]]
-name = "serial_test_derive"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2acd6defeddb41eb60bb468f8825d0cfd0c2a76bc03bfd235b6a1dc4f6a1ad5"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "shlex"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1016,6 +994,7 @@ checksum = "45456094d1983e2ee2a18fdfebce3189fa451699d0502cb8e3b49dba5ba41451"
 [[package]]
 name = "sp-domain"
 version = "0.1.0"
+source = "git+https://github.com/sequenceplanner/sp-rust?branch=actions#7a502222dd9201ca5965cf20bfee04f8ea4421ca"
 dependencies = [
  "peg",
  "serde",
@@ -1024,8 +1003,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp-formal"
+version = "0.1.0"
+source = "git+https://github.com/sequenceplanner/sp-rust?branch=actions#7a502222dd9201ca5965cf20bfee04f8ea4421ca"
+dependencies = [
+ "futures",
+ "rayon",
+ "serde",
+ "serde_json",
+ "snap",
+ "sp-domain",
+ "tokio",
+ "which 4.1.0",
+]
+
+[[package]]
 name = "sp-ros"
 version = "0.0.1"
+source = "git+https://github.com/sequenceplanner/sp-rust?branch=actions#7a502222dd9201ca5965cf20bfee04f8ea4421ca"
 dependencies = [
  "crossbeam",
  "failure",
@@ -1041,6 +1036,7 @@ dependencies = [
 [[package]]
 name = "sp-runner"
 version = "0.0.1"
+source = "git+https://github.com/sequenceplanner/sp-rust?branch=actions#7a502222dd9201ca5965cf20bfee04f8ea4421ca"
 dependencies = [
  "chrono",
  "crossbeam",
@@ -1053,6 +1049,7 @@ dependencies = [
  "serde_json",
  "snap",
  "sp-domain",
+ "sp-formal",
  "sp-ros",
  "tokio",
  "uuid",
@@ -1063,8 +1060,8 @@ dependencies = [
 name = "sp_model"
 version = "0.1.0"
 dependencies = [
- "serial_test",
  "sp-domain",
+ "sp-formal",
  "sp-runner",
  "tokio",
 ]
