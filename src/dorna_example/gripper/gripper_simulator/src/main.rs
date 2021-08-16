@@ -8,8 +8,6 @@ use r2r::gripper_msgs::msg::{Goal, State};
 
 use rand::Rng;
 
-mod resource_handler;
-
 #[derive(PartialEq, Copy, Clone)]
 enum GripperState {
     Open,
@@ -24,13 +22,6 @@ fn main() -> Result<(), Error> {
     let state_publisher = node.create_publisher::<State>("state")?;
 
     let state = Rc::new(RefCell::new(GripperState::Open));
-    let namespace = node.namespace().unwrap();
-    let initial_goal = Goal{close: false};
-    let sp_comm = crate::resource_handler::ResourceHandler::new(
-        &mut node, 
-        namespace, 
-        serde_json::to_string(&initial_goal).unwrap()
-    ).unwrap();
 
     // goal callback
     let state_cb = state.to_owned();
@@ -38,7 +29,6 @@ fn main() -> Result<(), Error> {
 
     let sp_goal_cb = move |msg: Goal| {
         let mut state = state_cb.borrow_mut();
-        sp_comm.last_goal(serde_json::to_string(&msg).unwrap());
 
         if msg.close && *state == GripperState::Open {
             r2r::log_info!(&nl_cb, "closing the gripper");
