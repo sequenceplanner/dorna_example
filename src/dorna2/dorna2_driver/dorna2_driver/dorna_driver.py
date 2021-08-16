@@ -9,7 +9,6 @@ import numpy
 import ast
 from dorna2_driver import dorna
 import json
-from .spnode import SPNode
 
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
@@ -22,7 +21,7 @@ from robot_msgs.msg import RobotState
 from ament_index_python.packages import get_package_share_directory
 from launch.substitutions import LaunchConfiguration
 
-class Ros2DornaDriver(SPNode):
+class Ros2DornaDriver(Node):
 
     def __init__(self, homing):
         super().__init__("ros2_dorna_driver")
@@ -46,10 +45,6 @@ class Ros2DornaDriver(SPNode):
             ret = self.robot.home(["j0", "j1", "j2", "j3", "j4"])
             self.get_logger().info(ret)
             self.get_logger().info('Homing done.')
-
-        # initial goal
-        self.goal_to_json(RobotGoal, RobotGoal(ref_pos = "unknown"))
-
 
         # check that we are in fact homed
         homed_str = self.robot.homed()
@@ -201,7 +196,6 @@ class Ros2DornaDriver(SPNode):
         if self.gui_to_esd_msg.gui_control_enabled:
             return
 
-        self.goal_to_json(RobotGoal, data)
         self.sp_to_esd_msg.ref_pos = data.ref_pos
         pose_list = self.read_and_generate_pose_list()
         if self.sp_to_esd_msg.ref_pos in pose_list:
