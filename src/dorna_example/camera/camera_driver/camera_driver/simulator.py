@@ -2,7 +2,6 @@
 import random
 import rclpy
 
-from .spnode import SPNode
 from rclpy.node import Node
 
 from camera_msgs.msg import Goal
@@ -10,7 +9,7 @@ from camera_msgs.msg import Measured
 
 from ament_index_python.packages import get_package_share_directory
 
-class CameraSimulator(SPNode):
+class CameraSimulator(Node):
 
     def __init__(self):
         super().__init__("camera_simulator")
@@ -21,7 +20,6 @@ class CameraSimulator(SPNode):
         self.result = 0
 
         # initial goal
-        self.goal_to_json(Goal, Goal(do_scan = False))
 
         self.subscriber = self.create_subscription(
             Goal,
@@ -38,9 +36,6 @@ class CameraSimulator(SPNode):
         self.timer = self.create_timer(2, self.tick)
         self.get_logger().info('Camera up and running!')
 
-        g = Goal()
-        self.sp_goal_callback(g)
-
     def publish_state(self):
         msg = Measured()
         msg.scanning = self.scanning
@@ -56,7 +51,7 @@ class CameraSimulator(SPNode):
             self.done = True
 
         self.publish_state()
-        
+
 
 
     def sp_goal_callback(self, data):
@@ -71,10 +66,9 @@ class CameraSimulator(SPNode):
             self.done = False
             self.result = 0
 
-        self.goal_to_json(Goal, data)
         self.publish_state()
 
-    
+
 
 
 
