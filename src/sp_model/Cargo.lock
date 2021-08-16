@@ -996,6 +996,7 @@ checksum = "45456094d1983e2ee2a18fdfebce3189fa451699d0502cb8e3b49dba5ba41451"
 [[package]]
 name = "sp-domain"
 version = "0.1.0"
+source = "git+https://github.com/sequenceplanner/sp-rust?branch=refactoring_comm#14a3ea7ed30d171c19c71d15274145b9871a69e0"
 dependencies = [
  "peg",
  "serde",
@@ -1006,6 +1007,7 @@ dependencies = [
 [[package]]
 name = "sp-formal"
 version = "0.1.0"
+source = "git+https://github.com/sequenceplanner/sp-rust?branch=refactoring_comm#14a3ea7ed30d171c19c71d15274145b9871a69e0"
 dependencies = [
  "futures",
  "rayon",
@@ -1020,6 +1022,7 @@ dependencies = [
 [[package]]
 name = "sp-ros"
 version = "0.0.1"
+source = "git+https://github.com/sequenceplanner/sp-rust?branch=refactoring_comm#14a3ea7ed30d171c19c71d15274145b9871a69e0"
 dependencies = [
  "futures",
  "r2r",
@@ -1032,6 +1035,7 @@ dependencies = [
 [[package]]
 name = "sp-runner"
 version = "0.0.1"
+source = "git+https://github.com/sequenceplanner/sp-rust?branch=refactoring_comm#14a3ea7ed30d171c19c71d15274145b9871a69e0"
 dependencies = [
  "chrono",
  "crossbeam",
