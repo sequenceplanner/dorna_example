@@ -5,6 +5,7 @@ version = 3
 [[package]]
 name = "actions"
 version = "0.1.0"
+source = "git+https://github.com/sequenceplanner/r2r?branch=untyped_services#f4db586b76729e6cf3e11b54ca6ff45e7f36cf9c"
 dependencies = [
  "bindgen",
  "common",
@@ -183,6 +184,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
+source = "git+https://github.com/sequenceplanner/r2r?branch=untyped_services#f4db586b76729e6cf3e11b54ca6ff45e7f36cf9c"
 
 [[package]]
 name = "crossbeam"
@@ -641,6 +643,7 @@ dependencies = [
 [[package]]
 name = "msg_gen"
 version = "0.1.0"
+source = "git+https://github.com/sequenceplanner/r2r?branch=untyped_services#f4db586b76729e6cf3e11b54ca6ff45e7f36cf9c"
 dependencies = [
  "bindgen",
  "common",
@@ -818,6 +821,7 @@ dependencies = [
 [[package]]
 name = "r2r"
 version = "0.2.0"
+source = "git+https://github.com/sequenceplanner/r2r?branch=untyped_services#f4db586b76729e6cf3e11b54ca6ff45e7f36cf9c"
 dependencies = [
  "actions",
  "common",
@@ -860,6 +864,7 @@ dependencies = [
 [[package]]
 name = "rcl"
 version = "0.1.0"
+source = "git+https://github.com/sequenceplanner/r2r?branch=untyped_services#f4db586b76729e6cf3e11b54ca6ff45e7f36cf9c"
 dependencies = [
  "bindgen",
  "common",

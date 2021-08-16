@@ -169,6 +169,7 @@ fn make_gripper_fail(resource: &mut Resource) {
     resource.setup_ros_service(
         &format!("{}/get_state", resource.path().leaf()), 
         "gripper_msgs/srv/GetState", 
+        p!(p: dummy),
         &[&dummy], 
         &[&is_closed, &has_part]
     );
