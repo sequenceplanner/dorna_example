@@ -4,7 +4,7 @@ use sp_domain::*;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (model, initial_state) = make_model();
-    launch_model(model, initial_state)?;
+    launch_model(model, initial_state).await?;
     Ok(())
 }
 
@@ -625,19 +625,4 @@ pub fn make_model() -> (Model, SPState) {
     return (m, s);
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use sp_formal::*;
-    use serial_test::serial;
 
-    #[test]
-    #[serial]
-    fn dorna_test() {
-        let (m, s) = make_model();
-
-        println!("{:#?}", m);
-
-        sp_formal::generate_mc_problems(&m);
-    }
-}
