@@ -24,8 +24,9 @@ find_package(ament_cmake REQUIRED)
 
 find_package(rosidl_default_generators REQUIRED)
 set(msg_files
-  "msg/Goal.msg"
-  "msg/State.msg"
+  "srv/Open.srv"
+  "srv/Close.srv"
+  "srv/GetState.srv"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
