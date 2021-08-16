@@ -155,8 +155,23 @@ fn make_gripper_fail(resource: &mut Resource) {
                                                 p!(! [[!p: closed] && [p: part_sensor]]));
     resource.add_specification(state_does_not_exist);
 
-    resource.setup_ros_outgoing(&format!("{}/goal", resource.path().leaf()), "gripper_msgs/msg/Goal");
-    resource.setup_ros_incoming(&format!("{}/state", resource.path().leaf()), "gripper_msgs/msg/State");
+    //resource.setup_ros_outgoing(&format!("{}/goal", resource.path().leaf()), "gripper_msgs/msg/Goal");
+    //resource.setup_ros_incoming(&format!("{}/state", resource.path().leaf()), "gripper_msgs/msg/State");
+
+    // testing service. The variabletype does bot matter
+    let is_closed = Variable::new_boolean("get_state/is_closed", VariableType::Measured);
+    let is_closed = resource.add_variable(is_closed);
+    let has_part = Variable::new_boolean("get_state/has_part", VariableType::Measured);
+    let has_part = resource.add_variable(has_part);
+    let dummy = Variable::new_boolean("get_state/dummy", VariableType::Command);
+    let dummy = resource.add_variable(dummy);
+
+    resource.setup_ros_service(
+        &format!("{}/get_state", resource.path().leaf()), 
+        "gripper_msgs/srv/GetState", 
+        &[&dummy], 
+        &[&is_closed, &has_part]
+    );
 }
 
 pub fn make_model() -> (Model, SPState) {
