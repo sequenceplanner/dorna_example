@@ -10,13 +10,12 @@ import json
 
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
-from .spnode import SPNode
 from builtin_interfaces.msg import Time
 
 from robot_msgs.msg import GuiToRobot, RobotGoal, RobotState
 
 
-class RobotSimulator(SPNode):
+class RobotSimulator(Node):
 
     def __init__(self):
         super().__init__("robot_simulator")
@@ -41,9 +40,6 @@ class RobotSimulator(SPNode):
         if self.initial_pose_name != "unknown":
             self.ref_pos = self.poses[self.initial_pose_name][:]
             self.act_pos = self.poses[self.initial_pose_name][:]
-
-        # initial goal
-        self.goal_to_json(RobotGoal, RobotGoal(ref_pos = self.initial_pose_name))
 
         # gui to robot:
         self.gui_to_robot = GuiToRobot()
@@ -117,8 +113,6 @@ class RobotSimulator(SPNode):
         return result
 
     def robot_goal_callback(self, data):
-        self.goal_to_json(RobotGoal, data)
-
         self.robot_goal_msg = data
         if not self.gui_to_robot.gui_control_enabled and self.robot_goal_msg.ref_pos in self.poses:
             self.ref_pos = self.poses[self.robot_goal_msg.ref_pos]
