@@ -5,19 +5,10 @@ use std::rc::Rc;
 
 use r2r::control_box_msgs::msg::{Goal, Measured};
 
-mod resource_handler;
-
 fn main() -> Result<(), Error> {
     let ctx = r2r::Context::create()?;
     let mut node = r2r::Node::create(ctx, "control_box_simulator", "/control_box")?;
     let state_publisher = node.create_publisher::<Measured>("measured")?;
-    let namespace = node.namespace().unwrap();
-    let initial_goal = Goal{blue_light: false};
-    let sp_comm = crate::resource_handler::ResourceHandler::new(
-        &mut node, 
-        namespace,
-        serde_json::to_string(&initial_goal).unwrap()
-    ).unwrap();
 
     // state
     let blue_light: Rc<RefCell<bool>> = Rc::new(RefCell::new(false));
@@ -28,12 +19,11 @@ fn main() -> Result<(), Error> {
     let b_cb = blue_light.clone();
     let sp_goal_cb = move |msg: Goal| {
         let mut b = b_cb.borrow_mut();
-        if *b == msg.blue_light && sp_comm.has_last_goal() {
+        if *b == msg.blue_light {
             return;
         };
 
         *b = msg.blue_light;
-        sp_comm.last_goal(serde_json::to_string(&msg).unwrap());
         r2r::log_info!(&nl_cb, "blue light is {}",
                        if *b { "on" } else { "off" });
 
