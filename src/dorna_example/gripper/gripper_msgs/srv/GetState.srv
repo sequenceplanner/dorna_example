@@ -1,4 +1,3 @@
-bool dummy
 ---
 bool is_closed
 bool has_part
