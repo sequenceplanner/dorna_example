@@ -28,8 +28,14 @@ fn make_dorna(resource: &mut Resource, poses: &[&str]) {
     let e_move_finish = Transition::new("move_finish", p!(p: moving), vec![ a!( p: act_pos <- p: ref_pos)], TransitionType::Effect);
     resource.add_transition(e_move_finish);
 
-    resource.setup_ros_outgoing("goal", &format!("/dorna/{}/goal", resource.path().leaf()), "robot_msgs/msg/RobotGoal");
-    resource.setup_ros_incoming("measured",&format!("/dorna/{}/measured", resource.path().leaf()), "robot_msgs/msg/RobotState");
+    resource.setup_ros_outgoing("goal", &format!("/dorna/{}/goal", resource.path().leaf()), "robot_msgs/msg/RobotGoal",
+    &[
+        MessageVariable::new(&ref_pos, "ref_pos")
+    ]);
+    resource.setup_ros_incoming("measured",&format!("/dorna/{}/measured", resource.path().leaf()), "robot_msgs/msg/RobotState",
+    &[
+        MessageVariable::new(&act_pos, "act_pos")
+    ]);
 }
 
 fn make_control_box(resource: &mut Resource) {
@@ -56,7 +62,7 @@ fn make_control_box(resource: &mut Resource) {
         ]
     );
 
-    let c_blue_on_start = Transition::new("blue_on_start", p!([!p: blue_light_on] && [p:action_state == "init"] && [!p:set_light]),
+    let c_blue_on_start = Transition::new("blue_on_start", p!([!p: blue_light_on] && [p:action_state == "ok"] && [!p:set_light]),
                                           vec![ a!( p: blue_light), a!(p:set_light)], TransitionType::Controlled);
     resource.add_transition(c_blue_on_start);
 
@@ -64,7 +70,7 @@ fn make_control_box(resource: &mut Resource) {
                                            vec![ a!( p: blue_light_on)], TransitionType::Effect);
     resource.add_transition(e_blue_on_finish);
 
-    let c_blue_off_start = Transition::new("blue_off_start", p!([p: blue_light_on] && [p:action_state == "init"] && [!p:set_light]),
+    let c_blue_off_start = Transition::new("blue_off_start", p!([p: blue_light_on] && [p:action_state == "ok"] && [!p:set_light]),
                                           vec![ a!( !p: blue_light), a!(p:set_light)], TransitionType::Controlled);
     resource.add_transition(c_blue_off_start);
 
@@ -77,7 +83,15 @@ fn make_control_box(resource: &mut Resource) {
     resource.add_transition(set_light_reset);
 
 
-    resource.setup_ros_incoming("measured",&format!("{}/measured", resource.path().leaf()), "control_box_msgs/msg/Measured");
+    resource.setup_ros_incoming(
+        "measured",
+        &format!("{}/measured", 
+        resource.path().leaf()), 
+        "control_box_msgs/msg/Measured",
+        &[
+            MessageVariable::new(&blue_light_on, "blue_light_on")
+        ]
+    );
 }
 
 fn make_camera(resource: &mut Resource) {
@@ -133,8 +147,15 @@ fn make_camera(resource: &mut Resource) {
 
     resource.add_specification(state_does_not_exist);
 
-    resource.setup_ros_outgoing("goal", &format!("{}/goal", resource.path().leaf()), "camera_msgs/msg/Goal");
-    resource.setup_ros_incoming("measured", &format!("{}/measured", resource.path().leaf()), "camera_msgs/msg/Measured");
+    resource.setup_ros_outgoing("goal", &format!("{}/goal", resource.path().leaf()), "camera_msgs/msg/Goal",
+    &[
+        MessageVariable::new(&do_scan, "do_scan")
+    ]);
+    resource.setup_ros_incoming("measured", &format!("{}/measured", resource.path().leaf()), "camera_msgs/msg/Measured",
+    &[
+        MessageVariable::new(&scanning, "scanning"),
+        MessageVariable::new(&done, "done"),
+    ]);
 }
 
 fn make_gripper_fail(resource: &mut Resource) {

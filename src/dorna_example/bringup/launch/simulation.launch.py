@@ -16,7 +16,7 @@ def generate_launch_description():
                                    arguments=['-d', rviz_config_file],
                                    output='screen', condition = rviz_cond)
 
-    #rviz = [launch_rviz, rviz_node]
+    rviz = [launch_rviz, rviz_node]
 
     # sp = launch_ros.actions.Node(
     #             package='sp_model',
@@ -82,7 +82,7 @@ def generate_launch_description():
             #sp,
             sp_ui,
             scene_master,
-             ] + r1 + r2 #+ rviz
+             ] + r1 + r2 + rviz
     return launch.LaunchDescription(nodes)
 
 
