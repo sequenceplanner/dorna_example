@@ -120,7 +120,7 @@ fn make_gripper_fail(resource: &mut Resource) {
     let close = resource.add_variable( Variable::new_boolean("get_state/close", VariableType::Command));
     let open = resource.add_variable( Variable::new_boolean("get_state/open", VariableType::Command));
 
-    resource.setup_ros_service(
+    let get_service = resource.setup_ros_service(
         "get_state",
         &format!("{}/get_state", resource.path().leaf()), 
         "gripper_msgs/srv/GetState", 
@@ -131,7 +131,7 @@ fn make_gripper_fail(resource: &mut Resource) {
             MessageVariable::new(&has_part, "has_part")
             ] 
     );
-    resource.setup_ros_service(
+    let open_service = resource.setup_ros_service(
         "open",
         &format!("{}/open", resource.path().leaf()), 
         "gripper_msgs/srv/Open", 
@@ -139,7 +139,7 @@ fn make_gripper_fail(resource: &mut Resource) {
         &[], 
         &[] 
     );
-    resource.setup_ros_service(
+    let close_service = resource.setup_ros_service(
         "close",
         &format!("{}/close", resource.path().leaf()), 
         "gripper_msgs/srv/Close", 
@@ -155,35 +155,84 @@ fn make_gripper_fail(resource: &mut Resource) {
     let fail_count = resource.add_variable(fail_count);
 
 
-    let c_close_start0 = Transition::new("close_start0", p!([!p:is_closed] && [p: fail_count == 0]), vec![ a!( p: close), a!( p: fail_count = 1)], TransitionType::Controlled);
-    resource.add_transition(c_close_start0);
-    let c_close_start1 = Transition::new("close_start1", p!([!p:is_closed] && [p: fail_count == 1]), vec![ a!( p: close), a!( p: fail_count = 2)], TransitionType::Controlled);
-    resource.add_transition(c_close_start1);
+    resource.add_transition(
+        Transition::new(
+            "close_start0",
+            p!([!p:is_closed] && [p: fail_count == 0] && [p: close_service == "ok"]), 
+            vec![ a!( p: close), a!( p: fail_count = 1)], 
+            TransitionType::Controlled));
+    resource.add_transition(
+        Transition::new(
+            "close_start1",
+            p!([!p:is_closed] && [p: fail_count == 1] && [p: close_service == "ok"]), 
+            vec![ a!( p: close), a!( p: fail_count = 2)], 
+            TransitionType::Controlled));
 
-    let done_closing = Transition::new("done_closing", p!([p: is_closed] && [p: close]), vec![a!(!p: close)], TransitionType::Auto);
-    resource.add_transition(done_closing);
+    // let done_closing = Transition::new("done_closing", p!([p: is_closed] && [p: close]), vec![a!(!p: close)], TransitionType::Auto);
+    // resource.add_transition(done_closing);
 
-    let e_finish_part = Transition::new("finish_part", p!([p: close] && [!p: is_closed]), vec![a!(p: is_closed), a!(p: has_part)], TransitionType::Effect);
-    resource.add_transition(e_finish_part);
-    let e_finish_no_part = Transition::new("finish_no_part", p!([p: close] && [!p: is_closed]), vec![a!(p: is_closed), a!(!p: has_part)], TransitionType::Effect);
-    resource.add_transition(e_finish_no_part);
+    resource.add_transition(
+        Transition::new(
+            "get_state_after_close",
+            p!([p: close_service == "done"]), 
+            vec![ a!( p: get), a!( !p: close)], 
+            TransitionType::Controlled));
 
-    let a_close_finished_reset_fc = Transition::new("close_finished_reset_fc", p!([p: is_closed] && [p: has_part] && [p: fail_count != 0]), vec![a!(p: fail_count = 0)], TransitionType::Auto);
-    resource.add_transition(a_close_finished_reset_fc);
+    resource.add_transition(
+        Transition::new(
+            "finish_part",
+            p!([p: close] && [!p: is_closed]), 
+            vec![a!(p: is_closed), a!(p: has_part)], 
+            TransitionType::Effect));
+    resource.add_transition(
+        Transition::new(
+            "finish_no_part",
+            p!([p: close] && [!p: is_closed]), 
+            vec![a!(p: is_closed), a!(!p: has_part)], 
+            TransitionType::Effect));
 
-    let c_open_start = Transition::new("open_start", p!(p:is_closed), vec![ a!( p: open)], TransitionType::Controlled);
-    resource.add_transition(c_open_start);
+    resource.add_transition(
+        Transition::new(
+            "close_finished_reset_fc",
+            p!([p: is_closed] && [p: has_part] && [p: fail_count != 0]), 
+            vec![a!(p: fail_count = 0)], 
+            TransitionType::Auto));
 
-    let e_open_finish = Transition::new("open_finish", p!([p: open] && [p: is_closed]), vec![ a!( !p: is_closed), a!( !p: has_part)], TransitionType::Effect);
-    resource.add_transition(e_open_finish);
+    resource.add_transition(
+        Transition::new(
+            "open_start",
+            p!([p:is_closed] && [p: open_service == "ok"]), 
+            vec![ a!( p: open)], 
+            TransitionType::Controlled));
 
-    let done_opening = Transition::new("done_opening", p!([!p: is_closed] && [p: open]), vec![a!(!p: open)], TransitionType::Auto);
-    resource.add_transition(done_opening);
+    resource.add_transition(
+        Transition::new(
+            "open_finish",
+            p!([p: open] && [p: is_closed]), 
+            vec![ a!( !p: is_closed), a!( !p: has_part)], 
+            TransitionType::Effect));
 
-    let state_does_not_exist =
-        Specification::new_transition_invariant("state_does_not_exist",
-                                                p!(! [[!p: is_closed] && [p: has_part]]));
-    resource.add_specification(state_does_not_exist);
+    // resource.add_transition(
+        // Transition::new(
+        //     "done_opening",
+        //     p!([!p: is_closed] && [p: open]), 
+        //     vec![a!(!p: open)], 
+        //     TransitionType::Auto));
+
+    resource.add_transition(
+        Transition::new(
+            "get_state_after_open",
+            p!([p: open_service == "done"]), 
+            vec![ a!( p: get), a!( !p: open)], 
+            TransitionType::Controlled));
+
+    resource.add_transition(
+        Transition::new(
+            "complete_get_state",
+            p!([p: get_service == "done"]), 
+            vec![ a!( !p: get)], 
+            TransitionType::Auto));
+
 
     //resource.setup_ros_outgoing(&format!("{}/goal", resource.path().leaf()), "gripper_msgs/msg/Goal");
     //resource.setup_ros_incoming(&format!("{}/state", resource.path().leaf()), "gripper_msgs/msg/State");
