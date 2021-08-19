@@ -34,24 +34,49 @@ fn make_dorna(resource: &mut Resource, poses: &[&str]) {
 
 fn make_control_box(resource: &mut Resource) {
     let blue_light = Variable::new_boolean("goal/blue_light", VariableType::Command);
-    let blue_light_on = Variable::new_boolean("measured/blue_light_on", VariableType::Measured);
-
     let blue_light = resource.add_variable(blue_light);
+
+    let set_light = Variable::new_boolean("goal/set_light", VariableType::Command);
+    let set_light = resource.add_variable(set_light);
+
+    let blue_light_on = Variable::new_boolean("measured/blue_light_on", VariableType::Measured);
     let blue_light_on = resource.add_variable(blue_light_on);
 
-    let c_blue_on_start = Transition::new("blue_on_start", p!(! p: blue_light_on), vec![ a!( p: blue_light)], TransitionType::Controlled);
+    let action_state = resource.setup_ros_action(
+        "set_light",
+        &format!("{}/set_light", resource.path().leaf()),
+        "control_box_msgs/action/SetLight",
+        p!(p: set_light),
+        &[
+            MessageVariable::new(&blue_light, "on")
+        ],
+        &[ // feedback
+        ],
+        &[ // result
+        ]
+    );
+
+    let c_blue_on_start = Transition::new("blue_on_start", p!([!p: blue_light_on] && [p:action_state == "init"] && [!p:set_light]),
+                                          vec![ a!( p: blue_light), a!(p:set_light)], TransitionType::Controlled);
     resource.add_transition(c_blue_on_start);
 
-    let e_blue_on_finish = Transition::new("blue_on_finish", p!([p: blue_light] && [!p: blue_light_on]), vec![ a!( p: blue_light_on)], TransitionType::Effect);
+    let e_blue_on_finish = Transition::new("blue_on_finish", p!([p: blue_light] && [p:set_light] && [!p: blue_light_on]),
+                                           vec![ a!( p: blue_light_on)], TransitionType::Effect);
     resource.add_transition(e_blue_on_finish);
 
-    let c_blue_off_start = Transition::new("blue_off_start", p!(p: blue_light_on), vec![ a!( !p: blue_light)], TransitionType::Controlled);
+    let c_blue_off_start = Transition::new("blue_off_start", p!([p: blue_light_on] && [p:action_state == "init"] && [!p:set_light]),
+                                          vec![ a!( !p: blue_light), a!(p:set_light)], TransitionType::Controlled);
     resource.add_transition(c_blue_off_start);
 
-    let e_blue_off_finish = Transition::new("blue_off_finish", p!([!p: blue_light] && [p: blue_light_on]), vec![ a!( !p: blue_light_on)], TransitionType::Effect);
+    let e_blue_off_finish = Transition::new("blue_off_finish", p!([!p: blue_light] && [p:set_light] && [p: blue_light_on]),
+                                           vec![ a!( !p: blue_light_on)], TransitionType::Effect);
     resource.add_transition(e_blue_off_finish);
 
-    resource.setup_ros_outgoing("goal",&format!("{}/goal", resource.path().leaf()), "control_box_msgs/msg/Goal");
+    let set_light_reset = Transition::new("blue_off_reset", p!([!p: blue_light] && [p:action_state == "succeeded"]),
+                                          vec![ a!( !p:set_light)], TransitionType::Auto);
+    resource.add_transition(set_light_reset);
+
+
     resource.setup_ros_incoming("measured",&format!("{}/measured", resource.path().leaf()), "control_box_msgs/msg/Measured");
 }
 
@@ -122,30 +147,30 @@ fn make_gripper_fail(resource: &mut Resource) {
 
     let get_service = resource.setup_ros_service(
         "get_state",
-        &format!("{}/get_state", resource.path().leaf()), 
-        "gripper_msgs/srv/GetState", 
+        &format!("{}/get_state", resource.path().leaf()),
+        "gripper_msgs/srv/GetState",
         p!(p: get),
-        &[], 
+        &[],
         &[
-            MessageVariable::new(&is_closed, "is_closed"), 
+            MessageVariable::new(&is_closed, "is_closed"),
             MessageVariable::new(&has_part, "has_part")
-            ] 
+            ]
     );
     let open_service = resource.setup_ros_service(
         "open",
-        &format!("{}/open", resource.path().leaf()), 
-        "gripper_msgs/srv/Open", 
+        &format!("{}/open", resource.path().leaf()),
+        "gripper_msgs/srv/Open",
         p!(p: open),
-        &[], 
-        &[] 
+        &[],
+        &[]
     );
     let close_service = resource.setup_ros_service(
         "close",
-        &format!("{}/close", resource.path().leaf()), 
-        "gripper_msgs/srv/Close", 
+        &format!("{}/close", resource.path().leaf()),
+        "gripper_msgs/srv/Close",
         p!(p: close),
-        &[], 
-        &[MessageVariable::new(&has_part, "has_part")] 
+        &[],
+        &[MessageVariable::new(&has_part, "has_part")]
     );
 
 
@@ -158,14 +183,14 @@ fn make_gripper_fail(resource: &mut Resource) {
     resource.add_transition(
         Transition::new(
             "close_start0",
-            p!([!p:is_closed] && [p: fail_count == 0] && [p: close_service == "ok"]), 
-            vec![ a!( p: close), a!( p: fail_count = 1)], 
+            p!([!p:is_closed] && [p: fail_count == 0] && [p: close_service == "ok"]),
+            vec![ a!( p: close), a!( p: fail_count = 1)],
             TransitionType::Controlled));
     resource.add_transition(
         Transition::new(
             "close_start1",
-            p!([!p:is_closed] && [p: fail_count == 1] && [p: close_service == "ok"]), 
-            vec![ a!( p: close), a!( p: fail_count = 2)], 
+            p!([!p:is_closed] && [p: fail_count == 1] && [p: close_service == "ok"]),
+            vec![ a!( p: close), a!( p: fail_count = 2)],
             TransitionType::Controlled));
 
     // let done_closing = Transition::new("done_closing", p!([p: is_closed] && [p: close]), vec![a!(!p: close)], TransitionType::Auto);
@@ -174,63 +199,63 @@ fn make_gripper_fail(resource: &mut Resource) {
     resource.add_transition(
         Transition::new(
             "get_state_after_close",
-            p!([p: close_service == "done"]), 
-            vec![ a!( p: get), a!( !p: close)], 
+            p!([p: close_service == "done"]),
+            vec![ a!( p: get), a!( !p: close)],
             TransitionType::Controlled));
 
     resource.add_transition(
         Transition::new(
             "finish_part",
-            p!([p: close] && [!p: is_closed]), 
-            vec![a!(p: is_closed), a!(p: has_part)], 
+            p!([p: close] && [!p: is_closed]),
+            vec![a!(p: is_closed), a!(p: has_part)],
             TransitionType::Effect));
     resource.add_transition(
         Transition::new(
             "finish_no_part",
-            p!([p: close] && [!p: is_closed]), 
-            vec![a!(p: is_closed), a!(!p: has_part)], 
+            p!([p: close] && [!p: is_closed]),
+            vec![a!(p: is_closed), a!(!p: has_part)],
             TransitionType::Effect));
 
     resource.add_transition(
         Transition::new(
             "close_finished_reset_fc",
-            p!([p: is_closed] && [p: has_part] && [p: fail_count != 0]), 
-            vec![a!(p: fail_count = 0)], 
+            p!([p: is_closed] && [p: has_part] && [p: fail_count != 0]),
+            vec![a!(p: fail_count = 0)],
             TransitionType::Auto));
 
     resource.add_transition(
         Transition::new(
             "open_start",
-            p!([p:is_closed] && [p: open_service == "ok"]), 
-            vec![ a!( p: open)], 
+            p!([p:is_closed] && [p: open_service == "ok"]),
+            vec![ a!( p: open)],
             TransitionType::Controlled));
 
     resource.add_transition(
         Transition::new(
             "open_finish",
-            p!([p: open] && [p: is_closed]), 
-            vec![ a!( !p: is_closed), a!( !p: has_part)], 
+            p!([p: open] && [p: is_closed]),
+            vec![ a!( !p: is_closed), a!( !p: has_part)],
             TransitionType::Effect));
 
     // resource.add_transition(
         // Transition::new(
         //     "done_opening",
-        //     p!([!p: is_closed] && [p: open]), 
-        //     vec![a!(!p: open)], 
+        //     p!([!p: is_closed] && [p: open]),
+        //     vec![a!(!p: open)],
         //     TransitionType::Auto));
 
     resource.add_transition(
         Transition::new(
             "get_state_after_open",
-            p!([p: open_service == "done"]), 
-            vec![ a!( p: get), a!( !p: open)], 
+            p!([p: open_service == "done"]),
+            vec![ a!( p: get), a!( !p: open)],
             TransitionType::Controlled));
 
     resource.add_transition(
         Transition::new(
             "complete_get_state",
-            p!([p: get_service == "done"]), 
-            vec![ a!( !p: get)], 
+            p!([p: get_service == "done"]),
+            vec![ a!( !p: get)],
             TransitionType::Auto));
 
 
@@ -703,7 +728,7 @@ pub fn make_model() -> (Model, SPState) {
     // intention state can be set manually in the initial state
     s.extend(initial_state);
 
-    let resource_init_state: SPState = 
+    let resource_init_state: SPState =
         m
         .resources
         .iter()
@@ -717,8 +742,6 @@ pub fn make_model() -> (Model, SPState) {
     );
 
     s.extend(resource_init_state);
-    
+
     return (m, s);
 }
-
-
