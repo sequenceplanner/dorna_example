@@ -11,10 +11,10 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <build_depend>rcl</build_depend>
-  <build_depend>sp_messages</build_depend>
+  <build_depend>sp_msgs</build_depend>
   
   <exec_depend>rcl</exec_depend>
-  <build_depend>sp_messages</build_depend>
+  <build_depend>sp_msgs</build_depend>
   
   <export>
     <build_type>ament_cmake</build_type>

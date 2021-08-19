@@ -1,8 +1,8 @@
 import json
 
 from rclpy.node import Node
-from sp_messages.msg import RegisterResource
-from sp_messages.msg import Resources
+from sp_msgs.msg import RegisterResource
+from sp_msgs.msg import Resources
 
 class SPNode(Node):
     def __init__(self, node_name):

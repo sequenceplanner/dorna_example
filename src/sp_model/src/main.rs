@@ -113,6 +113,24 @@ fn make_camera(resource: &mut Resource) {
 }
 
 fn make_gripper_fail(resource: &mut Resource) {
+
+    let is_closed = resource.add_variable(Variable::new_boolean("get_state/is_closed", VariableType::Measured));
+    let has_part = resource.add_variable(Variable::new_boolean("get_state/has_part", VariableType::Measured));
+    let get = resource.add_variable( Variable::new_boolean("get_state/get", VariableType::Command));
+
+    resource.setup_ros_service(
+        &format!("{}/get_state", resource.path().leaf()), 
+        "gripper_msgs/srv/GetState", 
+        p!(p: get),
+        &[], 
+        &[
+            MessageVariable::new(&is_closed, "is_closed"), 
+            MessageVariable::new(&has_part, "has_part")
+            ] 
+    );
+
+
+
     let close = Variable::new_boolean("goal/close", VariableType::Command);
     let closed = Variable::new_boolean("state/closed", VariableType::Measured);
     let part_sensor = Variable::new_boolean("state/part_sensor", VariableType::Measured);
@@ -159,20 +177,7 @@ fn make_gripper_fail(resource: &mut Resource) {
     //resource.setup_ros_incoming(&format!("{}/state", resource.path().leaf()), "gripper_msgs/msg/State");
 
     // testing service. The variabletype does bot matter
-    let is_closed = Variable::new_boolean("get_state/is_closed", VariableType::Measured);
-    let is_closed = resource.add_variable(is_closed);
-    let has_part = Variable::new_boolean("get_state/has_part", VariableType::Measured);
-    let has_part = resource.add_variable(has_part);
-    let dummy = Variable::new_boolean("get_state/dummy", VariableType::Command);
-    let dummy = resource.add_variable(dummy);
 
-    resource.setup_ros_service(
-        &format!("{}/get_state", resource.path().leaf()), 
-        "gripper_msgs/srv/GetState", 
-        p!(p: dummy),
-        &[&dummy], 
-        &[&is_closed, &has_part]
-    );
 }
 
 pub fn make_model() -> (Model, SPState) {

@@ -9,10 +9,10 @@ default = ["ros"]
 ros = ["sp-runner/ros"]
 
 [dependencies]
-# sp-domain = { path = "/Users/kristofer/sw/sp-rust/sp-domain" }
-# sp-runner = { path = "/Users/kristofer/sw/sp-rust/sp-runner" }
-# sp-formal = { path = "/Users/kristofer/sw/sp-rust/sp-formal" }
-sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", branch = "refactoring_comm" }
-sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", branch = "refactoring_comm" }
-sp-formal = { git = "https://github.com/sequenceplanner/sp-rust", branch = "refactoring_comm" }
+sp-domain = { path = "/Users/kristofer/sw/sp-rust/sp-domain" }
+sp-runner = { path = "/Users/kristofer/sw/sp-rust/sp-runner" }
+sp-formal = { path = "/Users/kristofer/sw/sp-rust/sp-formal" }
+# sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", branch = "refactoring_comm" }
+# sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", branch = "refactoring_comm" }
+# sp-formal = { git = "https://github.com/sequenceplanner/sp-rust", branch = "refactoring_comm" }
 tokio = { version = "1.9", features = ["full"] }

@@ -15,7 +15,7 @@ endfunction()
 
 # put ros package dependencies here.
 ros_deps(
-  sp_messages
+  sp_msgs
   rcl
 )
 

@@ -10,7 +10,7 @@ endif()
 include(r2r_cargo.cmake)
 
 # put ros package dependencies here.
-r2r_cargo(sp_messages
+r2r_cargo(sp_msgs
           control_box_msgs
           rcl
           rcl_action             # as of r2r 0.1.0, we also need the action api

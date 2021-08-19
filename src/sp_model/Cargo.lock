@@ -5,7 +5,7 @@ version = 3
 [[package]]
 name = "actions"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/r2r?branch=untyped_services#f4db586b76729e6cf3e11b54ca6ff45e7f36cf9c"
+source = "git+https://github.com/sequenceplanner/r2r#7853cb7161d2d6445a3b5fa6db2dbd7ff6de5180"
 dependencies = [
  "bindgen",
  "common",
@@ -184,7 +184,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/r2r?branch=untyped_services#f4db586b76729e6cf3e11b54ca6ff45e7f36cf9c"
+source = "git+https://github.com/sequenceplanner/r2r#7853cb7161d2d6445a3b5fa6db2dbd7ff6de5180"
 
 [[package]]
 name = "crossbeam"
@@ -643,7 +643,7 @@ dependencies = [
 [[package]]
 name = "msg_gen"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/r2r?branch=untyped_services#f4db586b76729e6cf3e11b54ca6ff45e7f36cf9c"
+source = "git+https://github.com/sequenceplanner/r2r#7853cb7161d2d6445a3b5fa6db2dbd7ff6de5180"
 dependencies = [
  "bindgen",
  "common",
@@ -820,8 +820,8 @@ dependencies = [
 
 [[package]]
 name = "r2r"
-version = "0.2.0"
-source = "git+https://github.com/sequenceplanner/r2r?branch=untyped_services#f4db586b76729e6cf3e11b54ca6ff45e7f36cf9c"
+version = "0.3.5"
+source = "git+https://github.com/sequenceplanner/r2r#7853cb7161d2d6445a3b5fa6db2dbd7ff6de5180"
 dependencies = [
  "actions",
  "common",
@@ -864,7 +864,7 @@ dependencies = [
 [[package]]
 name = "rcl"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/r2r?branch=untyped_services#f4db586b76729e6cf3e11b54ca6ff45e7f36cf9c"
+source = "git+https://github.com/sequenceplanner/r2r#7853cb7161d2d6445a3b5fa6db2dbd7ff6de5180"
 dependencies = [
  "bindgen",
  "common",
@@ -996,7 +996,6 @@ checksum = "45456094d1983e2ee2a18fdfebce3189fa451699d0502cb8e3b49dba5ba41451"
 [[package]]
 name = "sp-domain"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/sp-rust?branch=refactoring_comm#14a3ea7ed30d171c19c71d15274145b9871a69e0"
 dependencies = [
  "peg",
  "serde",
@@ -1007,7 +1006,6 @@ dependencies = [
 [[package]]
 name = "sp-formal"
 version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/sp-rust?branch=refactoring_comm#14a3ea7ed30d171c19c71d15274145b9871a69e0"
 dependencies = [
  "futures",
  "rayon",
@@ -1022,7 +1020,6 @@ dependencies = [
 [[package]]
 name = "sp-ros"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?branch=refactoring_comm#14a3ea7ed30d171c19c71d15274145b9871a69e0"
 dependencies = [
  "futures",
  "r2r",
@@ -1035,7 +1032,6 @@ dependencies = [
 [[package]]
 name = "sp-runner"
 version = "0.0.1"
-source = "git+https://github.com/sequenceplanner/sp-rust?branch=refactoring_comm#14a3ea7ed30d171c19c71d15274145b9871a69e0"
 dependencies = [
  "chrono",
  "crossbeam",

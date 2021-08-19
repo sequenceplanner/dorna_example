@@ -12,7 +12,7 @@ include(r2r_cargo.cmake)
 # put ros package dependencies here.
 r2r_cargo(std_msgs
           sp_operator_msgs
-          sp_messages
+          sp_msgs
           control_box_msgs
           camera_msgs
           robot_msgs
