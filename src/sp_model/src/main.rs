@@ -1,11 +1,76 @@
-use sp_runner::*;
 use sp_domain::*;
+use std::time::Duration;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main(){
+    
     let (model, initial_state) = make_model();
-    launch_model(model, initial_state).await?;
-    Ok(())
+    let state_json = SPStateJson::from_state_flat(&initial_state).to_json().to_string();
+    let compiled_model = sp_formal::CompiledModel::from(model.clone());
+    let cm_json = serde_json::to_string(&compiled_model).unwrap();
+
+    let state_req = r2r::sp_msgs::srv::Json::Request{
+        json: state_json
+    };
+    let model_req = r2r::sp_msgs::srv::Json::Request{
+        json: cm_json
+    };
+    
+
+    let mut i = 0;
+    let d: Duration = Duration::from_millis(5000);
+    
+        
+        let ctx = r2r::Context::create().map_err(SPError::from_any).unwrap();
+        let mut node = r2r::Node::create(ctx, "model_maker", "").map_err(SPError::from_any).unwrap();
+        
+        let client = node.create_client::<r2r::sp_msgs::srv::Json::Service>("/sp/set_model").unwrap();
+        let client_state = node.create_client::<r2r::sp_msgs::srv::Json::Service>("/sp/set_state").unwrap();
+    
+        let c_alive = node.is_available(&client).unwrap();
+        let c_state_alive = node.is_available(&client_state).unwrap();
+        
+    
+        let mut kill = std::sync::Arc::new(std::sync::Mutex::new(false));
+    
+        let k = kill.clone();
+        let spin_handle = tokio::task::spawn_blocking( move || {
+            loop {
+                node.spin_once(std::time::Duration::from_millis(100));
+                if *k.lock().unwrap() {
+                    println!("Killing");
+                    break;
+                }
+            }
+        });
+    
+        //tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+        
+        loop{   
+            println!("loop {}", i);
+            i += 1;
+    
+        println!("HEJ");
+        
+        //c_state_alive.await.unwrap();
+        println!("HEJ alive");
+        let result = tokio::time::timeout(d, client_state.request(&state_req).unwrap()).await;
+        println!("HEJ State req {:?}", result);
+    
+        
+        //c_alive.await.unwrap();
+        println!("HEJ 2");
+        let result = tokio::time::timeout(d, client.request(&model_req).unwrap()).await;
+        println!("Hej model req {:?}", result);
+    
+        
+    }
+    
+    *kill.lock().unwrap() = true;
+    spin_handle.await.unwrap();
+    
+
 }
 
 fn make_dorna(resource: &mut Resource, poses: &[&str]) {

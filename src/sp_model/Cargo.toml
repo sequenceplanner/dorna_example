@@ -1,17 +1,15 @@
 [package]
 name = "sp_model"
-version = "0.1.0"
+version = "0.5.0"
 authors = ["Martin Dahl <martin.dahl@gmail.com>"]
 edition = "2018"
 
-[features]
-default = ["ros"]
-ros = ["sp-runner/ros"]
 
 [dependencies]
-sp-domain = { path = "/Users/martin/sp/sp-rust/sp-domain" }
-sp-runner = { path = "/Users/martin/sp/sp-rust/sp-runner" }
-sp-formal = { path = "/Users/martin/sp/sp-rust/sp-formal" }
+sp-domain = { path = "/Users/kristofer/sw/sp-rust/sp-domain" }
+sp-formal = { path = "/Users/kristofer/sw/sp-rust/sp-formal" }
+r2r = { git = "https://github.com/sequenceplanner/r2r"}
+serde_json = "1.0"
 # sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", branch = "refactoring_comm" }
 # sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", branch = "refactoring_comm" }
 # sp-formal = { git = "https://github.com/sequenceplanner/sp-rust", branch = "refactoring_comm" }
