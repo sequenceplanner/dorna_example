@@ -9,9 +9,9 @@ default = ["ros"]
 ros = ["sp-runner/ros"]
 
 [dependencies]
-sp-domain = { path = "/Users/kristofer/sw/sp-rust/sp-domain" }
-sp-runner = { path = "/Users/kristofer/sw/sp-rust/sp-runner" }
-sp-formal = { path = "/Users/kristofer/sw/sp-rust/sp-formal" }
+sp-domain = { path = "/Users/martin/sp/sp-rust/sp-domain" }
+sp-runner = { path = "/Users/martin/sp/sp-rust/sp-runner" }
+sp-formal = { path = "/Users/martin/sp/sp-rust/sp-formal" }
 # sp-domain = { git = "https://github.com/sequenceplanner/sp-rust", branch = "refactoring_comm" }
 # sp-runner = { git = "https://github.com/sequenceplanner/sp-rust", branch = "refactoring_comm" }
 # sp-formal = { git = "https://github.com/sequenceplanner/sp-rust", branch = "refactoring_comm" }

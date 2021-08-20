@@ -19,6 +19,8 @@ async fn set_light_server(
 
                 let result = SetLight::Result::default();
 
+                println!("blue light changed to: {}", g.goal.on);
+
                 g.succeed(result).expect("could not send result");
             }
             None => break,

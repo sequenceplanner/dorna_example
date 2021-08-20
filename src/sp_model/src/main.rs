@@ -78,15 +78,15 @@ fn make_control_box(resource: &mut Resource) {
                                            vec![ a!( !p: blue_light_on)], TransitionType::Effect);
     resource.add_transition(e_blue_off_finish);
 
-    let set_light_reset = Transition::new("blue_off_reset", p!([!p: blue_light] && [p:action_state == "succeeded"]),
+    let set_light_reset = Transition::new("blue_off_reset", p!([p: set_light] && [p:action_state == "succeeded"]),
                                           vec![ a!( !p:set_light)], TransitionType::Auto);
     resource.add_transition(set_light_reset);
 
 
     resource.setup_ros_incoming(
         "measured",
-        &format!("{}/measured", 
-        resource.path().leaf()), 
+        &format!("{}/measured",
+        resource.path().leaf()),
         "control_box_msgs/msg/Measured",
         &[
             MessageVariable::new(&blue_light_on, "blue_light_on")
@@ -155,6 +155,7 @@ fn make_camera(resource: &mut Resource) {
     &[
         MessageVariable::new(&scanning, "scanning"),
         MessageVariable::new(&done, "done"),
+        MessageVariable::new(&result, "result"),
     ]);
 }
 
@@ -207,15 +208,13 @@ fn make_gripper_fail(resource: &mut Resource) {
             p!([!p:is_closed] && [p: fail_count == 0] && [p: close_service == "ok"]),
             vec![ a!( p: close), a!( p: fail_count = 1)],
             TransitionType::Controlled));
+
     resource.add_transition(
         Transition::new(
             "close_start1",
             p!([!p:is_closed] && [p: fail_count == 1] && [p: close_service == "ok"]),
             vec![ a!( p: close), a!( p: fail_count = 2)],
             TransitionType::Controlled));
-
-    // let done_closing = Transition::new("done_closing", p!([p: is_closed] && [p: close]), vec![a!(!p: close)], TransitionType::Auto);
-    // resource.add_transition(done_closing);
 
     resource.add_transition(
         Transition::new(
@@ -253,38 +252,38 @@ fn make_gripper_fail(resource: &mut Resource) {
 
     resource.add_transition(
         Transition::new(
-            "open_finish",
-            p!([p: open] && [p: is_closed]),
-            vec![ a!( !p: is_closed), a!( !p: has_part)],
-            TransitionType::Effect));
-
-    // resource.add_transition(
-        // Transition::new(
-        //     "done_opening",
-        //     p!([!p: is_closed] && [p: open]),
-        //     vec![a!(!p: open)],
-        //     TransitionType::Auto));
-
-    resource.add_transition(
-        Transition::new(
-            "get_state_after_open",
+            "start_get_state_after_open",
             p!([p: open_service == "done"]),
-            vec![ a!( p: get), a!( !p: open)],
+            vec![ a!( p: get) ],
             TransitionType::Controlled));
 
     resource.add_transition(
         Transition::new(
+            "finish_get_state_after_open",
+            p!([p: open_service == "done"] && [p: get_service == "done"] && [p: get] && [p: is_closed]),
+            vec![ a!( !p: is_closed), a!( !p: has_part) ],
+            TransitionType::Effect));
+
+    resource.add_transition(
+        Transition::new(
             "complete_get_state",
-            p!([p: get_service == "done"]),
-            vec![ a!( !p: get)],
+            p!([p: get_service == "done"] && [p: get]),
+            vec![ a!( !p: get) ],
             TransitionType::Auto));
 
+    resource.add_transition(
+        Transition::new(
+            "complete_open",
+            p!([p: get_service == "ok"] && [p: open_service == "done"]),
+            vec![ a!( !p: open) ],
+            TransitionType::Auto));
 
-    //resource.setup_ros_outgoing(&format!("{}/goal", resource.path().leaf()), "gripper_msgs/msg/Goal");
-    //resource.setup_ros_incoming(&format!("{}/state", resource.path().leaf()), "gripper_msgs/msg/State");
-
-    // testing service. The variabletype does bot matter
-
+    resource.add_transition(
+        Transition::new(
+            "complete_close",
+            p!([p: get_service == "ok"] && [p: close_service == "done"]),
+            vec![ a!( !p: close) ],
+            TransitionType::Auto));
 }
 
 pub fn make_model() -> (Model, SPState) {
@@ -362,8 +361,10 @@ pub fn make_model() -> (Model, SPState) {
 
     let gripper_part = m.get_resource(&gripper).get_variable("has_part");
     let gripper_closed = m.get_resource(&gripper).get_variable("is_closed");
-    let gripper_opening = m.get_resource(&gripper).get_variable("open");
-    let gripper_closing = m.get_resource(&gripper).get_variable("close");
+    let gripper_open = m.get_resource(&gripper).get_variable("open");
+    let gripper_opening = p!([p: gripper_open] && [p: gripper_closed]);
+    let gripper_close = m.get_resource(&gripper).get_variable("close");
+    let gripper_closing = p!([p: gripper_close] && [!p: gripper_closed]);
     let gripper_fc = m.get_resource(&gripper).get_variable("fail_count");
 
     // define robot movement
@@ -388,7 +389,7 @@ pub fn make_model() -> (Model, SPState) {
     // if we are holding a part, we cannot open the gripper freely!
     m.add_invar(
         "gripper_open",
-        &p!([[p:gripper_opening] && [p: dorna_holding !=0]] =>
+        &p!([[pp:gripper_opening] && [p: dorna_holding !=0]] =>
             [[[p:ap == t1] && [p:shelf1 == 0]] ||
              [[p:ap == t2] && [p:shelf2 == 0]] ||
              [[p:ap == t3] && [p:shelf3 == 0]] ||
@@ -398,15 +399,15 @@ pub fn make_model() -> (Model, SPState) {
     // we can only close the gripper
     m.add_invar(
         "gripper_close",
-        &p!([p:gripper_closing] => [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]),
+        &p!([pp:gripper_closing] => [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]),
     );
 
-    m.add_invar("close_gripper_while_dorna_moving", &p!(![[p:gripper_closing] && [p:dorna_moving]]));
-    m.add_invar("open_gripper_while_dorna_moving", &p!(![[p:gripper_opening] && [p:dorna_moving]]));
+    m.add_invar("close_gripper_while_dorna_moving", &p!(![[pp:gripper_closing] && [p:dorna_moving]]));
+    m.add_invar("open_gripper_while_dorna_moving", &p!(![[pp:gripper_opening] && [p:dorna_moving]]));
 
     // dont open gripper again after failure unless we have moved away.
     m.add_invar("dont_open_gripper_after_failure",
-                &p!([[p:gripper_opening] && [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]] => [p:gripper_part]));
+                &p!([[pp:gripper_opening] && [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]] => [p:gripper_part]));
 
     // if the gripper is closed, with no part in it, it is impossible for it to hold a part.
     // m.add_invar("gripper_no_sensor_implies_no_part",
@@ -765,4 +766,19 @@ pub fn make_model() -> (Model, SPState) {
     s.extend(resource_init_state);
 
     return (m, s);
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use sp_formal::*;
+
+    #[test]
+    fn dorna_test() {
+        let (m, s) = make_model();
+
+        // println!("{:#?}", m);
+
+        sp_formal::generate_mc_problems(&m);
+    }
 }
