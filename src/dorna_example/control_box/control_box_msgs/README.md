@@ -1,3 +1,3 @@
-# ros2_mecademic_msgs
+# control_box_msgs
 
-Custom messages for the ROS2 Mecademic robot suite.
+Custom messages for the control box.

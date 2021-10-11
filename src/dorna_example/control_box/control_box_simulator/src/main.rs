@@ -1,58 +1,57 @@
-use futures::executor::LocalPool;
-use futures::stream::{Stream, StreamExt};
-use futures::task::LocalSpawnExt;
 use r2r;
-use r2r::control_box_msgs::action::SetLight;
-use r2r::control_box_msgs::msg::Measured;
+use futures::prelude::*;
+use r2r::control_box_msgs::msg::{Goal, Measured};
 use std::sync::{Arc, Mutex};
 
-async fn set_light_server(
-    state: Arc<Mutex<bool>>,
-    mut requests: impl Stream<Item = r2r::GoalRequest<SetLight::Action>> + Unpin,
-) {
-    loop {
-        match requests.next().await {
-            Some(req) => {
-                let (mut g, mut _cancel) = req.accept().expect("could not accept goal");
-
-                *state.lock().unwrap() = g.goal.on;
-
-                let result = SetLight::Result::default();
-
-                println!("blue light changed to: {}", g.goal.on);
-
-                g.succeed(result).expect("could not send result");
-            }
-            None => break,
-        }
-    }
-}
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut pool = LocalPool::new();
-    let spawner = pool.spawner();
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ctx = r2r::Context::create()?;
-    let mut node = r2r::Node::create(ctx, "control_box_simulator", "/control_box")?;
+    let mut node = r2r::Node::create(ctx, "simulator", "control_box")?;
     let state_publisher = node.create_publisher::<Measured>("measured")?;
+    let mut goal_subscriber = node.subscribe::<Goal>("goal")?;
 
-    let server_requests = node.create_action_server::<SetLight::Action>("set_light")?;
+    // state of the light
+    let state = Arc::new(Mutex::new(false));
 
-    // state
-    let blue_light: Arc<Mutex<bool>> = Arc::new(Mutex::new(false));
+    // goal callback
+    let state_task = state.clone();
+    let state_publisher_task = state_publisher.clone();
+    let nl_task = node.logger().to_owned();
 
-    spawner
-        .spawn_local(set_light_server(blue_light.clone(), server_requests))
-        .unwrap();
+    tokio::task::spawn(async move {
+        loop {
+            match goal_subscriber.next().await {
+                Some(msg) => {
+                    let mut state = state_task.lock().unwrap();
+                    if *state == msg.blue_light {
+                        continue;
+                    };
 
-    loop {
+                    *state = msg.blue_light;
+                    r2r::log_info!(&nl_task, "blue light is {}",
+                                   if *state { "on" } else { "off" });
+
+                    let msg = Measured {
+                        blue_light_on: *state,
+                    };
+                    state_publisher_task.publish(&msg).expect("The node publisher is dead");
+                }
+                None => break,
+            }
+        }
+    });
+
+    tokio::task::spawn_blocking(move || loop {
         node.spin_once(std::time::Duration::from_millis(1000));
-        pool.run_until_stalled();
+
         // publish the state once in a while
         let msg = Measured {
-            blue_light_on: *blue_light.lock().unwrap(),
+            blue_light_on: *state.lock().unwrap(),
         };
         state_publisher
             .publish(&msg)
             .expect("The node publisher is dead");
-    }
+    }).await?;
+
+    Ok(())
 }

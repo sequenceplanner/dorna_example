@@ -3,74 +3,52 @@ use std::time::Duration;
 
 #[tokio::main]
 async fn main(){
-    
-    let (model, initial_state) = make_model();
-    let state_json = SPStateJson::from_state_flat(&initial_state).to_json().to_string();
+    let (model, state) = make_model();
+    let state_json = SPStateJson::from_state_flat(&state)
+        .to_json()
+        .to_string();
     let compiled_model = sp_formal::CompiledModel::from(model.clone());
     let cm_json = serde_json::to_string(&compiled_model).unwrap();
 
-    let state_req = r2r::sp_msgs::srv::Json::Request{
-        json: state_json
-    };
-    let model_req = r2r::sp_msgs::srv::Json::Request{
-        json: cm_json
-    };
-    
+    let state_req = r2r::sp_msgs::srv::Json::Request { json: state_json };
+    let model_req = r2r::sp_msgs::srv::Json::Request { json: cm_json };
 
-    let mut i = 0;
-    let d: Duration = Duration::from_millis(5000);
-    
-        
-        let ctx = r2r::Context::create().map_err(SPError::from_any).unwrap();
-        let mut node = r2r::Node::create(ctx, "model_maker", "").map_err(SPError::from_any).unwrap();
-        
-        let client = node.create_client::<r2r::sp_msgs::srv::Json::Service>("/sp/set_model").unwrap();
-        let client_state = node.create_client::<r2r::sp_msgs::srv::Json::Service>("/sp/set_state").unwrap();
-    
-        let c_alive = node.is_available(&client).unwrap();
-        let c_state_alive = node.is_available(&client_state).unwrap();
-        
-    
-        let mut kill = std::sync::Arc::new(std::sync::Mutex::new(false));
-    
-        let k = kill.clone();
-        let spin_handle = tokio::task::spawn_blocking( move || {
-            loop {
-                node.spin_once(std::time::Duration::from_millis(100));
-                if *k.lock().unwrap() {
-                    println!("Killing");
-                    break;
-                }
-            }
-        });
-    
-        //tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+    let ctx = r2r::Context::create().map_err(SPError::from_any).unwrap();
+    let mut node = r2r::Node::create(ctx, "model_maker", "")
+        .map_err(SPError::from_any)
+        .unwrap();
 
-        
-        loop{   
-            println!("loop {}", i);
-            i += 1;
-    
-        println!("HEJ");
-        
-        //c_state_alive.await.unwrap();
-        println!("HEJ alive");
-        let result = tokio::time::timeout(d, client_state.request(&state_req).unwrap()).await;
-        println!("HEJ State req {:?}", result);
-    
-        
-        //c_alive.await.unwrap();
-        println!("HEJ 2");
-        let result = tokio::time::timeout(d, client.request(&model_req).unwrap()).await;
-        println!("Hej model req {:?}", result);
-    
-        
-    }
-    
+    let client = node
+        .create_client::<r2r::sp_msgs::srv::Json::Service>("/sp/set_model")
+        .unwrap();
+    let client_state = node
+        .create_client::<r2r::sp_msgs::srv::Json::Service>("/sp/set_state")
+        .unwrap();
+
+    // let c_alive = node.is_available(&client).unwrap();
+    // let c_state_alive = node.is_available(&client_state).unwrap();
+
+    let kill = std::sync::Arc::new(std::sync::Mutex::new(false));
+
+    let k = kill.clone();
+    let spin_handle = tokio::task::spawn_blocking(move || loop {
+        node.spin_once(std::time::Duration::from_millis(100));
+        if *k.lock().unwrap() {
+            println!("Killing");
+            break;
+        }
+    });
+
+    let d = std::time::Duration::from_secs(5);
+    print!("Sending state request... ");
+    let result = tokio::time::timeout(d, client_state.request(&state_req).unwrap()).await;
+    println!("{:?}", result);
+    print!("Sending model change request... ");
+    let result = tokio::time::timeout(d, client.request(&model_req).unwrap()).await;
+    println!("{:?}", result);
+
     *kill.lock().unwrap() = true;
     spin_handle.await.unwrap();
-    
-
 }
 
 fn make_dorna(resource: &mut Resource, poses: &[&str]) {
@@ -93,11 +71,13 @@ fn make_dorna(resource: &mut Resource, poses: &[&str]) {
     let e_move_finish = Transition::new("move_finish", p!(p: moving), vec![ a!( p: act_pos <- p: ref_pos)], TransitionType::Effect);
     resource.add_transition(e_move_finish);
 
-    resource.setup_ros_outgoing("goal", &format!("/dorna/{}/goal", resource.path().leaf()), "robot_msgs/msg/RobotGoal",
+    resource.setup_ros_outgoing("goal", &format!("/dorna/{}/goal", resource.path().leaf()),
+                                MessageType::Ros("robot_msgs/msg/RobotGoal".into()),
     &[
         MessageVariable::new(&ref_pos, "ref_pos")
     ]);
-    resource.setup_ros_incoming("measured",&format!("/dorna/{}/measured", resource.path().leaf()), "robot_msgs/msg/RobotState",
+    resource.setup_ros_incoming("measured",&format!("/dorna/{}/measured", resource.path().leaf()),
+                                MessageType::Ros("robot_msgs/msg/RobotState".into()),
     &[
         MessageVariable::new(&act_pos, "act_pos")
     ]);
@@ -107,52 +87,36 @@ fn make_control_box(resource: &mut Resource) {
     let blue_light = Variable::new_boolean("goal/blue_light", VariableType::Command);
     let blue_light = resource.add_variable(blue_light);
 
-    let set_light = Variable::new_boolean("goal/set_light", VariableType::Command);
-    let set_light = resource.add_variable(set_light);
-
     let blue_light_on = Variable::new_boolean("measured/blue_light_on", VariableType::Measured);
     let blue_light_on = resource.add_variable(blue_light_on);
 
-    let action_state = resource.setup_ros_action(
-        "set_light",
-        &format!("{}/set_light", resource.path().leaf()),
-        "control_box_msgs/action/SetLight",
-        p!(p: set_light),
-        &[
-            MessageVariable::new(&blue_light, "on")
-        ],
-        &[ // feedback
-        ],
-        &[ // result
-        ]
-    );
-
-    let c_blue_on_start = Transition::new("blue_on_start", p!([!p: blue_light_on] && [p:action_state == "ok"] && [!p:set_light]),
-                                          vec![ a!( p: blue_light), a!(p:set_light)], TransitionType::Controlled);
+    let c_blue_on_start = Transition::new("blue_on_start", p!([!p: blue_light_on] && [!p:blue_light]),
+                                          vec![ a!( p: blue_light) ], TransitionType::Controlled);
     resource.add_transition(c_blue_on_start);
 
-    let e_blue_on_finish = Transition::new("blue_on_finish", p!([p: blue_light] && [p:set_light] && [!p: blue_light_on]),
+    let e_blue_on_finish = Transition::new("blue_on_finish", p!([!p: blue_light_on] && [p: blue_light]),
                                            vec![ a!( p: blue_light_on)], TransitionType::Effect);
     resource.add_transition(e_blue_on_finish);
 
-    let c_blue_off_start = Transition::new("blue_off_start", p!([p: blue_light_on] && [p:action_state == "ok"] && [!p:set_light]),
-                                          vec![ a!( !p: blue_light), a!(p:set_light)], TransitionType::Controlled);
+    let c_blue_off_start = Transition::new("blue_off_start", p!([p: blue_light_on] && [p: blue_light]),
+                                          vec![ a!( !p: blue_light)], TransitionType::Controlled);
     resource.add_transition(c_blue_off_start);
 
-    let e_blue_off_finish = Transition::new("blue_off_finish", p!([!p: blue_light] && [p:set_light] && [p: blue_light_on]),
+    let e_blue_off_finish = Transition::new("blue_off_finish", p!([p: blue_light_on] && [!p: blue_light]),
                                            vec![ a!( !p: blue_light_on)], TransitionType::Effect);
     resource.add_transition(e_blue_off_finish);
 
-    let set_light_reset = Transition::new("blue_off_reset", p!([p: set_light] && [p:action_state == "succeeded"]),
-                                          vec![ a!( !p:set_light)], TransitionType::Auto);
-    resource.add_transition(set_light_reset);
-
+    resource.setup_ros_outgoing("goal", &format!("{}/goal", resource.path().leaf()),
+                                MessageType::Ros("control_box_msgs/msg/Goal".into()),
+    &[
+        MessageVariable::new(&blue_light, "blue_light")
+    ]);
 
     resource.setup_ros_incoming(
         "measured",
         &format!("{}/measured",
         resource.path().leaf()),
-        "control_box_msgs/msg/Measured",
+        MessageType::Ros("control_box_msgs/msg/Measured".into()),
         &[
             MessageVariable::new(&blue_light_on, "blue_light_on")
         ]
@@ -212,11 +176,13 @@ fn make_camera(resource: &mut Resource) {
 
     resource.add_specification(state_does_not_exist);
 
-    resource.setup_ros_outgoing("goal", &format!("{}/goal", resource.path().leaf()), "camera_msgs/msg/Goal",
+    resource.setup_ros_outgoing("goal", &format!("{}/goal", resource.path().leaf()),
+                                MessageType::Ros("camera_msgs/msg/Goal".into()),
     &[
         MessageVariable::new(&do_scan, "do_scan")
     ]);
-    resource.setup_ros_incoming("measured", &format!("{}/measured", resource.path().leaf()), "camera_msgs/msg/Measured",
+    resource.setup_ros_incoming("measured", &format!("{}/measured", resource.path().leaf()),
+                                MessageType::Ros("camera_msgs/msg/Measured".into()),
     &[
         MessageVariable::new(&scanning, "scanning"),
         MessageVariable::new(&done, "done"),
@@ -225,130 +191,59 @@ fn make_camera(resource: &mut Resource) {
 }
 
 fn make_gripper_fail(resource: &mut Resource) {
-
-    let is_closed = resource.add_variable(Variable::new_boolean("get_state/is_closed", VariableType::Measured));
-    let has_part = resource.add_variable(Variable::new_boolean("get_state/has_part", VariableType::Measured));
-    let get = resource.add_variable( Variable::new_boolean("get_state/get", VariableType::Command));
-    let close = resource.add_variable( Variable::new_boolean("get_state/close", VariableType::Command));
-    let open = resource.add_variable( Variable::new_boolean("get_state/open", VariableType::Command));
-
-    let get_service = resource.setup_ros_service(
-        "get_state",
-        &format!("{}/get_state", resource.path().leaf()),
-        "gripper_msgs/srv/GetState",
-        p!(p: get),
-        &[],
-        &[
-            MessageVariable::new(&is_closed, "is_closed"),
-            MessageVariable::new(&has_part, "has_part")
-            ]
-    );
-    let open_service = resource.setup_ros_service(
-        "open",
-        &format!("{}/open", resource.path().leaf()),
-        "gripper_msgs/srv/Open",
-        p!(p: open),
-        &[],
-        &[]
-    );
-    let close_service = resource.setup_ros_service(
-        "close",
-        &format!("{}/close", resource.path().leaf()),
-        "gripper_msgs/srv/Close",
-        p!(p: close),
-        &[],
-        &[MessageVariable::new(&has_part, "has_part")]
-    );
-
-
+    let close = Variable::new_boolean("goal/close", VariableType::Command);
+    let closed = Variable::new_boolean("measured/closed", VariableType::Measured);
+    let part_sensor = Variable::new_boolean("measured/part_sensor", VariableType::Measured);
 
     let domain = vec![0,1,2].iter().map(|v|v.to_spvalue()).collect();
     let fail_count = Variable::new("fail_count", VariableType::Estimated, SPValueType::Int32, domain);
+
+    let close = resource.add_variable(close);
+    let closed = resource.add_variable(closed);
+    let part_sensor = resource.add_variable(part_sensor);
     let fail_count = resource.add_variable(fail_count);
 
+    let opening = Variable::new_predicate("opening", p!([!p: close] && [p: closed]));
+    let opening = resource.add_variable(opening);
 
-    resource.add_transition(
-        Transition::new(
-            "close_start0",
-            p!([!p:is_closed] && [p: fail_count == 0] && [p: close_service == "ok"]),
-            vec![ a!( p: close), a!( p: fail_count = 1)],
-            TransitionType::Controlled));
+    let closing = Variable::new_predicate("closing", p!([p: close] && [!p: closed]));
+    let closing = resource.add_variable(closing);
 
-    resource.add_transition(
-        Transition::new(
-            "close_start1",
-            p!([!p:is_closed] && [p: fail_count == 1] && [p: close_service == "ok"]),
-            vec![ a!( p: close), a!( p: fail_count = 2)],
-            TransitionType::Controlled));
+    let c_close_start0 = Transition::new("close_start0", p!([!p:closed] && [p: fail_count == 0]), vec![ a!( p: close), a!( p: fail_count = 1)], TransitionType::Controlled);
+    resource.add_transition(c_close_start0);
+    let c_close_start1 = Transition::new("close_start1", p!([!p:closed] && [p: fail_count == 1]), vec![ a!( p: close), a!( p: fail_count = 2)], TransitionType::Controlled);
+    resource.add_transition(c_close_start1);
 
-    resource.add_transition(
-        Transition::new(
-            "get_state_after_close",
-            p!([p: close_service == "done"]),
-            vec![ a!( p: get), a!( !p: close)],
-            TransitionType::Controlled));
+    let e_finish_part = Transition::new("finish_part", p!([p: closing]), vec![a!(p: closed), a!(p: part_sensor)], TransitionType::Effect);
+    resource.add_transition(e_finish_part);
+    let e_finish_no_part = Transition::new("finish_no_part", p!([p: closing]), vec![a!(p: closed), a!(!p: part_sensor)], TransitionType::Effect);
+    resource.add_transition(e_finish_no_part);
 
-    resource.add_transition(
-        Transition::new(
-            "finish_part",
-            p!([p: close] && [!p: is_closed]),
-            vec![a!(p: is_closed), a!(p: has_part)],
-            TransitionType::Effect));
-    resource.add_transition(
-        Transition::new(
-            "finish_no_part",
-            p!([p: close] && [!p: is_closed]),
-            vec![a!(p: is_closed), a!(!p: has_part)],
-            TransitionType::Effect));
+    let a_close_finished_reset_fc = Transition::new("close_finished_reset_fc", p!([p: closed] && [p: part_sensor] && [p: fail_count != 0]), vec![a!(p: fail_count = 0)], TransitionType::Auto);
+    resource.add_transition(a_close_finished_reset_fc);
 
-    resource.add_transition(
-        Transition::new(
-            "close_finished_reset_fc",
-            p!([p: is_closed] && [p: has_part] && [p: fail_count != 0]),
-            vec![a!(p: fail_count = 0)],
-            TransitionType::Auto));
+    let c_open_start = Transition::new("open_start", p!(p:closed), vec![ a!( !p: close)], TransitionType::Controlled);
+    resource.add_transition(c_open_start);
 
-    resource.add_transition(
-        Transition::new(
-            "open_start",
-            p!([p:is_closed] && [p: open_service == "ok"]),
-            vec![ a!( p: open)],
-            TransitionType::Controlled));
+    let e_open_finish = Transition::new("open_finish", p!(p:opening), vec![ a!( !p: closed), a!( !p: part_sensor)], TransitionType::Effect);
+    resource.add_transition(e_open_finish);
 
-    resource.add_transition(
-        Transition::new(
-            "start_get_state_after_open",
-            p!([p: open_service == "done"]),
-            vec![ a!( p: get) ],
-            TransitionType::Controlled));
+    let state_does_not_exist =
+        Specification::new_transition_invariant("state_does_not_exist",
+                                                p!(! [[!p: closed] && [p: part_sensor]]));
+    resource.add_specification(state_does_not_exist);
 
-    resource.add_transition(
-        Transition::new(
-            "finish_get_state_after_open",
-            p!([p: open_service == "done"] && [p: get_service == "done"] && [p: get] && [p: is_closed]),
-            vec![ a!( !p: is_closed), a!( !p: has_part) ],
-            TransitionType::Effect));
-
-    resource.add_transition(
-        Transition::new(
-            "complete_get_state",
-            p!([p: get_service == "done"] && [p: get]),
-            vec![ a!( !p: get) ],
-            TransitionType::Auto));
-
-    resource.add_transition(
-        Transition::new(
-            "complete_open",
-            p!([p: get_service == "ok"] && [p: open_service == "done"]),
-            vec![ a!( !p: open) ],
-            TransitionType::Auto));
-
-    resource.add_transition(
-        Transition::new(
-            "complete_close",
-            p!([p: get_service == "ok"] && [p: close_service == "done"]),
-            vec![ a!( !p: close) ],
-            TransitionType::Auto));
+    resource.setup_ros_outgoing("goal", &format!("{}/goal", resource.path().leaf()),
+                                MessageType::Ros("gripper_msgs/msg/Goal".into()),
+    &[
+        MessageVariable::new(&close, "close")
+    ]);
+    resource.setup_ros_incoming("measured", &format!("{}/measured", resource.path().leaf()),
+                                MessageType::Ros("gripper_msgs/msg/Measured".into()),
+    &[
+        MessageVariable::new(&closed, "closed"),
+        MessageVariable::new(&part_sensor, "part_sensor"),
+    ]);
 }
 
 pub fn make_model() -> (Model, SPState) {
@@ -407,29 +302,27 @@ pub fn make_model() -> (Model, SPState) {
     let dorna_moving = m.get_resource(&r1).get_predicate("moving");
     let dorna2_moving = m.get_resource(&r2).get_predicate("moving");
 
-    let ap = m.get_resource(&r1).get_variable("act_pos");
-    let rp = m.get_resource(&r1).get_variable("ref_pos");
+    let ap = m.get_resource(&r1).get_variable("measured/act_pos");
+    let rp = m.get_resource(&r1).get_variable("goal/ref_pos");
     let pp = m.get_resource(&r1).get_variable("prev_pos");
 
-    let ap3 = m.get_resource(&r2).get_variable("act_pos");
-    let rp3 = m.get_resource(&r2).get_variable("ref_pos");
+    let ap3 = m.get_resource(&r2).get_variable("measured/act_pos");
+    let rp3 = m.get_resource(&r2).get_variable("goal/ref_pos");
     let pp3 = m.get_resource(&r2).get_variable("prev_pos");
 
-    let blue = m.get_resource(&control_box).get_variable("blue_light_on");
+    let blue = m.get_resource(&control_box).get_variable("measured/blue_light_on");
 
     let cf = m.get_resource(&camera).get_predicate("finished");
 
     let camera_start = m.get_resource(&camera).take_transition("start");
 
-    let cr = m.get_resource(&camera).get_variable("result");
-    let cd = m.get_resource(&camera).get_variable("do_scan");
+    let cr = m.get_resource(&camera).get_variable("measured/result");
+    let cd = m.get_resource(&camera).get_variable("goal/do_scan");
 
-    let gripper_part = m.get_resource(&gripper).get_variable("has_part");
-    let gripper_closed = m.get_resource(&gripper).get_variable("is_closed");
-    let gripper_open = m.get_resource(&gripper).get_variable("open");
-    let gripper_opening = p!([p: gripper_open] && [p: gripper_closed]);
-    let gripper_close = m.get_resource(&gripper).get_variable("close");
-    let gripper_closing = p!([p: gripper_close] && [!p: gripper_closed]);
+    let gripper_part = m.get_resource(&gripper).get_variable("measured/part_sensor");
+    let gripper_closed = m.get_resource(&gripper).get_variable("measured/closed");
+    let gripper_opening = m.get_resource(&gripper).get_predicate("opening");
+    let gripper_closing = m.get_resource(&gripper).get_predicate("closing");
     let gripper_fc = m.get_resource(&gripper).get_variable("fail_count");
 
     // define robot movement
@@ -454,7 +347,7 @@ pub fn make_model() -> (Model, SPState) {
     // if we are holding a part, we cannot open the gripper freely!
     m.add_invar(
         "gripper_open",
-        &p!([[pp:gripper_opening] && [p: dorna_holding !=0]] =>
+        &p!([[p:gripper_opening] && [p: dorna_holding !=0]] =>
             [[[p:ap == t1] && [p:shelf1 == 0]] ||
              [[p:ap == t2] && [p:shelf2 == 0]] ||
              [[p:ap == t3] && [p:shelf3 == 0]] ||
@@ -464,15 +357,15 @@ pub fn make_model() -> (Model, SPState) {
     // we can only close the gripper
     m.add_invar(
         "gripper_close",
-        &p!([pp:gripper_closing] => [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]),
+        &p!([p:gripper_closing] => [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]),
     );
 
-    m.add_invar("close_gripper_while_dorna_moving", &p!(![[pp:gripper_closing] && [p:dorna_moving]]));
-    m.add_invar("open_gripper_while_dorna_moving", &p!(![[pp:gripper_opening] && [p:dorna_moving]]));
+    m.add_invar("close_gripper_while_dorna_moving", &p!(![[p:gripper_closing] && [p:dorna_moving]]));
+    m.add_invar("open_gripper_while_dorna_moving", &p!(![[p:gripper_opening] && [p:dorna_moving]]));
 
     // dont open gripper again after failure unless we have moved away.
     m.add_invar("dont_open_gripper_after_failure",
-                &p!([[pp:gripper_opening] && [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]] => [p:gripper_part]));
+                &p!([[p:gripper_opening] && [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]] => [p:gripper_part]));
 
     // if the gripper is closed, with no part in it, it is impossible for it to hold a part.
     // m.add_invar("gripper_no_sensor_implies_no_part",

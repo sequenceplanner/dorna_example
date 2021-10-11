@@ -3,18 +3,6 @@
 version = 3
 
 [[package]]
-name = "actions"
-version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/r2r#80c0db3f35c9c7ab3d48da87292134e4b4b416d1"
-dependencies = [
- "bindgen",
- "common",
- "itertools",
- "msg_gen",
- "rcl",
-]
-
-[[package]]
 name = "aho-corasick"
 version = "0.7.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -124,11 +112,6 @@ dependencies = [
  "unicode-width",
  "vec_map",
 ]
-
-[[package]]
-name = "common"
-version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/r2r#80c0db3f35c9c7ab3d48da87292134e4b4b416d1"
 
 [[package]]
 name = "crossbeam-channel"
@@ -436,18 +419,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "msg_gen"
-version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/r2r#80c0db3f35c9c7ab3d48da87292134e4b4b416d1"
-dependencies = [
- "bindgen",
- "common",
- "heck",
- "lazy_static",
- "rcl",
-]
-
-[[package]]
 name = "nom"
 version = "5.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -590,20 +561,66 @@ dependencies = [
 
 [[package]]
 name = "r2r"
-version = "0.3.8"
-source = "git+https://github.com/sequenceplanner/r2r#80c0db3f35c9c7ab3d48da87292134e4b4b416d1"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bcd6a4db2b53f36373b0a5e820a5bc459e5ac58c5ca710662fb94c26dc37ad34"
 dependencies = [
- "actions",
- "common",
  "futures",
  "lazy_static",
- "msg_gen",
- "rcl",
+ "r2r_actions",
+ "r2r_common",
+ "r2r_msg_gen",
+ "r2r_rcl",
  "retain_mut",
  "serde",
  "serde_json",
  "thiserror",
  "uuid",
+]
+
+[[package]]
+name = "r2r_actions"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b99440abaa8e72e2a7eea7fe39c001d99841b19de13192ed6ceaad1f265bc6a1"
+dependencies = [
+ "bindgen",
+ "itertools",
+ "r2r_common",
+ "r2r_msg_gen",
+ "r2r_rcl",
+]
+
+[[package]]
+name = "r2r_common"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bdc49e715528f754063ce32d6862c4e83a5fc61e91a2b50391ebae0cd7fad13c"
+
+[[package]]
+name = "r2r_msg_gen"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "deaf85f52ac2b6e92f566a1daf433180df0c3572926997e9f6d89a940d7152c3"
+dependencies = [
+ "bindgen",
+ "heck",
+ "lazy_static",
+ "r2r_common",
+ "r2r_rcl",
+]
+
+[[package]]
+name = "r2r_rcl"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cef1378a81c988d071b9ce7c5f84c4ac0af0c40c9a5c59696eefdaa04f3bcb85"
+dependencies = [
+ "bindgen",
+ "itertools",
+ "paste",
+ "r2r_common",
+ "widestring",
 ]
 
 [[package]]
@@ -629,18 +646,6 @@ dependencies = [
  "crossbeam-utils",
  "lazy_static",
  "num_cpus",
-]
-
-[[package]]
-name = "rcl"
-version = "0.1.0"
-source = "git+https://github.com/sequenceplanner/r2r#80c0db3f35c9c7ab3d48da87292134e4b4b416d1"
-dependencies = [
- "bindgen",
- "common",
- "itertools",
- "paste",
- "widestring",
 ]
 
 [[package]]
