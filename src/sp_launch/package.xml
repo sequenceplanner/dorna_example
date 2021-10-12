@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
-  <name>sp_model</name>
+  <name>sp_launch</name>
   <version>0.0.1</version>
-  <description>dorna example sp model</description>
+  <description>main sp launch template</description>
   <maintainer email="martin.dahl@gmail.com">Martin Dahl</maintainer>
   <license>MIT</license>
   <author>Martin Dahl</author>

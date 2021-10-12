@@ -1,5 +1,4 @@
 use sp_domain::*;
-use std::time::Duration;
 
 #[tokio::main]
 async fn main(){
@@ -25,8 +24,8 @@ async fn main(){
         .create_client::<r2r::sp_msgs::srv::Json::Service>("/sp/set_state")
         .unwrap();
 
-    // let c_alive = node.is_available(&client).unwrap();
-    // let c_state_alive = node.is_available(&client_state).unwrap();
+    let cav = node.is_available(&client).unwrap();
+    let csv = node.is_available(&client_state).unwrap();
 
     let kill = std::sync::Arc::new(std::sync::Mutex::new(false));
 
@@ -39,13 +38,30 @@ async fn main(){
         }
     });
 
+    print!("waiting for services...");
+    let _r = tokio::join! {
+        cav,
+        csv,
+    };
+    println!("done");
+
     let d = std::time::Duration::from_secs(5);
-    print!("Sending state request... ");
-    let result = tokio::time::timeout(d, client_state.request(&state_req).unwrap()).await;
-    println!("{:?}", result);
-    print!("Sending model change request... ");
-    let result = tokio::time::timeout(d, client.request(&model_req).unwrap()).await;
-    println!("{:?}", result);
+    loop {
+        print!("Sending state request... ");
+        let result = tokio::time::timeout(d, client_state.request(&state_req).unwrap()).await;
+        println!("{:?}", result);
+        if result.is_ok() {
+            break;
+        }
+    }
+    loop {
+        print!("Sending model change request... ");
+        let result = tokio::time::timeout(d, client.request(&model_req).unwrap()).await;
+        println!("{:?}", result);
+        if result.is_ok() {
+            break;
+        }
+    }
 
     *kill.lock().unwrap() = true;
     spin_handle.await.unwrap();
