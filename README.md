@@ -5,7 +5,7 @@ Example of Sequence Planner controlling some simulated resources.
 
 Requirements:
 -----------------
-1. [ROS2 Foxy](https://index.ros.org/doc/ros2/Releases/Release-Foxy-Fitzroy/)
+1. [ROS2 Galactic](https://docs.ros.org/en/foxy/Releases/Release-Galactic-Geochelone.html)
 2. [Colcon](https://colcon.readthedocs.io/en/released/user/installation.html)
 3. [Rust](https://rustup.rs/)
 4. [NuXmv](https://nuxmv.fbk.eu)

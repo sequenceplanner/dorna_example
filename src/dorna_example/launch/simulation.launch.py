@@ -69,6 +69,13 @@ def generate_launch_description():
                 output='screen',
                 )
 
+    sp_ui_env = launch_ros.actions.Node(
+                package='sp_ui',
+                executable='sp_ui',
+                namespace='/env',
+                output='screen',
+                )
+
     scene_master = launch_ros.actions.Node(
                 package='cylinders2_scene_master',
                 executable='cylinders2_scene_master',
@@ -81,6 +88,7 @@ def generate_launch_description():
             gripper,
             #sp,
             sp_ui,
+            sp_ui_env,
             scene_master,
              ] + r1 + r2 + rviz
     return launch.LaunchDescription(nodes)
