@@ -167,7 +167,6 @@ fn make_camera(resource: &mut Resource) {
     let resetting = Variable::new_predicate("resetting", p!([!p: do_scan] && [p: scanning] && [p: done]));
     let resetting = resource.add_variable(resetting);
 
-
     let c_start = Transition::new("start", p!(p:enabled), vec![ a!( p: do_scan)], TransitionType::Controlled);
     resource.add_transition(c_start);
 

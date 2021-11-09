@@ -18,13 +18,6 @@ def generate_launch_description():
 
     rviz = [launch_rviz, rviz_node]
 
-    # sp = launch_ros.actions.Node(
-    #             package='sp_model',
-    #             executable='sp_model',
-    #             output='screen' output={'both': 'log'}, # output='screen',
-    #             arguments = ['--ros-args', '--log-level', 'INFO'],
-    #             )
-
     r1 = make_dorna_simulation("r1",  os.path.join(examples_dir, 'poses', 'r1_joint_poses.csv'))
     r2 = make_dorna_simulation("r2",  os.path.join(examples_dir, 'poses', 'r3_joint_poses.csv'))
 
@@ -82,15 +75,34 @@ def generate_launch_description():
                 output='screen',
                 )
 
+    sp = launch_ros.actions.Node(
+                package='sp_launch',
+                executable='sp_launch',
+                output={'both': 'log'}, # output='screen',
+                arguments = ['--ros-args', '--log-level', 'INFO'],
+                namespace='/'
+                )
+
+    sp_env = launch_ros.actions.Node(
+                package='sp_launch',
+                executable='sp_launch',
+                output={'both': 'log'}, # output='screen',
+                arguments = ['--ros-args', '--log-level', 'INFO'],
+                namespace='/env'
+                )
+
     nodes = [scene_manipulation_service,
-            camera_node,
-            control_box,
-            gripper,
-            #sp,
+            #camera_node,
+            #control_box,
+            #gripper,
+            sp,
+            sp_env,
             sp_ui,
             sp_ui_env,
             scene_master,
-             ] + r1 + r2 + rviz
+             #] + r1 + r2 + rviz
+             ] + rviz
+
     return launch.LaunchDescription(nodes)
 
 
