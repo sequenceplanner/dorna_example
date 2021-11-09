@@ -252,7 +252,90 @@ pub fn make_model() -> (Model, SPState) {
     let gripper_part_sensor = m.get_resource(&gripper).get_variable("measured/part_sensor");
     let gripper_closed = m.get_resource(&gripper).get_variable("measured/closed");
 
+
+    let r1_moving = m.get_resource(&r1).get_predicate("moving");
+    let r2_moving = m.get_resource(&r2).get_predicate("moving");
+
+    // the product state+transitions. this is what we are interested in learning.
+    let buffer_domain = &[
+        0.to_spvalue(), // buffer empty
+        1.to_spvalue(),
+        2.to_spvalue(),
+        3.to_spvalue(),
+    ];
+
+    let product_kinds = &[
+        100.to_spvalue(), // unknown type
+        1.to_spvalue(),
+        2.to_spvalue(),
+        3.to_spvalue(),
+    ];
+
+    let product_1_kind = m.add_product_domain("product_1_kind", product_kinds);
+    let product_2_kind = m.add_product_domain("product_2_kind", product_kinds);
+    let product_3_kind = m.add_product_domain("product_3_kind", product_kinds);
+
+    let shelf1 = m.add_product_domain("shelf1", buffer_domain);
+    let shelf2 = m.add_product_domain("shelf2", buffer_domain);
+    let shelf3 = m.add_product_domain("shelf3", buffer_domain);
+    let conveyor = m.add_product_domain("conveyor", buffer_domain);
+    let dorna_holding = m.add_product_domain("dorna_holding", buffer_domain);
+    let dorna2_holding = m.add_product_domain("dorna2_holding", buffer_domain);
+    let conveyor2 = m.add_product_domain("conveyor2", buffer_domain);
+
+    // transitions are copied from the operations in the model.
+
+    // dorna 2 take/leave transitions
+    // dorna2 take/leave products
+    let pos = vec![
+        (leave, conveyor.clone()),
+        (pt, conveyor2.clone()),
+    ];
+
+    for (pos_name, pos) in pos.iter() {
+        let buffer_predicate = if pos_name == &pt {
+            // when taking the product, because we have an auto transition that consumes it,
+            // we need to be sure that the product will still be there
+            p!([p: dorna2_holding == 0] && [
+                [[p: pos == 1] && [p: product_1_kind == 100]] ||
+                    [[p: pos == 2] && [p: product_2_kind == 100]] ||
+                    [[p: pos == 3] && [p: product_3_kind == 100]]
+            ])
+        } else {
+            p!([p: pos != 0] && [p: dorna2_holding == 0])
+        };
+
+
+        let take = Transition::new(&format!("r3_take_{}", pos.leaf()),
+                                   p!([pp:buffer_predicate] &&
+                                      [p: r2_ap == pos_name] && [!p: r2_moving]),
+                                   vec![ a!(p:dorna2_holding <- p:pos), a!(p: pos = 0)],
+                                   TransitionType::Runner);
+        m.add_transition(take);
+
+        let leave = Transition::new(&format!("r3_leave_{}", pos.leaf()),
+                                   p!([p: dorna2_holding != 0] && [p: pos == 0] &&
+                                      [p: r2_ap == pos_name] && [!p: r2_moving]),
+                                   vec![ a!(p:pos <- p:dorna2_holding), a!(p: dorna2_holding = 0)],
+                                   TransitionType::Runner);
+        m.add_transition(leave);
+
+        // m.add_op(&format!("r3_leave_{}", pos.leaf()),
+        //          // operation model guard.
+        //          &p!([p: dorna2_holding != 0] && [p: pos == 0]),
+        //          // operation model effects.
+        //          &[a!(p:pos <- p:dorna2_holding), a!(p: dorna2_holding = 0)],
+        //          // low level goal
+        //          &p!([p: ap3 == pos_name] && [!p: dorna2_moving]),
+        //          // low level actions (should not be needed)
+        //          &[],
+        //          // not auto
+        //          false, None);
+    }
+
+
     let initial_state = SPState::new_from_values(&[
+        // initial resource state
         (r1_ap, pt.to_spvalue()),
         (r2_ap, pt.to_spvalue()),
         (camera_done, false.to_spvalue()),
@@ -261,6 +344,18 @@ pub fn make_model() -> (Model, SPState) {
         (cb_blue_light_on, false.to_spvalue()),
         (gripper_part_sensor, false.to_spvalue()),
         (gripper_closed, false.to_spvalue()),
+
+        // initial product state
+        (dorna_holding, 0.to_spvalue()),
+        (dorna2_holding, 0.to_spvalue()),
+        (shelf1, 0.to_spvalue()), //SPValue::Unknown),
+        (shelf2, 0.to_spvalue()),
+        (shelf3, 0.to_spvalue()),
+        (product_1_kind, 100.to_spvalue()), // unknown products
+        (product_2_kind, 100.to_spvalue()),
+        (product_3_kind, 100.to_spvalue()),
+        (conveyor, 0.to_spvalue()),
+        (conveyor2, 1.to_spvalue()),
     ]);
 
     return (m, initial_state);
