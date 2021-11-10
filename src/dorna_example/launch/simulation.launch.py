@@ -18,8 +18,14 @@ def generate_launch_description():
 
     rviz = [launch_rviz, rviz_node]
 
-    r1 = make_dorna_simulation("r1",  os.path.join(examples_dir, 'poses', 'r1_joint_poses.csv'))
-    r2 = make_dorna_simulation("r2",  os.path.join(examples_dir, 'poses', 'r3_joint_poses.csv'))
+    # fast discrete simulation mode.
+    fast_mode = launch.actions.DeclareLaunchArgument(name="fast", default_value="False",
+                                                     description="Fast mode (no robot simulation)?")
+    fast_cond = launch.conditions.IfCondition(launch.substitutions.LaunchConfiguration("fast"))
+    not_fast_cond = launch.conditions.UnlessCondition(launch.substitutions.LaunchConfiguration("fast"))
+
+    r1 = make_dorna_simulation("r1",  os.path.join(examples_dir, 'poses', 'r1_joint_poses.csv'), not_fast_cond)
+    r2 = make_dorna_simulation("r2",  os.path.join(examples_dir, 'poses', 'r3_joint_poses.csv'), not_fast_cond)
 
     sm_parameters = {
         "active_transforms": os.path.join(examples_dir, 'transforms', 'active_transforms.json'),
@@ -38,6 +44,7 @@ def generate_launch_description():
                 executable='camera_simulator',
                 namespace='/camera',
                 output='screen',
+                condition=not_fast_cond,
                 )
 
     control_box = launch_ros.actions.Node(
@@ -46,13 +53,23 @@ def generate_launch_description():
                 namespace='/control_box',
                 output='screen',
                 arguments = ['--ros-args', '--log-level', 'INFO'],
+                condition=not_fast_cond,
                 )
 
-    gripper = launch_ros.actions.Node(
+    r1_gripper = launch_ros.actions.Node(
                 package='gripper_simulator',
                 executable='gripper_simulator',
-                namespace='/gripper',
+                namespace='/r1_gripper',
                 output='screen',
+                condition=not_fast_cond,
+                )
+
+    r2_gripper = launch_ros.actions.Node(
+                package='gripper_simulator',
+                executable='gripper_simulator',
+                namespace='/r2_gripper',
+                output='screen',
+                condition=not_fast_cond,
                 )
 
     sp_ui = launch_ros.actions.Node(
@@ -67,6 +84,7 @@ def generate_launch_description():
                 executable='sp_ui',
                 namespace='/env',
                 output='screen',
+                condition=fast_cond,
                 )
 
     scene_master = launch_ros.actions.Node(
@@ -88,25 +106,28 @@ def generate_launch_description():
                 executable='sp_launch',
                 output={'both': 'log'}, # output='screen',
                 arguments = ['--ros-args', '--log-level', 'INFO'],
-                namespace='/env'
+                namespace='/env',
+                condition=fast_cond,
                 )
 
-    nodes = [scene_manipulation_service,
-            #camera_node,
-            #control_box,
-            #gripper,
+    nodes = [
+            fast_mode,
+            scene_manipulation_service,
+            camera_node,
+            control_box,
+            r1_gripper,
+            r2_gripper,
             sp,
             sp_env,
             sp_ui,
             sp_ui_env,
             scene_master,
-             #] + r1 + r2 + rviz
-             ] + rviz
+            ] + r1 + r2 + rviz
 
     return launch.LaunchDescription(nodes)
 
 
-def make_dorna_simulation(name, poses_file):
+def make_dorna_simulation(name, poses_file, cond):
     dorna2_share = FindPackageShare('dorna2').find('dorna2')
     urdf = os.path.join(dorna2_share, 'urdf', 'dorna.urdf')
     with open(urdf, 'r') as infp:
@@ -123,7 +144,8 @@ def make_dorna_simulation(name, poses_file):
                                 namespace='dorna/' + name,
                                 output={'both': 'log'}, # output='screen',
                                 parameters=[robot_state_publisher_params],
-                                arguments = ['--ros-args', '--log-level', 'INFO']
+                                arguments = ['--ros-args', '--log-level', 'INFO'],
+                                condition = cond
                                 )
 
     simulation_parameters = {
@@ -144,6 +166,7 @@ def make_dorna_simulation(name, poses_file):
                  namespace='dorna/'+name,
                  output='screen',
                  parameters=[simulation_parameters],
+                 condition = cond
                  )
 
     gui_parameters = {
@@ -176,6 +199,7 @@ def make_dorna_simulation(name, poses_file):
                 namespace='dorna/'+name,
                 output='screen',
                 parameters=[gui_parameters],
+                condition = cond,
                 )
 
     return [rsp_node, sim_node] #, gui_node]

@@ -1,1 +1,4 @@
 bool blue_light_on
+bool conv_running_left
+bool conv_running_right
+bool conv_sensor

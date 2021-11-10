@@ -100,13 +100,30 @@ fn make_control_box(resource: &mut Resource) {
     let blue_light = Variable::new_boolean("goal/blue_light", VariableType::Measured);
     let blue_light = resource.add_variable(blue_light);
 
+    let conv_left = Variable::new_boolean("goal/conv_left", VariableType::Measured);
+    let conv_left = resource.add_variable(conv_left);
+
+    let conv_right = Variable::new_boolean("goal/conv_right", VariableType::Measured);
+    let conv_right = resource.add_variable(conv_right);
+
     let blue_light_on = Variable::new_boolean("measured/blue_light_on", VariableType::Command);
     let blue_light_on = resource.add_variable(blue_light_on);
+
+    let conv_running_left = Variable::new_boolean("measured/conv_running_left", VariableType::Command);
+    let conv_running_left = resource.add_variable(conv_running_left);
+
+    let conv_running_right = Variable::new_boolean("measured/conv_running_right", VariableType::Command);
+    let conv_running_right = resource.add_variable(conv_running_right);
+
+    let conv_sensor = Variable::new_boolean("measured/conv_sensor", VariableType::Command);
+    let conv_sensor = resource.add_variable(conv_sensor);
 
     resource.setup_ros_incoming("goal", &format!("/{}/goal", resource.path().leaf()),
                                 MessageType::Ros("control_box_msgs/msg/Goal".into()),
     &[
-        MessageVariable::new(&blue_light, "blue_light")
+        MessageVariable::new(&blue_light, "blue_light"),
+        MessageVariable::new(&conv_left, "conv_left"),
+        MessageVariable::new(&conv_right, "conv_right"),
     ]);
 
     resource.setup_ros_outgoing(
@@ -115,7 +132,10 @@ fn make_control_box(resource: &mut Resource) {
         resource.path().leaf()),
         MessageType::Ros("control_box_msgs/msg/Measured".into()),
         &[
-            MessageVariable::new(&blue_light_on, "blue_light_on")
+            MessageVariable::new(&blue_light_on, "blue_light_on"),
+            MessageVariable::new(&conv_running_left, "conv_running_left"),
+            MessageVariable::new(&conv_running_right, "conv_running_right"),
+            MessageVariable::new(&conv_sensor, "conv_sensor"),
         ]
     );
 
@@ -128,6 +148,16 @@ fn make_control_box(resource: &mut Resource) {
     let e_blue_off_finish = Transition::new("blue_off_finish", p!([p: blue_light_on] && [!p: blue_light]),
                                            vec![ a!( !p: blue_light_on)], TransitionType::Runner);
     resource.add_transition(e_blue_off_finish);
+
+    let e_run_left_finish = Transition::new("run_left_finish",
+                                            p!([p: conv_left] && [!p: conv_right] && [!p: conv_running_left] && [!p: conv_running_right]),
+                                            vec![ a!( p: conv_running_left)], TransitionType::Runner);
+    resource.add_transition(e_run_left_finish);
+
+    let e_run_right_finish = Transition::new("run_right_finish",
+                                            p!([!p: conv_left] && [p: conv_right] && [!p: conv_running_left] && [!p: conv_running_right]),
+                                            vec![ a!( p: conv_running_right)], TransitionType::Runner);
+    resource.add_transition(e_run_right_finish);
 }
 
 fn make_camera(resource: &mut Resource) {
@@ -237,8 +267,11 @@ pub fn make_model() -> (Model, SPState) {
     let camera = m.add_resource("camera");
     make_camera(m.get_resource(&camera));
 
-    let gripper = m.add_resource("gripper");
-    make_gripper_fail(m.get_resource(&gripper));
+    let r1_gripper = m.add_resource("r1_gripper");
+    make_gripper_fail(m.get_resource(&r1_gripper));
+
+    let r2_gripper = m.add_resource("r2_gripper");
+    make_gripper_fail(m.get_resource(&r2_gripper));
 
     let r1_ap = m.get_resource(&r1).get_variable("measured/act_pos");
     let r2_ap = m.get_resource(&r2).get_variable("measured/act_pos");
@@ -248,10 +281,14 @@ pub fn make_model() -> (Model, SPState) {
     let camera_scanning = m.get_resource(&camera).get_variable("measured/scanning");
 
     let cb_blue_light_on = m.get_resource(&control_box).get_variable("measured/blue_light_on");
+    let cb_conv_running_left = m.get_resource(&control_box).get_variable("measured/conv_running_left");
+    let cb_conv_running_right = m.get_resource(&control_box).get_variable("measured/conv_running_right");
+    let cb_conv_sensor = m.get_resource(&control_box).get_variable("measured/conv_sensor");
 
-    let gripper_part_sensor = m.get_resource(&gripper).get_variable("measured/part_sensor");
-    let gripper_closed = m.get_resource(&gripper).get_variable("measured/closed");
-
+    let r1_gripper_part_sensor = m.get_resource(&r1_gripper).get_variable("measured/part_sensor");
+    let r1_gripper_closed = m.get_resource(&r1_gripper).get_variable("measured/closed");
+    let r2_gripper_part_sensor = m.get_resource(&r2_gripper).get_variable("measured/part_sensor");
+    let r2_gripper_closed = m.get_resource(&r2_gripper).get_variable("measured/closed");
 
     let r1_moving = m.get_resource(&r1).get_predicate("moving");
     let r2_moving = m.get_resource(&r2).get_predicate("moving");
@@ -341,9 +378,16 @@ pub fn make_model() -> (Model, SPState) {
         (camera_done, false.to_spvalue()),
         (camera_result, 0.to_spvalue()),
         (camera_scanning, false.to_spvalue()),
+
         (cb_blue_light_on, false.to_spvalue()),
-        (gripper_part_sensor, false.to_spvalue()),
-        (gripper_closed, false.to_spvalue()),
+        (cb_conv_running_left, false.to_spvalue()),
+        (cb_conv_running_right, false.to_spvalue()),
+        (cb_conv_sensor, false.to_spvalue()),
+
+        (r1_gripper_part_sensor, false.to_spvalue()),
+        (r1_gripper_closed, false.to_spvalue()),
+        (r2_gripper_part_sensor, false.to_spvalue()),
+        (r2_gripper_closed, false.to_spvalue()),
 
         // initial product state
         (dorna_holding, 0.to_spvalue()),

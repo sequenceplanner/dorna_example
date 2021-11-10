@@ -46,6 +46,7 @@ async fn main(){
     println!("done");
 
     let d = std::time::Duration::from_secs(5);
+    let d2 = std::time::Duration::from_secs(25);
     loop {
         print!("Sending state request... ");
         let result = tokio::time::timeout(d, client_state.request(&state_req).unwrap()).await;
@@ -56,7 +57,7 @@ async fn main(){
     }
     loop {
         print!("Sending model change request... ");
-        let result = tokio::time::timeout(d, client.request(&model_req).unwrap()).await;
+        let result = tokio::time::timeout(d2, client.request(&model_req).unwrap()).await;
         println!("{:?}", result);
         if result.is_ok() {
             break;
@@ -103,8 +104,23 @@ fn make_control_box(resource: &mut Resource) {
     let blue_light = Variable::new_boolean("goal/blue_light", VariableType::Command);
     let blue_light = resource.add_variable(blue_light);
 
+    let conv_left = Variable::new_boolean("goal/conv_left", VariableType::Command);
+    let conv_left = resource.add_variable(conv_left);
+
+    let conv_right = Variable::new_boolean("goal/conv_right", VariableType::Command);
+    let conv_right = resource.add_variable(conv_right);
+
     let blue_light_on = Variable::new_boolean("measured/blue_light_on", VariableType::Measured);
     let blue_light_on = resource.add_variable(blue_light_on);
+
+    let conv_running_left = Variable::new_boolean("measured/conv_running_left", VariableType::Measured);
+    let conv_running_left = resource.add_variable(conv_running_left);
+
+    let conv_running_right = Variable::new_boolean("measured/conv_running_right", VariableType::Measured);
+    let conv_running_right = resource.add_variable(conv_running_right);
+
+    let conv_sensor = Variable::new_boolean("measured/conv_sensor", VariableType::Measured);
+    let conv_sensor = resource.add_variable(conv_sensor);
 
     let c_blue_on_start = Transition::new("blue_on_start", p!([!p: blue_light_on] && [!p:blue_light]),
                                           vec![ a!( p: blue_light) ], TransitionType::Controlled);
@@ -122,10 +138,57 @@ fn make_control_box(resource: &mut Resource) {
                                            vec![ a!( !p: blue_light_on)], TransitionType::Effect);
     resource.add_transition(e_blue_off_finish);
 
+    let c_run_left_start = Transition::new("run_left_start",
+                                           p!([!p: conv_left] && [!p: conv_right] &&
+                                              [!p: conv_running_left] && [!p: conv_running_right]),
+                                          vec![ a!( p: conv_left)], TransitionType::Controlled);
+    resource.add_transition(c_run_left_start);
+
+    let e_run_left_finish = Transition::new("run_left_finish",
+                                            p!([p: conv_left] && [!p: conv_right] && [!p: conv_running_left] && [!p: conv_running_right]),
+                                            vec![ a!( p: conv_running_left)], TransitionType::Effect);
+    resource.add_transition(e_run_left_finish);
+
+    let c_run_right_start = Transition::new("run_right_start",
+                                           p!([!p: conv_left] && [!p: conv_right] &&
+                                              [!p: conv_running_left] && [!p: conv_running_right]),
+                                          vec![ a!( p: conv_right)], TransitionType::Controlled);
+    resource.add_transition(c_run_right_start);
+
+    let e_run_right_finish = Transition::new("run_right_finish",
+                                            p!([!p: conv_left] && [p: conv_right] && [!p: conv_running_left] && [!p: conv_running_right]),
+                                            vec![ a!( p: conv_running_right)], TransitionType::Effect);
+    resource.add_transition(e_run_right_finish);
+
+    let c_stop_start = Transition::new("stop_start",
+                                       p!([[p: conv_left] && [p: conv_running_left]] ||
+                                          [[p: conv_right] && [p: conv_running_right]]),
+                                          vec![ a!( !p: conv_left),a!( !p: conv_right)], TransitionType::Controlled);
+    resource.add_transition(c_stop_start);
+
+    let e_stop_finish = Transition::new("stop_fininsh",
+                                       p!([[!p: conv_left] && [!p: conv_right]] &&
+                                          [[p: conv_running_left] || [p: conv_running_right]]),
+                                          vec![ a!( !p: conv_running_left),a!( !p: conv_running_right)],
+                                        TransitionType::Effect);
+    resource.add_transition(e_stop_finish);
+
+    let e_run_left_sensor = Transition::new("run_left_sensor",
+                                             p!([p: conv_running_left] && [!p: conv_sensor]),
+                                             vec![ a!( p: conv_sensor)], TransitionType::Effect);
+    resource.add_transition(e_run_left_sensor);
+
+    let e_run_right_sensor = Transition::new("run_right_sensor",
+                                             p!([p: conv_running_right] && [p: conv_sensor]),
+                                             vec![ a!( !p: conv_sensor)], TransitionType::Effect);
+    resource.add_transition(e_run_right_sensor);
+
     resource.setup_ros_outgoing("goal", &format!("{}/goal", resource.path().leaf()),
                                 MessageType::Ros("control_box_msgs/msg/Goal".into()),
     &[
-        MessageVariable::new(&blue_light, "blue_light")
+        MessageVariable::new(&blue_light, "blue_light"),
+        MessageVariable::new(&conv_left, "conv_left"),
+        MessageVariable::new(&conv_right, "conv_right"),
     ]);
 
     resource.setup_ros_incoming(
@@ -134,7 +197,10 @@ fn make_control_box(resource: &mut Resource) {
         resource.path().leaf()),
         MessageType::Ros("control_box_msgs/msg/Measured".into()),
         &[
-            MessageVariable::new(&blue_light_on, "blue_light_on")
+            MessageVariable::new(&blue_light_on, "blue_light_on"),
+            MessageVariable::new(&conv_running_left, "conv_running_left"),
+            MessageVariable::new(&conv_running_right, "conv_running_right"),
+            MessageVariable::new(&conv_sensor, "conv_sensor"),
         ]
     );
 }
@@ -283,8 +349,11 @@ pub fn make_model() -> (Model, SPState) {
     let camera = m.add_resource("camera");
     make_camera(m.get_resource(&camera));
 
-    let gripper = m.add_resource("gripper");
-    make_gripper_fail(m.get_resource(&gripper));
+    let r1_gripper = m.add_resource("r1_gripper");
+    make_gripper_fail(m.get_resource(&r1_gripper));
+
+    let r2_gripper = m.add_resource("r2_gripper");
+    make_gripper_fail(m.get_resource(&r2_gripper));
 
     let buffer_domain = &[
         0.to_spvalue(), // buffer empty
@@ -321,11 +390,14 @@ pub fn make_model() -> (Model, SPState) {
     let rp = m.get_resource(&r1).get_variable("goal/ref_pos");
     let pp = m.get_resource(&r1).get_variable("prev_pos");
 
-    let ap3 = m.get_resource(&r2).get_variable("measured/act_pos");
-    let rp3 = m.get_resource(&r2).get_variable("goal/ref_pos");
+    let ap2 = m.get_resource(&r2).get_variable("measured/act_pos");
+    let rp2 = m.get_resource(&r2).get_variable("goal/ref_pos");
     let pp3 = m.get_resource(&r2).get_variable("prev_pos");
 
-    let blue = m.get_resource(&control_box).get_variable("measured/blue_light_on");
+    let cb_blue_light_on = m.get_resource(&control_box).get_variable("measured/blue_light_on");
+    let cb_conv_running_left = m.get_resource(&control_box).get_variable("measured/conv_running_left");
+    let cb_conv_running_right = m.get_resource(&control_box).get_variable("measured/conv_running_right");
+    let cb_conv_sensor = m.get_resource(&control_box).get_variable("measured/conv_sensor");
 
     let cf = m.get_resource(&camera).get_predicate("finished");
 
@@ -334,11 +406,17 @@ pub fn make_model() -> (Model, SPState) {
     let cr = m.get_resource(&camera).get_variable("measured/result");
     let cd = m.get_resource(&camera).get_variable("goal/do_scan");
 
-    let gripper_part = m.get_resource(&gripper).get_variable("measured/part_sensor");
-    let gripper_closed = m.get_resource(&gripper).get_variable("measured/closed");
-    let gripper_opening = m.get_resource(&gripper).get_predicate("opening");
-    let gripper_closing = m.get_resource(&gripper).get_predicate("closing");
-    let gripper_fc = m.get_resource(&gripper).get_variable("fail_count");
+    let r1_gripper_part = m.get_resource(&r1_gripper).get_variable("measured/part_sensor");
+    let r1_gripper_closed = m.get_resource(&r1_gripper).get_variable("measured/closed");
+    let r1_gripper_opening = m.get_resource(&r1_gripper).get_predicate("opening");
+    let r1_gripper_closing = m.get_resource(&r1_gripper).get_predicate("closing");
+    let r1_gripper_fc = m.get_resource(&r1_gripper).get_variable("fail_count");
+
+    let r2_gripper_part = m.get_resource(&r2_gripper).get_variable("measured/part_sensor");
+    let r2_gripper_closed = m.get_resource(&r2_gripper).get_variable("measured/closed");
+    let r2_gripper_opening = m.get_resource(&r2_gripper).get_predicate("opening");
+    let r2_gripper_closing = m.get_resource(&r2_gripper).get_predicate("closing");
+    let r2_gripper_fc = m.get_resource(&r2_gripper).get_variable("fail_count");
 
     // define robot movement
 
@@ -362,7 +440,7 @@ pub fn make_model() -> (Model, SPState) {
     // if we are holding a part, we cannot open the gripper freely!
     m.add_invar(
         "gripper_open",
-        &p!([[p:gripper_opening] && [p: dorna_holding !=0]] =>
+        &p!([[p:r1_gripper_opening] && [p: dorna_holding !=0]] =>
             [[[p:ap == t1] && [p:shelf1 == 0]] ||
              [[p:ap == t2] && [p:shelf2 == 0]] ||
              [[p:ap == t3] && [p:shelf3 == 0]] ||
@@ -372,15 +450,37 @@ pub fn make_model() -> (Model, SPState) {
     // we can only close the gripper
     m.add_invar(
         "gripper_close",
-        &p!([p:gripper_closing] => [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]),
+        &p!([p:r1_gripper_closing] => [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]),
     );
 
-    m.add_invar("close_gripper_while_dorna_moving", &p!(![[p:gripper_closing] && [p:dorna_moving]]));
-    m.add_invar("open_gripper_while_dorna_moving", &p!(![[p:gripper_opening] && [p:dorna_moving]]));
+    m.add_invar("close_gripper_while_dorna_moving", &p!(![[p:r1_gripper_closing] && [p:dorna_moving]]));
+    m.add_invar("open_gripper_while_dorna_moving", &p!(![[p:r1_gripper_opening] && [p:dorna_moving]]));
 
     // dont open gripper again after failure unless we have moved away.
     m.add_invar("dont_open_gripper_after_failure",
-                &p!([[p:gripper_opening] && [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]] => [p:gripper_part]));
+                &p!([[p:r1_gripper_opening] && [[p:ap == t1] || [p:ap == t2] || [p:ap == t3] || [p:ap == leave]]] => [p:r1_gripper_part]));
+
+    // TODO: the following is copy paste code for gripper #2.
+    // if we are holding a part, we cannot open the gripper freely!
+    m.add_invar(
+        "gripper_open_r2",
+        &p!([[p:r2_gripper_opening] && [p: dorna2_holding != 0]] =>
+            [[[p:ap2 == pt] && [p:conveyor2 == 0]] ||
+             [[p:ap2 == leave] && [p:conveyor == 0]]]),
+    );
+
+    // we can only close the gripper
+    m.add_invar(
+        "gripper_close_r2",
+        &p!([p:r2_gripper_closing] => [[p:ap2 == pt] || [p:ap2 == leave]]),
+    );
+
+    m.add_invar("close_gripper_while_dorna_moving_r2", &p!(![[p:r2_gripper_closing] && [p:dorna2_moving]]));
+    m.add_invar("open_gripper_while_dorna_moving_r2", &p!(![[p:r2_gripper_opening] && [p:dorna2_moving]]));
+
+    // dont open gripper again after failure unless we have moved away.
+    m.add_invar("dont_open_gripper_after_failure_r2",
+                &p!([[p:r2_gripper_opening] && [[p:ap2 == pt] || [p:ap2 == leave]]] => [p:r2_gripper_part]));
 
     // if the gripper is closed, with no part in it, it is impossible for it to hold a part.
     // m.add_invar("gripper_no_sensor_implies_no_part",
@@ -389,22 +489,32 @@ pub fn make_model() -> (Model, SPState) {
     // if there is something on the shelves, we can only try to move there with the gripper open.
     m.add_invar(
         "to_take1_occupied",
-        &p!([[p:rp == t1] && [p: dorna_moving]] => [[p:shelf1 == 0] || [! p:gripper_closed]]),
+        &p!([[p:rp == t1] && [p: dorna_moving]] => [[p:shelf1 == 0] || [! p:r1_gripper_closed]]),
     );
 
     m.add_invar(
         "to_take2_occupied",
-        &p!([[p:rp == t2] && [p: dorna_moving]] => [[p:shelf2 == 0] || [! p:gripper_closed]]),
+        &p!([[p:rp == t2] && [p: dorna_moving]] => [[p:shelf2 == 0] || [! p:r1_gripper_closed]]),
     );
 
     m.add_invar(
         "to_take3_occupied",
-        &p!([[p:rp == t3] && [p: dorna_moving]] => [[p:shelf3 == 0] || [! p:gripper_closed]]),
+        &p!([[p:rp == t3] && [p: dorna_moving]] => [[p:shelf3 == 0] || [! p:r1_gripper_closed]]),
     );
 
     m.add_invar(
         "to_conveyor_occupied",
-        &p!([[p:rp == leave] && [p: dorna_moving]] => [[p:conveyor == 0] || [! p:gripper_closed]]),
+        &p!([[p:rp == leave] && [p: dorna_moving]] => [[p:conveyor == 0] || [! p:r1_gripper_closed]]),
+    );
+
+    m.add_invar(
+        "to_conveyor_occupied_r2",
+        &p!([[p:rp2 == leave] && [p: dorna2_moving]] => [[p:conveyor == 0] || [! p:r2_gripper_closed]]),
+    );
+
+    m.add_invar(
+        "to_conveyor_2_occupied_r2",
+        &p!([[p:rp2 == pt] && [p: dorna2_moving]] => [[p:conveyor2 == 0] || [! p:r2_gripper_closed]]),
     );
 
     // scan and leave can only be reached from pre_take
@@ -418,11 +528,11 @@ pub fn make_model() -> (Model, SPState) {
     );
 
     // we must always be blue when going to scan
-    m.add_invar("blue_scan", &p!([p:rp == scan] => [p:blue]));
+    m.add_invar("blue_scan", &p!([p:rp == scan] => [p:cb_blue_light_on]));
     // but only then...
     m.add_invar(
         "blue_scan_2",
-        &p!([[p:rp == t1]||[p:rp == t2]||[p:rp == t3]||[p:rp == leave]] => [!p:blue]),
+        &p!([[p:rp == t1]||[p:rp == t2]||[p:rp == t3]||[p:rp == leave]] => [!p:cb_blue_light_on]),
     );
 
     // we can only scan the product in front of the camera
@@ -449,16 +559,16 @@ pub fn make_model() -> (Model, SPState) {
                  // operation model effects.
                  &[a!(p:dorna_holding <- p:pos), a!(p: pos = 0)],
                  // low level goal
-                 &p!([p: ap == pos_name] && [p: gripper_part]),
+                 &p!([p: ap == pos_name] && [p: r1_gripper_part]),
                  // low level actions (should not be needed)
                  &[],
                  // auto
-                 true, Some(p!([p: gripper_fc == 0] || [p: gripper_fc == 1])));
+                 true, Some(p!([p: r1_gripper_fc == 0] || [p: r1_gripper_fc == 1])));
 
         let goal = if pos_name == &t1 {
-            p!([p: ap == pos_name] && [! p: gripper_part] && [!p: poison])
+            p!([p: ap == pos_name] && [! p: r1_gripper_part] && [!p: poison])
         } else {
-            p!([p: ap == pos_name] && [! p: gripper_part])
+            p!([p: ap == pos_name] && [! p: r1_gripper_part])
         };
 
         m.add_op(&format!("r1_leave_{}", pos.leaf()),
@@ -471,7 +581,7 @@ pub fn make_model() -> (Model, SPState) {
                  // low level actions (should not be needed)
                  &[],
                  // auto
-                 true, Some(p!([p: gripper_fc == 0] || [p: gripper_fc == 1])));
+                 true, Some(p!([p: r1_gripper_fc == 0] || [p: r1_gripper_fc == 1])));
     }
 
     // dorna2 take/leave products
@@ -499,11 +609,11 @@ pub fn make_model() -> (Model, SPState) {
                  // operation model effects.
                  &[a!(p:dorna2_holding <- p:pos), a!(p: pos = 0)],
                  // low level goal
-                 &p!([p: ap3 == pos_name] && [!p: dorna2_moving]),
+                 &p!([p: ap2 == pos_name] && [p: r2_gripper_part] && [!p: dorna2_moving]),
                  // low level actions (should not be needed)
                  &[],
                  // not auto
-                 false, None);
+                 true, None);
 
         m.add_op(&format!("r3_leave_{}", pos.leaf()),
                  // operation model guard.
@@ -511,11 +621,11 @@ pub fn make_model() -> (Model, SPState) {
                  // operation model effects.
                  &[a!(p:pos <- p:dorna2_holding), a!(p: dorna2_holding = 0)],
                  // low level goal
-                 &p!([p: ap3 == pos_name] && [!p: dorna2_moving]),
+                 &p!([p: ap2 == pos_name] && [!p: r2_gripper_part] && [!p: dorna2_moving]),
                  // low level actions (should not be needed)
                  &[],
                  // not auto
-                 false, None);
+                 true, None);
     }
 
     let np = |p: i32| {
@@ -549,17 +659,17 @@ pub fn make_model() -> (Model, SPState) {
                      true, None);
 
         // product sink is at conveyor2, only accepts identified products.
-        m.add_op(&format!("consume_known_product_{}", n),
+        m.add_op(&format!("send_out_{}", n),
                  // operation model guard.
                  &p!([p: conveyor2 == n] && [p: kind != 100]),
                  // operation model effects.
                  &[a!(p: conveyor2 = 0), a!(p: kind = 100)],
                  // low level goal
-                 &Predicate::TRUE,
+                 &p!(!p: cb_conv_sensor),
                  // low level actions (should not be needed)
                  &[],
                  // auto
-                 true, None);
+                 false, None);
 
         // product source also at conveyor2, we can add a new, unknown,
         // unique product if there is room.
@@ -569,11 +679,10 @@ pub fn make_model() -> (Model, SPState) {
                  // operation model effects.
                  &[a!(p:conveyor2 = n), a!(p: kind = 100)],
                  // low level goal: away from buffer and not moving. OR the robot is not holding anything.
-                 &p!([[[p:ap3 != pt] && [p: ap3 <-> p: rp3]] || [p: dorna2_holding == 0]]),
-                 //&p!([p:ap3 != pt] && [p: ap3 <-> p: rp3]),
+                 &p!(p: cb_conv_sensor),
                  // low level actions (should not be needed)
                  &[],
-                 // not auto
+                 // auto
                  false, None);
     }
 
@@ -700,7 +809,7 @@ pub fn make_model() -> (Model, SPState) {
         (conveyor, 0.to_spvalue()),
         (conveyor2, 0.to_spvalue()),
         (poison, false.to_spvalue()),
-        (gripper_fc, 0.to_spvalue()),
+        (r1_gripper_fc, 0.to_spvalue()),
     ]);
 
     // operations start in init

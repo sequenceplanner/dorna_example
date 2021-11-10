@@ -11,7 +11,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut goal_subscriber = node.subscribe::<Goal>("goal")?;
 
     // state of the light
-    let state = Arc::new(Mutex::new(false));
+    let state = Arc::new(Mutex::new(Measured::default()));
 
     // goal callback
     let state_task = state.clone();
@@ -23,18 +23,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             match goal_subscriber.next().await {
                 Some(msg) => {
                     let mut state = state_task.lock().unwrap();
-                    if *state == msg.blue_light {
-                        continue;
+                    if state.blue_light_on != msg.blue_light {
+                        state.blue_light_on = msg.blue_light;
+                        r2r::log_info!(&nl_task, "blue light is {}",
+                                       if state.blue_light_on { "on" } else { "off" });
+                        state_publisher_task.publish(&state).expect("The node publisher is dead");
                     };
 
-                    *state = msg.blue_light;
-                    r2r::log_info!(&nl_task, "blue light is {}",
-                                   if *state { "on" } else { "off" });
-
-                    let msg = Measured {
-                        blue_light_on: *state,
+                    if state.conv_running_left && !state.conv_sensor {
+                        state.conv_sensor = true;
+                        r2r::log_info!(&nl_task, "part arrived");
+                        state_publisher_task.publish(&state).expect("The node publisher is dead");
                     };
-                    state_publisher_task.publish(&msg).expect("The node publisher is dead");
+                    if state.conv_running_right && state.conv_sensor {
+                        state.conv_sensor = false;
+                        r2r::log_info!(&nl_task, "part left");
+                        state_publisher_task.publish(&state).expect("The node publisher is dead");
+                    };
+                    if !state.conv_running_left && msg.conv_left && !msg.conv_right {
+                        state.conv_running_left = true;
+                        r2r::log_info!(&nl_task, "conveyor started LEFT");
+                        state_publisher_task.publish(&state).expect("The node publisher is dead");
+                    };
+                    if !state.conv_running_right && !msg.conv_left && msg.conv_right {
+                        state.conv_running_right = true;
+                        r2r::log_info!(&nl_task, "conveyor started RIGHT");
+                        state_publisher_task.publish(&state).expect("The node publisher is dead");
+                    };
+                    if (state.conv_running_left || state.conv_running_right) && !msg.conv_left && !msg.conv_right {
+                        state.conv_running_left = false;
+                        state.conv_running_right = false;
+                        r2r::log_info!(&nl_task, "conveyor STOPPED");
+                        state_publisher_task.publish(&state).expect("The node publisher is dead");
+                    };
                 }
                 None => break,
             }
@@ -45,11 +66,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         node.spin_once(std::time::Duration::from_millis(1000));
 
         // publish the state once in a while
-        let msg = Measured {
-            blue_light_on: *state.lock().unwrap(),
-        };
         state_publisher
-            .publish(&msg)
+            .publish(&state.lock().unwrap())
             .expect("The node publisher is dead");
     }).await?;
 
