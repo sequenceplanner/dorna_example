@@ -35,7 +35,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                         // take transition slowly so we see what's going on
                         tokio::time::sleep(Duration::from_millis(2000)).await;
-                        let fail = rand::thread_rng().gen_range(0,5) < 1;
+                        // for now, always fail.
+                        let fail = false; // rand::thread_rng().gen_range(0,5) < 1;
                         if fail {
                             r2r::log_warn!(&nl_task, "closed without a part");
                             *state_task.lock().unwrap() = GripperState::ClosedWithoutPart;
