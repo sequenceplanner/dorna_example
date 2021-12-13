@@ -77,6 +77,7 @@ def generate_launch_description():
                 executable='sp_ui',
                 namespace='/',
                 output='screen',
+                condition=not_fast_cond,
                 )
 
     sp_ui_env = launch_ros.actions.Node(
@@ -98,7 +99,8 @@ def generate_launch_description():
                 executable='sp_launch',
                 output={'both': 'log'}, # output='screen',
                 arguments = ['--ros-args', '--log-level', 'INFO'],
-                namespace='/'
+                namespace='/',
+                condition=not_fast_cond,
                 )
 
     sp_env = launch_ros.actions.Node(
@@ -107,6 +109,23 @@ def generate_launch_description():
                 output={'both': 'log'}, # output='screen',
                 arguments = ['--ros-args', '--log-level', 'INFO'],
                 namespace='/env',
+                condition=fast_cond,
+                )
+
+    sp_env_model = launch_ros.actions.Node(
+                package='sp_environment',
+                executable='sp_environment',
+                output='screen',
+                arguments = ['--ros-args', '--log-level', 'INFO'],
+                namespace='/',
+                condition=fast_cond,
+                )
+
+    opcua_node = launch_ros.actions.Node(
+                package='opcua_ros2_bridge',
+                executable='opcua_ros2_bridge',
+                namespace='/',
+                output='screen',
                 condition=fast_cond,
                 )
 
@@ -122,6 +141,8 @@ def generate_launch_description():
             sp_ui,
             sp_ui_env,
             scene_master,
+            opcua_node,
+            sp_env_model
             ] + r1 + r2 + rviz
 
     return launch.LaunchDescription(nodes)

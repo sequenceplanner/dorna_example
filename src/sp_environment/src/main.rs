@@ -19,11 +19,11 @@ async fn main(){
         .unwrap();
 
     let client = node
-        .create_client::<r2r::sp_msgs::srv::Json::Service>("sp/set_model")
+        .create_client::<r2r::sp_msgs::srv::Json::Service>("/env/sp/set_model")
         .unwrap();
 
     let client_state = node
-        .create_client::<r2r::sp_msgs::srv::Json::Service>("sp/set_state")
+        .create_client::<r2r::sp_msgs::srv::Json::Service>("/env/sp/set_state")
         .unwrap();
 
     let cav = node.is_available(&client).unwrap();
@@ -160,55 +160,7 @@ fn make_control_box(resource: &mut Resource) {
     resource.add_transition(e_run_right_finish);
 }
 
-fn make_camera(resource: &mut Resource) {
-    let do_scan = Variable::new_boolean("goal/do_scan", VariableType::Command);
-    let scanning = Variable::new_boolean("measured/scanning", VariableType::Command);
-    let done = Variable::new_boolean("measured/done", VariableType::Command);
-
-    let domain = vec![0,1,2,3].iter().map(|v|v.to_spvalue()).collect();
-    let result = Variable::new("measured/result", VariableType::Measured, SPValueType::Int32, domain);
-
-    let do_scan = resource.add_variable(do_scan);
-    let scanning = resource.add_variable(scanning);
-    let done = resource.add_variable(done);
-    let result = resource.add_variable(result);
-
-    resource.setup_ros_incoming("goal", &format!("/{}/goal", resource.path().leaf()),
-                                MessageType::Ros("camera_msgs/msg/Goal".into()),
-    &[
-        MessageVariable::new(&do_scan, "do_scan")
-    ]);
-    resource.setup_ros_outgoing("measured", &format!("/{}/measured", resource.path().leaf()),
-                                MessageType::Ros("camera_msgs/msg/Measured".into()),
-    &[
-        MessageVariable::new(&scanning, "scanning"),
-        MessageVariable::new(&done, "done"),
-        MessageVariable::new(&result, "result"),
-    ]);
-
-    let started = Variable::new_predicate("started", p!([p: do_scan] && [!p: scanning]));
-    let started = resource.add_variable(started);
-
-    let executing = Variable::new_predicate("executing", p!([p: do_scan] && [p: scanning] && [!p: done]));
-    let executing = resource.add_variable(executing);
-
-    let resetting = Variable::new_predicate("resetting", p!([!p: do_scan] && [p: scanning] && [p: done]));
-    let resetting = resource.add_variable(resetting);
-
-    let e_starting = Transition::new("starting", p!([p: started]), vec![a!(p: scanning), a!(!p: done)],
-                                     TransitionType::Runner);
-    resource.add_transition(e_starting);
-
-    let random = Action::new(result.clone(), Compute::Random(4));
-    let e_finish = Transition::new("finish", p!([p: executing]), vec![a!(p: done), a!(p: scanning), random ],
-                                   TransitionType::Runner);
-    resource.add_transition(e_finish);
-
-    let e_reset_effect = Transition::new("reset_effect", p!([p: resetting]), vec![a!(!p: done), a!(!p: scanning), a!(p: result = 0)], TransitionType::Runner);
-    resource.add_transition(e_reset_effect);
-}
-
-fn make_gripper_fail(resource: &mut Resource) {
+fn make_gripper(resource: &mut Resource) {
     let close = Variable::new_boolean("goal/close", VariableType::Measured);
     let closed = Variable::new_boolean("measured/closed", VariableType::Measured);
     let part_sensor = Variable::new_boolean("measured/part_sensor", VariableType::Measured);
@@ -228,70 +180,36 @@ fn make_gripper_fail(resource: &mut Resource) {
         MessageVariable::new(&closed, "closed"),
         MessageVariable::new(&part_sensor, "part_sensor"),
     ]);
-
-
-    let opening = Variable::new_predicate("opening", p!([!p: close] && [p: closed]));
-    let opening = resource.add_variable(opening);
-
-    let closing = Variable::new_predicate("closing", p!([p: close] && [!p: closed]));
-    let closing = resource.add_variable(closing);
-
-    let e_finish_part = Transition::new("finish_part", p!([p: closing]), vec![a!(p: closed), a!(p: part_sensor)], TransitionType::Runner);
-    resource.add_transition(e_finish_part);
-    let e_finish_no_part = Transition::new("finish_no_part", p!([p: closing]), vec![a!(p: closed), a!(!p: part_sensor)], TransitionType::Runner);
-    resource.add_transition(e_finish_no_part);
-
-    let e_open_finish = Transition::new("open_finish", p!(p:opening), vec![ a!( !p: closed), a!( !p: part_sensor)], TransitionType::Runner);
-    resource.add_transition(e_open_finish);
 }
 
 pub fn make_model() -> (Model, SPState) {
     let mut m = Model::new("environment");
 
-    let pt = "pre_take";
-    let scan = "scan";
-    let t1 = "take1"; // shelf poses
-    let t2 = "take2";
-    let t3 = "take3";
-    let leave = "leave"; // down at conveyor
+    let t1 = "take1"; // shelf poses  // take1 = up
+    let leave = "leave"; // down at conveyor // leave = pick
 
     let r1 = m.add_resource("/dorna/r1");
-    make_dorna(m.get_resource(&r1), &[pt, scan, t1, t2, t3, leave]);
-
-    let r2 = m.add_resource("/dorna/r2");
-    make_dorna(m.get_resource(&r2), &[pt, scan, t1, t2, t3, leave]);
+    make_dorna(m.get_resource(&r1), &[t1, leave]);
 
     let control_box = m.add_resource("control_box");
     make_control_box(m.get_resource(&control_box));
 
-    let camera = m.add_resource("camera");
-    make_camera(m.get_resource(&camera));
-
     let r1_gripper = m.add_resource("r1_gripper");
-    make_gripper_fail(m.get_resource(&r1_gripper));
-
-    let r2_gripper = m.add_resource("r2_gripper");
-    make_gripper_fail(m.get_resource(&r2_gripper));
+    make_gripper(m.get_resource(&r1_gripper));
 
     let r1_ap = m.get_resource(&r1).get_variable("measured/act_pos");
-    let r2_ap = m.get_resource(&r2).get_variable("measured/act_pos");
-
-    let camera_done = m.get_resource(&camera).get_variable("measured/done");
-    let camera_result = m.get_resource(&camera).get_variable("measured/result");
-    let camera_scanning = m.get_resource(&camera).get_variable("measured/scanning");
+    let r1_rp = m.get_resource(&r1).get_variable("goal/ref_pos");
+    let r1_moving = m.get_resource(&r1).get_predicate("moving");
 
     let cb_blue_light_on = m.get_resource(&control_box).get_variable("measured/blue_light_on");
+    let cb_conv_run_left = m.get_resource(&control_box).get_variable("goal/conv_left");
     let cb_conv_running_left = m.get_resource(&control_box).get_variable("measured/conv_running_left");
     let cb_conv_running_right = m.get_resource(&control_box).get_variable("measured/conv_running_right");
     let cb_conv_sensor = m.get_resource(&control_box).get_variable("measured/conv_sensor");
 
     let r1_gripper_part_sensor = m.get_resource(&r1_gripper).get_variable("measured/part_sensor");
     let r1_gripper_closed = m.get_resource(&r1_gripper).get_variable("measured/closed");
-    let r2_gripper_part_sensor = m.get_resource(&r2_gripper).get_variable("measured/part_sensor");
-    let r2_gripper_closed = m.get_resource(&r2_gripper).get_variable("measured/closed");
-
-    let r1_moving = m.get_resource(&r1).get_predicate("moving");
-    let r2_moving = m.get_resource(&r2).get_predicate("moving");
+    let r1_gripper_close = m.get_resource(&r1_gripper).get_variable("goal/close");
 
     // the product state+transitions. this is what we are interested in learning.
     let buffer_domain = &[
@@ -301,105 +219,118 @@ pub fn make_model() -> (Model, SPState) {
         3.to_spvalue(),
     ];
 
-    let product_kinds = &[
-        100.to_spvalue(), // unknown type
-        1.to_spvalue(),
-        2.to_spvalue(),
-        3.to_spvalue(),
-    ];
-
-    let product_1_kind = m.add_product_domain("product_1_kind", product_kinds);
-    let product_2_kind = m.add_product_domain("product_2_kind", product_kinds);
-    let product_3_kind = m.add_product_domain("product_3_kind", product_kinds);
-
-    let shelf1 = m.add_product_domain("shelf1", buffer_domain);
-    let shelf2 = m.add_product_domain("shelf2", buffer_domain);
-    let shelf3 = m.add_product_domain("shelf3", buffer_domain);
     let conveyor = m.add_product_domain("conveyor", buffer_domain);
     let dorna_holding = m.add_product_domain("dorna_holding", buffer_domain);
-    let dorna2_holding = m.add_product_domain("dorna2_holding", buffer_domain);
-    let conveyor2 = m.add_product_domain("conveyor2", buffer_domain);
+
+    // conv running left => new part arrives, if there is no part already.
+    let conv_left_sensor = Transition::new("run_left_finish",
+                                           p!([p: conveyor == 0] && [p: cb_conv_running_left]),
+                                           vec![ a!( p: conveyor = 1)], TransitionType::Runner);
+    m.add_transition(conv_left_sensor);
+
+    // conv stop running left
+    let conv_left_stop = Transition::new("run_left_stop",
+                                           p!([!p: cb_conv_run_left] && [p: cb_conv_running_left]),
+                                           vec![ a!( ! p: cb_conv_running_left)], TransitionType::Runner);
+    m.add_transition(conv_left_stop);
+
+
+    // set sensor on conveyor based on product state.
+    let set_conv_sensor = Transition::new("set_conv_finish",
+                                           p!([p: conveyor != 0] && [!p: cb_conv_sensor]),
+                                           vec![ a!( p: cb_conv_sensor)], TransitionType::Runner);
+    m.add_transition(set_conv_sensor);
+    let reset_conv_sensor = Transition::new("reset_conv_finish",
+                                            p!([p: conveyor == 0] && [p: cb_conv_sensor]),
+                                            vec![ a!( !p: cb_conv_sensor)], TransitionType::Runner);
+    m.add_transition(reset_conv_sensor);
+
+
+    // gripper based on product state
+    let e_finish_part = Transition::new("finish_part",
+                                        p!([p: r1_gripper_close] && [!p: r1_gripper_closed] &&
+                                           [p: r1_ap == leave] && [p: r1_rp == leave] &&
+                                           [p: conveyor != 0]),
+                                        vec![a!(p: r1_gripper_closed),
+                                             a!(p: r1_gripper_part_sensor),
+                                             a!(p: dorna_holding <- p:conveyor),
+                                             a!(p: conveyor = 0)
+                                        ],
+                                        TransitionType::Runner);
+    m.add_transition(e_finish_part);
+
+    let e_finish_no_part = Transition::new("finish_no_part",
+                                        p!([p: r1_gripper_close] && [!p: r1_gripper_closed] &&
+                                           [! [[p: r1_ap == leave] && [p: r1_rp == leave] &&
+                                               [p: conveyor != 0]]]),
+                                        vec![a!(p: r1_gripper_closed),
+                                             a!(!p: r1_gripper_part_sensor),
+                                        ],
+                                        TransitionType::Runner);
+    m.add_transition(e_finish_no_part);
+
+    let e_finish_open_conv = Transition::new("finish_open_conv",
+                                             p!([!p: r1_gripper_close] && [p: r1_gripper_closed] &&
+                                                [p: r1_ap == leave] && [p: r1_rp == leave] &&
+                                                [p: conveyor == 0]),
+                                             vec![a!(!p: r1_gripper_closed),
+                                                  a!(!p: r1_gripper_part_sensor),
+                                                  a!(p: conveyor <- p: dorna_holding),
+                                                  a!(p: dorna_holding = 0)
+                                             ],
+                                             TransitionType::Runner);
+    m.add_transition(e_finish_open_conv);
+
+    let e_finish_open_away = Transition::new("finish_open_away",
+                                             p!([!p: r1_gripper_close] && [p: r1_gripper_closed] &&
+                                                [! [[p: r1_ap == leave] && [p: r1_rp == leave] &&
+                                                    [p: conveyor == 0]]]),
+                                             vec![a!(!p: r1_gripper_closed),
+                                                  a!(!p: r1_gripper_part_sensor),
+                                                  a!(p: dorna_holding = 0)
+                                             ],
+                                             TransitionType::Runner);
+    m.add_transition(e_finish_open_away);
+
+    // let e_finish_no_part = Transition::new("finish_no_part", p!([p: closing]), vec![a!(p: closed), a!(!p: part_sensor)], TransitionType::Runner);
+    // m.add_transition(e_finish_no_part);
+
+    // let e_open_finish = Transition::new("open_finish", p!(p:opening), vec![ a!( !p: closed), a!( !p: part_sensor)], TransitionType::Runner);
+    // m.add_transition(e_open_finish);
 
     // transitions are copied from the operations in the model.
 
-    // dorna 2 take/leave transitions
-    // dorna2 take/leave products
-    let pos = vec![
-        (leave, conveyor.clone()),
-        (pt, conveyor2.clone()),
-    ];
+    // let take = Transition::new("r3_take_conveyor",
+    //                            p!([p: conveyor != 0] && [p: dorna_holding == 0] &&
+    //                               [p: r1_ap == leave] && [!p: r1_moving]),
+    //                            vec![ a!(p:dorna_holding <- p:conveyor), a!(p: conveyor = 0)],
+    //                            TransitionType::Runner);
+    // m.add_transition(take);
 
-    for (pos_name, pos) in pos.iter() {
-        let buffer_predicate = if pos_name == &pt {
-            // when taking the product, because we have an auto transition that consumes it,
-            // we need to be sure that the product will still be there
-            p!([p: dorna2_holding == 0] && [
-                [[p: pos == 1] && [p: product_1_kind == 100]] ||
-                    [[p: pos == 2] && [p: product_2_kind == 100]] ||
-                    [[p: pos == 3] && [p: product_3_kind == 100]]
-            ])
-        } else {
-            p!([p: pos != 0] && [p: dorna2_holding == 0])
-        };
-
-
-        let take = Transition::new(&format!("r3_take_{}", pos.leaf()),
-                                   p!([pp:buffer_predicate] &&
-                                      [p: r2_ap == pos_name] && [!p: r2_moving]),
-                                   vec![ a!(p:dorna2_holding <- p:pos), a!(p: pos = 0)],
-                                   TransitionType::Runner);
-        m.add_transition(take);
-
-        let leave = Transition::new(&format!("r3_leave_{}", pos.leaf()),
-                                   p!([p: dorna2_holding != 0] && [p: pos == 0] &&
-                                      [p: r2_ap == pos_name] && [!p: r2_moving]),
-                                   vec![ a!(p:pos <- p:dorna2_holding), a!(p: dorna2_holding = 0)],
-                                   TransitionType::Runner);
-        m.add_transition(leave);
-
-        // m.add_op(&format!("r3_leave_{}", pos.leaf()),
-        //          // operation model guard.
-        //          &p!([p: dorna2_holding != 0] && [p: pos == 0]),
-        //          // operation model effects.
-        //          &[a!(p:pos <- p:dorna2_holding), a!(p: dorna2_holding = 0)],
-        //          // low level goal
-        //          &p!([p: ap3 == pos_name] && [!p: dorna2_moving]),
-        //          // low level actions (should not be needed)
-        //          &[],
-        //          // not auto
-        //          false, None);
-    }
-
+    // let leave = Transition::new("r3_leave_conveyor",
+    //                             p!([p: dorna_holding != 0] && [p: conveyor == 0] &&
+    //                                [p: r1_ap == leave] && [!p: r1_moving]),
+    //                             vec![ a!(p:conveyor <- p:dorna_holding), a!(p: dorna_holding = 0)],
+    //                             TransitionType::Runner);
+    // m.add_transition(leave);
 
     let initial_state = SPState::new_from_values(&[
         // initial resource state
-        (r1_ap, pt.to_spvalue()),
-        (r2_ap, pt.to_spvalue()),
-        (camera_done, false.to_spvalue()),
-        (camera_result, 0.to_spvalue()),
-        (camera_scanning, false.to_spvalue()),
+        (r1_ap, t1.to_spvalue()),
+        (r1_rp, t1.to_spvalue()),
 
         (cb_blue_light_on, false.to_spvalue()),
+        (cb_conv_run_left, false.to_spvalue()),
         (cb_conv_running_left, false.to_spvalue()),
         (cb_conv_running_right, false.to_spvalue()),
         (cb_conv_sensor, false.to_spvalue()),
 
         (r1_gripper_part_sensor, false.to_spvalue()),
         (r1_gripper_closed, false.to_spvalue()),
-        (r2_gripper_part_sensor, false.to_spvalue()),
-        (r2_gripper_closed, false.to_spvalue()),
 
         // initial product state
         (dorna_holding, 0.to_spvalue()),
-        (dorna2_holding, 0.to_spvalue()),
-        (shelf1, 0.to_spvalue()), //SPValue::Unknown),
-        (shelf2, 0.to_spvalue()),
-        (shelf3, 0.to_spvalue()),
-        (product_1_kind, 100.to_spvalue()), // unknown products
-        (product_2_kind, 100.to_spvalue()),
-        (product_3_kind, 100.to_spvalue()),
         (conveyor, 0.to_spvalue()),
-        (conveyor2, 1.to_spvalue()),
     ]);
 
     return (m, initial_state);

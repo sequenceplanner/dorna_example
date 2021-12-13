@@ -332,10 +332,10 @@ pub fn make_model() -> (Model, SPState) {
 
     let pt = "pre_take";
     let scan = "scan";
-    let t1 = "take1"; // shelf poses
+    let t1 = "take1"; // shelf poses  // take1 = up
     let t2 = "take2";
     let t3 = "take3";
-    let leave = "leave"; // down at conveyor
+    let leave = "leave"; // down at conveyor // leave = pick
 
     let r1 = m.add_resource("/dorna/r1");
     make_dorna(m.get_resource(&r1), &[pt, scan, t1, t2, t3, leave]);

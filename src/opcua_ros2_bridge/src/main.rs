@@ -4,7 +4,11 @@ use r2r;
 use std::str::FromStr;
 use std::sync::{mpsc, Arc, Mutex, RwLock};
 use std::collections::HashMap;
-use r2r::gripper_msgs::msg::{Goal, Measured};
+
+use r2r::gripper_msgs;
+use r2r::robot_msgs;
+use r2r::control_box_msgs;
+
 use serde_json::json;
 
 fn opc_variant_to_serde_value(variant: &Variant) -> serde_json::Value {
@@ -267,20 +271,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(r2r::ParameterValue::StringArray(s)) => s.clone(),
         _ => vec![
             // our hardcoded list.
-            "s=GVL.R1",
-            "s=GVL.R2",
-            "s=GVL.R3",
-            "s=GVL.R4",
-            "s=GVL.R5",
-            "s=GVL.R6",
-            "s=GVL.R7",
-            "s=GVL.S1",
-            "s=GVL.S2",
-            "s=GVL.S3",
-            "s=GVL.S4",
-            "s=GVL.S5",
-            "s=GVL.S6",
-            "s=GVL.S7",
+            "s=s1.pos",
+            "s=s2.gripper_closed",
+            "s=s3.gripper_part",
+            "s=s4.conveyor_sensor",
+            "s=s5.conveyor_running",
+            "s=a1.pos",
+            "s=a2.gripper",
+            "s=a3.conv_left",
         ].into_iter().map(|s|s.to_string()).collect(),
     };
     println!("listening to node ids: {:?}", node_ids);
@@ -288,12 +286,65 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let state = Arc::new(Mutex::new(HashMap::new()));
     let (session, _kill) = setup_opc(&server_address, node_ids, state.clone()).expect("could not connect to opc server");
 
-    let sub = node.subscribe::<Measured>("/gripper/measured")?;
-    let publisher = node.create_publisher::<Goal>("/gripper/goal")?;
+    let gripper_sub = node.subscribe::<gripper_msgs::msg::Measured>("/r1_gripper/measured")?;
+    let gripper_pub = node.create_publisher::<gripper_msgs::msg::Goal>("/r1_gripper/goal")?;
+
+    let robot_sub = node.subscribe::<robot_msgs::msg::RobotState>("/dorna/r1/measured")?;
+    let robot_pub = node.create_publisher::<robot_msgs::msg::RobotGoal>("/dorna/r1/goal")?;
+
+    let control_box_sub = node.subscribe::<control_box_msgs::msg::Measured>("/control_box/measured")?;
+    let control_box_pub = node.create_publisher::<control_box_msgs::msg::Goal>("/control_box/goal")?;
+
+    tokio::task::spawn_blocking(move || loop {
+        node.spin_once(std::time::Duration::from_millis(100));
+    });
 
     let state_task = state.clone();
-    let handle = tokio::task::spawn_blocking(move || loop {
-        node.spin_once(std::time::Duration::from_millis(100));
+    let session_task = session.clone();
+    tokio::spawn(async {
+        gripper_sub.for_each(move |msg| {
+            let session = session_task.clone();
+            let state_task = state_task.clone();
+            let json_object = json!({
+                "s=s2.gripper_closed": msg.closed,
+                "s=s3.gripper_part": msg.part_sensor,
+            });
+            write_opc(session, state_task, json_object);
+            future::ready(())
+        }).await;
+    });
+
+    let state_task = state.clone();
+    let session_task = session.clone();
+    tokio::spawn(async {
+        robot_sub.for_each(move |msg| {
+            let session = session_task.clone();
+            let state_task = state_task.clone();
+            let json_object = json!({
+                "s=s1.pos": msg.act_pos,
+            });
+            write_opc(session, state_task, json_object);
+            future::ready(())
+        }).await;
+    });
+
+    let state_task = state.clone();
+    let session_task = session.clone();
+    tokio::spawn(async {
+        control_box_sub.for_each(move |msg| {
+            let session = session_task.clone();
+            let state_task = state_task.clone();
+            let json_object = json!({
+                "s=s4.conveyor_sensor": msg.conv_sensor,
+                "s=s5.conveyor_running": msg.conv_running_left,
+            });
+            write_opc(session, state_task, json_object);
+            future::ready(())
+        }).await;
+    });
+
+    let state_task = state.clone();
+    loop {
         let state = state_task.lock().unwrap();
 
         let mut json_map = serde_json::Map::with_capacity(state.len());
@@ -302,25 +353,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         // create gripper goal msg based on opc state
-        if let Some(close) = json_map.get("s=GVL.R1") {
+        if let Some(close) = json_map.get("s=a2.gripper") {
             let close = close.as_bool().expect("wrong datatype");
-            let msg = Goal { close };
-            publisher.publish(&msg).expect("could not publish");
+            let msg = gripper_msgs::msg::Goal { close };
+            gripper_pub.publish(&msg).expect("could not publish");
         }
-    });
 
-    sub.for_each(move |msg| {
-        let state_task = state.clone();
-        let session = session.clone();
-        let json_object = json!({
-            "s=GVL.S1": msg.closed,
-            "s=GVL.S2": msg.part_sensor,
-        });
-        write_opc(session, state_task, json_object);
-        future::ready(())
-    }).await;
+        // create robot goal msg based on opc state
+        if let Some(pos) = json_map.get("s=a1.pos") {
+            let pos = pos.as_str().expect("wrong datatype");
+            let msg = robot_msgs::msg::RobotGoal { ref_pos: pos.to_string() };
+            robot_pub.publish(&msg).expect("could not publish");
+        }
 
-    handle.await?;
+        // create control box goal msg based on opc state
+        if let Some(conv) = json_map.get("s=a3.conv_left") {
+            let conv = conv.as_bool().expect("wrong datatype");
+            let msg = control_box_msgs::msg::Goal { conv_left: conv, ..
+                                                    control_box_msgs::msg::Goal::default()};
+            control_box_pub.publish(&msg).expect("could not publish");
+        }
 
-    Ok(())
+        // sleep a little.
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
 }
