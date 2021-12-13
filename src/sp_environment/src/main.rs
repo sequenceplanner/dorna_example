@@ -327,6 +327,7 @@ pub fn make_model() -> (Model, SPState) {
 
         (r1_gripper_part_sensor, false.to_spvalue()),
         (r1_gripper_closed, false.to_spvalue()),
+        (r1_gripper_close, false.to_spvalue()),
 
         // initial product state
         (dorna_holding, 0.to_spvalue()),
