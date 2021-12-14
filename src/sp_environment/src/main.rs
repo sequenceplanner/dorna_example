@@ -305,8 +305,20 @@ pub fn make_model() -> (Model, SPState) {
 
     let reset = Transition::new("reset_system",
                                 p!([p: do_reset] && [!p: is_reset]),
-                                vec![a!(p: conveyor = 0),
-                                     a!(p: dorna_holding = 0),
+                                vec![
+                                    a!(p: conveyor = 0),
+                                    a!(p: dorna_holding = 0),
+
+                                     a!(p: r1_ap = t1),
+                                     a!(p: r1_rp = t1),
+                                     a!(p: cb_blue_light_on = false),
+                                     a!(p: cb_conv_run_left = false),
+                                     a!(p: cb_conv_running_left = false),
+                                     a!(p: cb_conv_sensor = false),
+                                     a!(p: r1_gripper_part_sensor = false),
+                                     a!(p: r1_gripper_closed = true),
+                                     a!(p: r1_gripper_close = true),
+
                                      a!(p: is_reset)
                                 ],
                                 TransitionType::Runner);
