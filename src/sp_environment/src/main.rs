@@ -250,6 +250,15 @@ pub fn make_model() -> (Model, SPState) {
                                             vec![ a!( !p: cb_conv_sensor)], TransitionType::Runner);
     m.add_transition(reset_conv_sensor);
 
+    let set_gripper_sensor = Transition::new("set_gripper_finish",
+                                             p!([p: dorna_holding != 0] && [!p: r1_gripper_part_sensor]),
+                                             vec![ a!( p: r1_gripper_part_sensor)], TransitionType::Runner);
+    m.add_transition(set_gripper_sensor);
+    let reset_gripper_sensor = Transition::new("reset_gripper_finish",
+                                               p!([p: dorna_holding == 0] && [p: r1_gripper_part_sensor]),
+                                               vec![ a!( !p: r1_gripper_part_sensor)], TransitionType::Runner);
+    m.add_transition(reset_gripper_sensor);
+
 
     // gripper based on product state
     let e_finish_part = Transition::new("finish_part",
@@ -257,7 +266,6 @@ pub fn make_model() -> (Model, SPState) {
                                            [p: r1_ap == leave] && [p: r1_rp == leave] &&
                                            [p: conveyor != 0]),
                                         vec![a!(p: r1_gripper_closed),
-                                             a!(p: r1_gripper_part_sensor),
                                              a!(p: dorna_holding <- p:conveyor),
                                              a!(p: conveyor = 0)
                                         ],
@@ -269,7 +277,7 @@ pub fn make_model() -> (Model, SPState) {
                                            [! [[p: r1_ap == leave] && [p: r1_rp == leave] &&
                                                [p: conveyor != 0]]]),
                                         vec![a!(p: r1_gripper_closed),
-                                             a!(!p: r1_gripper_part_sensor),
+                                             a!(p: dorna_holding = 0),
                                         ],
                                         TransitionType::Runner);
     m.add_transition(e_finish_no_part);
@@ -279,7 +287,6 @@ pub fn make_model() -> (Model, SPState) {
                                                 [p: r1_ap == leave] && [p: r1_rp == leave] &&
                                                 [p: conveyor == 0]),
                                              vec![a!(!p: r1_gripper_closed),
-                                                  a!(!p: r1_gripper_part_sensor),
                                                   a!(p: conveyor <- p: dorna_holding),
                                                   a!(p: dorna_holding = 0)
                                              ],
@@ -291,7 +298,6 @@ pub fn make_model() -> (Model, SPState) {
                                                 [! [[p: r1_ap == leave] && [p: r1_rp == leave] &&
                                                     [p: conveyor == 0]]]),
                                              vec![a!(!p: r1_gripper_closed),
-                                                  a!(!p: r1_gripper_part_sensor),
                                                   a!(p: dorna_holding = 0)
                                              ],
                                              TransitionType::Runner);
@@ -346,8 +352,8 @@ pub fn make_model() -> (Model, SPState) {
         (cb_conv_sensor, false.to_spvalue()),
 
         (r1_gripper_part_sensor, false.to_spvalue()),
-        (r1_gripper_closed, false.to_spvalue()),
-        (r1_gripper_close, false.to_spvalue()),
+        (r1_gripper_closed, true.to_spvalue()),
+        (r1_gripper_close, true.to_spvalue()),
 
         // initial product state
         (dorna_holding, 0.to_spvalue()),

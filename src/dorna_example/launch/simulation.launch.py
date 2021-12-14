@@ -106,7 +106,8 @@ def generate_launch_description():
     sp_env = launch_ros.actions.Node(
                 package='sp_launch',
                 executable='sp_launch',
-                output={'both': 'log'}, # output='screen',
+                #output={'both': 'log'},
+                output='screen',
                 arguments = ['--ros-args', '--log-level', 'INFO'],
                 namespace='/env',
                 condition=fast_cond,
