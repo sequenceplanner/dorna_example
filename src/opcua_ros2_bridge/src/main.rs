@@ -310,7 +310,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "s=s3.gripper_part": msg.part_sensor,
             });
             write_opc(session, state_task, json_object);
-            println!("writing to opc...");
             future::ready(())
         }).await;
     });
@@ -325,7 +324,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "s=s1.pos": msg.act_pos,
             });
             write_opc(session, state_task, json_object);
-            println!("writing to opc...");
             future::ready(())
         }).await;
     });
@@ -341,7 +339,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "s=s5.conveyor_running": msg.conv_running_left,
             });
             write_opc(session, state_task, json_object);
-            println!("writing to opc...");
             future::ready(())
         }).await;
     });
