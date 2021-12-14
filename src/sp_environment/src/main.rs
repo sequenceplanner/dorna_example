@@ -154,10 +154,10 @@ fn make_control_box(resource: &mut Resource) {
                                             vec![ a!( p: conv_running_left)], TransitionType::Runner);
     resource.add_transition(e_run_left_finish);
 
-    let e_run_right_finish = Transition::new("run_right_finish",
-                                            p!([!p: conv_left] && [p: conv_right] && [!p: conv_running_left] && [!p: conv_running_right]),
-                                            vec![ a!( p: conv_running_right)], TransitionType::Runner);
-    resource.add_transition(e_run_right_finish);
+    // let e_run_right_finish = Transition::new("run_right_finish",
+    //                                         p!([!p: conv_left] && [p: conv_right] && [!p: conv_running_left] && [!p: conv_running_right]),
+    //                                         vec![ a!( p: conv_running_right)], TransitionType::Runner);
+    // resource.add_transition(e_run_right_finish);
 }
 
 fn make_gripper(resource: &mut Resource) {
@@ -203,6 +203,11 @@ pub fn make_model() -> (Model, SPState) {
 
     let cb_blue_light_on = m.get_resource(&control_box).get_variable("measured/blue_light_on");
     let cb_conv_run_left = m.get_resource(&control_box).get_variable("goal/conv_left");
+
+    // hack
+    let do_reset = m.get_resource(&control_box).get_variable("goal/conv_right");
+    let is_reset = m.get_resource(&control_box).get_variable("measured/conv_running_right");
+
     let cb_conv_running_left = m.get_resource(&control_box).get_variable("measured/conv_running_left");
     let cb_conv_running_right = m.get_resource(&control_box).get_variable("measured/conv_running_right");
     let cb_conv_sensor = m.get_resource(&control_box).get_variable("measured/conv_sensor");
@@ -291,6 +296,21 @@ pub fn make_model() -> (Model, SPState) {
                                              ],
                                              TransitionType::Runner);
     m.add_transition(e_finish_open_away);
+
+    let reset = Transition::new("reset_system",
+                                p!([p: do_reset] && [!p: is_reset]),
+                                vec![a!(p: conveyor = 0),
+                                     a!(p: dorna_holding = 0),
+                                     a!(p: is_reset)
+                                ],
+                                TransitionType::Runner);
+    m.add_transition(reset);
+
+    let reset2 = Transition::new("reset_system2",
+                                 p!([!p: do_reset] && [p: is_reset]),
+                                 vec![a!(!p: is_reset)],
+                                 TransitionType::Runner);
+    m.add_transition(reset2);
 
     // let e_finish_no_part = Transition::new("finish_no_part", p!([p: closing]), vec![a!(p: closed), a!(!p: part_sensor)], TransitionType::Runner);
     // m.add_transition(e_finish_no_part);

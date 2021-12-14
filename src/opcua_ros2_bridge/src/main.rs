@@ -279,6 +279,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "s=a1.pos",
             "s=a2.gripper",
             "s=a3.conv_left",
+            "s=do_reset",
+            "s=is_reset",
         ].into_iter().map(|s|s.to_string()).collect(),
     };
     println!("listening to node ids: {:?}", node_ids);
@@ -337,6 +339,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let json_object = json!({
                 "s=s4.conveyor_sensor": msg.conv_sensor,
                 "s=s5.conveyor_running": msg.conv_running_left,
+
+                "s=is_reset": msg.conv_running_right, //hack
             });
             write_opc(session, state_task, json_object);
             future::ready(())
@@ -370,10 +374,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // create control box goal msg based on opc state
         if let Some(conv) = json_map.get("s=a3.conv_left") {
-            let conv = conv.as_bool().expect("wrong datatype");
-            let msg = control_box_msgs::msg::Goal { conv_left: conv, ..
-                                                    control_box_msgs::msg::Goal::default()};
-            control_box_pub.publish(&msg).expect("could not publish");
+            if let Some(do_reset) = json_map.get("s=do_reset") {
+                let conv = conv.as_bool().expect("wrong datatype");
+                let do_reset = do_reset.as_bool().expect("wrong datatype");
+                let msg = control_box_msgs::msg::Goal { conv_left: conv,
+                                                        conv_right: do_reset, ..
+                                                        control_box_msgs::msg::Goal::default()};
+                control_box_pub.publish(&msg).expect("could not publish");
+            }
         }
 
         // sleep a little.
