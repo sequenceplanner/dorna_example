@@ -310,6 +310,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "s=s3.gripper_part": msg.part_sensor,
             });
             write_opc(session, state_task, json_object);
+            println!("writing to opc...");
             future::ready(())
         }).await;
     });
@@ -324,6 +325,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "s=s1.pos": msg.act_pos,
             });
             write_opc(session, state_task, json_object);
+            println!("writing to opc...");
             future::ready(())
         }).await;
     });
@@ -339,18 +341,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "s=s5.conveyor_running": msg.conv_running_left,
             });
             write_opc(session, state_task, json_object);
+            println!("writing to opc...");
             future::ready(())
         }).await;
     });
 
     let state_task = state.clone();
     loop {
-        let state = state_task.lock().unwrap();
-
-        let mut json_map = serde_json::Map::with_capacity(state.len());
-        for (k,v) in &*state {
-            json_map.insert(k.clone(), opc_variant_to_serde_value(&v));
-        }
+        let json_map = {
+            let state = state_task.lock().unwrap();
+            let mut json_map = serde_json::Map::with_capacity(state.len());
+            for (k,v) in &*state {
+                json_map.insert(k.clone(), opc_variant_to_serde_value(&v));
+            }
+            json_map
+        };
 
         // create gripper goal msg based on opc state
         if let Some(close) = json_map.get("s=a2.gripper") {
