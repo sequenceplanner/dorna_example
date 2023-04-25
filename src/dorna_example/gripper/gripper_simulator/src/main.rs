@@ -20,7 +20,7 @@ fn handle_get_state(shared_state: Arc<Mutex<GripperState>>, r: r2r::ServiceReque
         GripperState::ClosedWithPart => GetState::Response { is_closed: true, has_part: true },
         GripperState::ClosedWithoutPart => GetState::Response { is_closed: true, has_part: false },
     };
-    r.respond(resp);
+    let _res = r.respond(resp);
 }
 
 async fn handle_close(nl: String, shared_state: Arc<Mutex<GripperState>>, r: r2r::ServiceRequest<Close::Service>) {
@@ -47,7 +47,7 @@ async fn handle_close(nl: String, shared_state: Arc<Mutex<GripperState>>, r: r2r
     let resp = Close::Response {
         has_part: new_state == GripperState::ClosedWithPart
     };
-    r.respond(resp);
+    let _res = r.respond(resp);
 }
 
 async fn handle_open(nl: String, shared_state: Arc<Mutex<GripperState>>, r: r2r::ServiceRequest<Open::Service>) {
@@ -64,7 +64,7 @@ async fn handle_open(nl: String, shared_state: Arc<Mutex<GripperState>>, r: r2r:
     *shared_state.lock().unwrap() = new_state;
 
     let resp = Open::Response::default();
-    r.respond(resp);
+    let _res = r.respond(resp);
 }
 
 #[tokio::main]

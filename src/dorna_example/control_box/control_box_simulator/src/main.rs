@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 
 async fn set_light_server(
     state: Arc<Mutex<bool>>,
-    mut requests: impl Stream<Item = r2r::GoalRequest<SetLight::Action>> + Unpin,
+    mut requests: impl Stream<Item = r2r::ActionServerGoalRequest<SetLight::Action>> + Unpin,
 ) {
     loop {
         match requests.next().await {
@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let spawner = pool.spawner();
     let ctx = r2r::Context::create()?;
     let mut node = r2r::Node::create(ctx, "control_box_simulator", "/control_box")?;
-    let state_publisher = node.create_publisher::<Measured>("measured")?;
+    let state_publisher = node.create_publisher::<Measured>("measured", r2r::QosProfile::default())?;
 
     let server_requests = node.create_action_server::<SetLight::Action>("set_light")?;
 
